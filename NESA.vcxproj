@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{C3BCEA75-E3E1-4D44-A7FD-14740C52D821}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>NESA</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Allocator.h" />
+    <ClInclude Include="Cartridge.h" />
+    <ClInclude Include="CNode.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="CTranslater.h" />
+    <ClInclude Include="DataFlowAnalyzer.h" />
+    <ClInclude Include="Exception.h" />
+    <ClInclude Include="Instruction.h" />
+    <ClInclude Include="LiveVariableAnalysis.h" />
+    <ClInclude Include="Mapper.h" />
+    <ClInclude Include="Mappers.h" />
+    <ClInclude Include="NesAnalyzer.h" />
+    <ClInclude Include="NesBase.h" />
+    <ClInclude Include="NesBasicBlock.h" />
+    <ClInclude Include="NesDataBase.h" />
+    <ClInclude Include="NesObject.h" />
+    <ClInclude Include="NesSubroutine.h" />
+    <ClInclude Include="NesSubroutineParser.h" />
+    <ClInclude Include="NesUtil.h" />
+    <ClInclude Include="NodeSet.h" />
+    <ClInclude Include="ReachingDefinition.h" />
+    <ClInclude Include="Sprintf.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="TAC.h" />
+    <ClInclude Include="TACTranslater.h" />
+    <ClInclude Include="targetver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Cartridge.cpp" />
+    <ClCompile Include="CNode.cpp" />
+    <ClCompile Include="CTranslater.cpp" />
+    <ClCompile Include="DataFlowAnalyzer.cpp" />
+    <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="Instruction.cpp" />
+    <ClCompile Include="LiveVariableAnalysis.cpp" />
+    <ClCompile Include="Mapper.cpp" />
+    <ClCompile Include="Mappers.cpp" />
+    <ClCompile Include="NESA.cpp" />
+    <ClCompile Include="NesAnalyzer.cpp" />
+    <ClCompile Include="NesBase.cpp" />
+    <ClCompile Include="NesBasicBlock.cpp" />
+    <ClCompile Include="NesDataBase.cpp" />
+    <ClCompile Include="NesObject.cpp" />
+    <ClCompile Include="NesSubroutine.cpp" />
+    <ClCompile Include="NesSubroutineParser.cpp" />
+    <ClCompile Include="NodeSet.cpp" />
+    <ClCompile Include="ReachingDefinition.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="TAC.cpp" />
+    <ClCompile Include="TACTranslater.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

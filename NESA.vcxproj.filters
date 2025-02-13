@@ -1,0 +1,195 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{30177dfd-6d48-4c18-957f-0db5c7ed0013}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Nes">
+      <UniqueIdentifier>{2f0f0420-db92-4381-83ee-28262f3d44c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NesDB">
+      <UniqueIdentifier>{9bb2c01e-1629-4f45-a72f-6989fff78da5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Parser">
+      <UniqueIdentifier>{87281380-692c-4c77-a1de-e8d3585b1cc8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IR">
+      <UniqueIdentifier>{3eba12c0-c98b-4af7-b1c8-861de3d1e213}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{5a413aa9-819d-4cc3-9b38-6b5ae4a9e860}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Exception">
+      <UniqueIdentifier>{dfe0f0e7-9a29-4091-8a7e-1ca6f256d59d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C">
+      <UniqueIdentifier>{0d5e72be-95f8-4bb4-8b4e-6a86fedba0c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DataFlow">
+      <UniqueIdentifier>{a1e1980a-8e52-47d3-a51e-d7195571779e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Allocator.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Cartridge.h">
+      <Filter>Nes</Filter>
+    </ClInclude>
+    <ClInclude Include="Mapper.h">
+      <Filter>Nes</Filter>
+    </ClInclude>
+    <ClInclude Include="Mappers.h">
+      <Filter>Nes</Filter>
+    </ClInclude>
+    <ClInclude Include="NesBase.h">
+      <Filter>Nes</Filter>
+    </ClInclude>
+    <ClInclude Include="Instruction.h">
+      <Filter>Nes</Filter>
+    </ClInclude>
+    <ClInclude Include="NesDataBase.h">
+      <Filter>NesDB</Filter>
+    </ClInclude>
+    <ClInclude Include="NesBasicBlock.h">
+      <Filter>NesDB</Filter>
+    </ClInclude>
+    <ClInclude Include="NesObject.h">
+      <Filter>NesDB</Filter>
+    </ClInclude>
+    <ClInclude Include="NesSubroutine.h">
+      <Filter>NesDB</Filter>
+    </ClInclude>
+    <ClInclude Include="NesUtil.h">
+      <Filter>NesDB</Filter>
+    </ClInclude>
+    <ClInclude Include="NesSubroutineParser.h">
+      <Filter>Parser</Filter>
+    </ClInclude>
+    <ClInclude Include="TAC.h">
+      <Filter>IR</Filter>
+    </ClInclude>
+    <ClInclude Include="TACTranslater.h">
+      <Filter>IR</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Exception.h">
+      <Filter>Exception</Filter>
+    </ClInclude>
+    <ClInclude Include="CTranslater.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="NodeSet.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="CNode.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="DataFlowAnalyzer.h">
+      <Filter>DataFlow</Filter>
+    </ClInclude>
+    <ClInclude Include="LiveVariableAnalysis.h">
+      <Filter>DataFlow</Filter>
+    </ClInclude>
+    <ClInclude Include="ReachingDefinition.h">
+      <Filter>DataFlow</Filter>
+    </ClInclude>
+    <ClInclude Include="NesAnalyzer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Sprintf.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NESA.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Cartridge.cpp">
+      <Filter>Nes</Filter>
+    </ClCompile>
+    <ClCompile Include="Mapper.cpp">
+      <Filter>Nes</Filter>
+    </ClCompile>
+    <ClCompile Include="Mappers.cpp">
+      <Filter>Nes</Filter>
+    </ClCompile>
+    <ClCompile Include="NesBase.cpp">
+      <Filter>Nes</Filter>
+    </ClCompile>
+    <ClCompile Include="Instruction.cpp">
+      <Filter>Nes</Filter>
+    </ClCompile>
+    <ClCompile Include="NesDataBase.cpp">
+      <Filter>NesDB</Filter>
+    </ClCompile>
+    <ClCompile Include="NesBasicBlock.cpp">
+      <Filter>NesDB</Filter>
+    </ClCompile>
+    <ClCompile Include="NesObject.cpp">
+      <Filter>NesDB</Filter>
+    </ClCompile>
+    <ClCompile Include="NesSubroutine.cpp">
+      <Filter>NesDB</Filter>
+    </ClCompile>
+    <ClCompile Include="NesSubroutineParser.cpp">
+      <Filter>Parser</Filter>
+    </ClCompile>
+    <ClCompile Include="TAC.cpp">
+      <Filter>IR</Filter>
+    </ClCompile>
+    <ClCompile Include="TACTranslater.cpp">
+      <Filter>IR</Filter>
+    </ClCompile>
+    <ClCompile Include="Exception.cpp">
+      <Filter>Exception</Filter>
+    </ClCompile>
+    <ClCompile Include="CTranslater.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="NodeSet.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="CNode.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="DataFlowAnalyzer.cpp">
+      <Filter>DataFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="LiveVariableAnalysis.cpp">
+      <Filter>DataFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ReachingDefinition.cpp">
+      <Filter>DataFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="NesAnalyzer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
