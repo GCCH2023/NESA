@@ -8,13 +8,13 @@ allocator(allocator_),
 function(nullptr),
 subroutine(nullptr)
 {
-	registers[Nes::NesRegisters::A] = allocator.New<CVariable>(_T("A"));
-	registers[Nes::NesRegisters::X] = allocator.New<CVariable>(_T("X"));
-	registers[Nes::NesRegisters::Y] = allocator.New<CVariable>(_T("Y"));
-	registers[Nes::NesRegisters::P] = allocator.New<CVariable>(_T("P"));
-	registers[Nes::NesRegisters::SP] = allocator.New<CVariable>(_T("SP"));
+	registers[Nes::NesRegisters::A] = allocator.New<CNode>(NewString(_T("A")));
+	registers[Nes::NesRegisters::X] = allocator.New<CNode>(NewString(_T("X")));
+	registers[Nes::NesRegisters::Y] = allocator.New<CNode>(NewString(_T("Y")));
+	registers[Nes::NesRegisters::P] = allocator.New<CNode>(NewString(_T("P")));
+	registers[Nes::NesRegisters::SP] = allocator.New<CNode>(NewString(_T("SP")));
 
-	noneStatement = allocator.New<CStatement>(CNodeKind::STAT_NONE);
+	noneStatement = allocator.New<CNode>(CNodeKind::STAT_NONE);
 }
 
 
@@ -70,7 +70,7 @@ ControlTreeNodeEx* CTranslater::Analyze(Edge edges[], size_t count)
 	Node n = N.ToVector()[0];
 	if (ctrees[n].statement == nullptr)
 	{
-		CExpression* condition = nullptr;
+		CNode* condition = nullptr;
 		uint32_t jumpAddr;
 		auto block = this->subroutine->GetBasicBlocks()[n];
 		ctrees[n].statement = TranslateRegion(condition, block, jumpAddr);
@@ -108,40 +108,32 @@ void CTranslater::Reset()
 	blockCount = 0;
 }
 
-CExpression* CTranslater::GetExpression(TACOperand& operand)
+CNode* CTranslater::GetExpression(TACOperand& operand)
 {
 	switch (operand.GetKind())
 	{
 	case TACOperand::INTEGER:
 		if (operand.IsTemp())
 		{
-			TCHAR buffer[64];
-			_stprintf_s(buffer, _T("temp%d"), operand.GetValue());
-			return allocator.New<CVariable>(buffer, VAR_KIND_LOCAL);
+			return allocator.New<CNode>(NewString(_T("temp%d"), operand.GetValue()), VAR_KIND_LOCAL);
 		}
 		else
-			return allocator.New<CInteger>(operand.GetValue());
+			return allocator.New<CNode>(operand.GetValue());
 	case TACOperand::REGISTER:
 		return registers[operand.GetValue()];
 	case TACOperand::MEMORY:
 	{
-							   TCHAR buffer[64];
 							   if (operand.IsTemp())
 							   {
-								   _stprintf_s(buffer, _T("temp%d"), operand.GetValue());
-								   auto var = allocator.New<CVariable>(buffer, VAR_KIND_GLOBAL);
+								   auto var = allocator.New<CNode>(NewString(_T("temp%d"), operand.GetValue()), VAR_KIND_GLOBAL);
 								   // 需要解引用
-								   return allocator.New<CSingleExpression>(CNodeKind::EXPR_REF, var);
+								   return allocator.New<CNode>(CNodeKind::EXPR_REF, var);
 							   }
-							   else
-								   _stprintf_s(buffer, _T("g_%04X"), operand.GetValue());
-							   return allocator.New<CVariable>(buffer, VAR_KIND_GLOBAL);
+							   return allocator.New<CNode>(NewString(_T("g_%04X"), operand.GetValue()), VAR_KIND_GLOBAL);
 	}
 	case TACOperand::ADDRESS:
 	{
-								TCHAR buffer[64];
-								_stprintf_s(buffer, _T("g_%04X"), operand.GetValue());
-								return allocator.New<CVariable>(buffer, VAR_KIND_GLOBAL);
+								return allocator.New<CNode>(NewString(_T("g_%04X"), operand.GetValue()), VAR_KIND_GLOBAL);
 	}
 	default:
 	{
@@ -153,20 +145,20 @@ CExpression* CTranslater::GetExpression(TACOperand& operand)
 }
 
 
-CExpression* CTranslater::ConditionalJump(CExpression*& condition, CNodeKind kind, TAC* tac, uint32_t& jumpAddr)
+CNode* CTranslater::ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac, uint32_t& jumpAddr)
 {
 	// 条件跳转指令必定是基本块结束指令
-	condition = allocator.New<CBinaryExpression>(kind, GetExpression(tac->x), GetExpression(tac->y));
+	condition = allocator.New<CNode>(kind, GetExpression(tac->x), GetExpression(tac->y));
 	jumpAddr = tac->z.GetValue();
 	return condition;
 }
 
 
-CStatement* CTranslater::TranslateRegion(CExpression*& pCondition, TACBasicBlock* tacBlock, uint32_t& jumpAddr)
+CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock, uint32_t& jumpAddr)
 {
-	CStatement* current = nullptr, *last = nullptr;
-	CListStatement* list = nullptr, *tail = nullptr;
-	CExpression* expr = nullptr;
+	CNode* current = nullptr, *last = nullptr, *tail = nullptr;
+	CNode* expr = nullptr;
+	CNode* list = nullptr;
 	auto& codes = tacBlock->GetCodes();
 	for (size_t i = 0; i < codes.size(); ++i)
 	{
@@ -174,50 +166,52 @@ CStatement* CTranslater::TranslateRegion(CExpression*& pCondition, TACBasicBlock
 		switch (tac->op)
 		{
 		case	TACOperator::BOR:
-			expr = allocator.New<CBinaryExpression>(CNodeKind::EXPR_BOR, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CBinaryExpression>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CExpressionStatement>(expr);
+			expr = allocator.New<CNode>(CNodeKind::EXPR_BOR, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
 		case	TACOperator::BAND:
-			expr = allocator.New<CBinaryExpression>(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CBinaryExpression>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CExpressionStatement>(expr);
+			expr = allocator.New<CNode>(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
 		case	TACOperator::ASSIGN:
-			expr = allocator.New<CBinaryExpression>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), GetExpression(tac->x));
-			current = allocator.New<CExpressionStatement>(expr);
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), GetExpression(tac->x));
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
 		case	TACOperator::ADD:
-			expr = allocator.New<CBinaryExpression>(CNodeKind::EXPR_ADD, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CBinaryExpression>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CExpressionStatement>(expr);
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
 		case	TACOperator::SUB:
-			expr = allocator.New<CBinaryExpression>(CNodeKind::EXPR_SUB, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CBinaryExpression>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CExpressionStatement>(expr);
+			expr = allocator.New<CNode>(CNodeKind::EXPR_SUB, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
 		case	TACOperator::ARG:
 		{
-									std::vector<CExpression*> args(4);
-									args.clear();
 									// 若干个 ARG 后面跟着一个 CALL
 									// 遇到 ARG，则要连着后面的直到 CALL 的三地址码一起翻译
+									CNode* params = nullptr;
+									CNode* paramsTail = nullptr;
 									while (codes[i]->op == TACOperator::ARG)
 									{
-										args.push_back(GetExpression(codes[i]->x));
+										if (!paramsTail)
+										{
+											paramsTail = params = GetExpression(codes[i]->x);
+										}
+										else
+										{
+											paramsTail->next = GetExpression(codes[i]->x);
+											paramsTail = paramsTail->next;
+										}
 										++i;
 									}
 									if (codes[i]->op != TACOperator::CALL)
 										throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
 									// 最后是 CALL 指令
-									TCHAR buffer[64];
-									_stprintf_s(buffer, _T("sub_%04X"), tac->z.GetValue());
-									auto var = allocator.New<CVariable>(buffer, VAR_KIND_FUNCTION);
-									auto call = allocator.New<CCallStatement>(var);
-									call->args = allocator.Alloc<CExpression*>(args.size() + 1);
-									memcpy_s(call->args, args.size() * sizeof(CExpression*), args.data(), args.size() * sizeof(CExpression*));
-									call->args[args.size()] = nullptr;  // 以 空 结尾
+									auto call = allocator.New<CNode>(NewString(_T("sub_%04X"), codes[i]->z.GetValue()), params);
 									current = call;
 									break;
 		}
@@ -225,10 +219,7 @@ CStatement* CTranslater::TranslateRegion(CExpression*& pCondition, TACBasicBlock
 		{
 									 // 如果有参数，则鄙视 若干个 ARG 后面跟着一个 CALL
 									 // 直接出现 CALL，说明没有参数
-									 TCHAR buffer[64];
-									 _stprintf_s(buffer, _T("sub_%04X"), tac->z.GetValue());
-									 auto var = allocator.New<CVariable>(buffer, VAR_KIND_FUNCTION);
-									 current = allocator.New<CCallStatement>(var);
+									 current = allocator.New<CNode>(NewString(_T("sub_%04X"), tac->z.GetValue()));
 									 break;
 		}
 
@@ -260,24 +251,24 @@ CStatement* CTranslater::TranslateRegion(CExpression*& pCondition, TACBasicBlock
 									  //expr = allocator.New<CInteger>(1);
 									  //current = allocator.New<CWhileStatement>(expr, noneStatement);
 									  current = noneStatement;
-									  pCondition = allocator.New<CInteger>(1);
+									  pCondition = allocator.New<CNode>(1);
 									  break;
 								  }
 								  auto label = GetLabelName(tac->z.GetValue());
-								  current = allocator.New<CGotoStatement>(label.c_str());
+								  current = allocator.New<CNode>(CNodeKind::STAT_GOTO, label);
 								  break;
 		}
 		case TACOperator::BIT:
 		{
 								 // 先这样翻译凑合一下，翻译成表达式语句
-								 expr = allocator.New<CBinaryExpression>(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
-								 current = allocator.New<CExpressionStatement>(expr);
+								 expr = allocator.New<CNode>(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
+								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
 		case TACOperator::RETURN:
 		{
 									// 返回值以后再考虑吧
-									current = allocator.New<CReturnStatement>();
+									current = allocator.New<CNode>(CNodeKind::STAT_RETURN);
 									break;
 		}
 		default:
@@ -290,12 +281,12 @@ CStatement* CTranslater::TranslateRegion(CExpression*& pCondition, TACBasicBlock
 		// 构建语句列表
 		if (tail)
 		{
-			tail->second = allocator.New<CListStatement>(tail->second, current);
-			tail = (CListStatement*)tail->second;
+			tail->e.y = allocator.New<CNode>(CNodeKind::STAT_LIST, tail->e.y, current);
+			tail = tail->e.y;
 		}
 		else if (last)
 		{
-			tail = list = allocator.New<CListStatement>(last, current);
+			tail = list = allocator.New<CNode>(CNodeKind::STAT_LIST, last, current);
 		}
 		last = current;
 	}
@@ -318,24 +309,28 @@ CStatement* CTranslater::TranslateRegion(CExpression*& pCondition, TACBasicBlock
 //}
 
 
-String CTranslater::GetLabelName(uint32_t jumpAddr)
+CStr CTranslater::GetLabelName(uint32_t jumpAddr)
 {
-	TCHAR buffer[64];
-	_stprintf_s(buffer, _T("L%04X"), jumpAddr);
-	labels.push_back(jumpAddr);  // 标记这个地址是标签语句地址
-	return buffer;
+	auto it = labels.find(jumpAddr);
+	if (it == labels.end())
+	{
+		auto label = NewString(_T("L%04X"), jumpAddr);
+		labels[jumpAddr] = label;
+		return label;
+	}
+	return it->second;
 }
 
 
-CStatement* CTranslater::CombineListIf(CStatement* statement, CExpression* condition, CStatement* body, CStatement* elseBody /*= nullptr*/)
+CNode* CTranslater::CombineListIf(CNode* statement, CNode* condition, CNode* body, CNode* elseBody /*= nullptr*/)
 {
-	auto ifStat = allocator.New<CIfStatement>(condition, body, elseBody);
+	auto ifStat = allocator.New<CNode>(CNodeKind::STAT_IF, condition, body, elseBody);
 	if (!statement)
 		return ifStat;
-	return allocator.New<CListStatement>(statement, ifStat);
+	return allocator.New<CNode>(CNodeKind::STAT_LIST, statement, ifStat);
 }
 
-CExpression* CTranslater::GetNotExpression(CExpression* expr)
+CNode* CTranslater::GetNotExpression(CNode* expr)
 {
 	switch (expr->kind)
 	{
@@ -367,12 +362,30 @@ void CTranslater::PatchLabels()
 {
 	for (auto label : labels)
 	{
-		auto statement = blockStatements[label];
+		auto statement = blockStatements[label.first];
 		if (statement->kind != CNodeKind::STAT_LABEL)
 		{
-
+			// 修改为标签语句
+			auto body = allocator.New<CNode>();
+			*body = *statement;
+			statement->kind = CNodeKind::STAT_LABEL;
+			statement->l.body = body;
+			statement->l.name = label.second;
 		}
 	}
+}
+
+CStr CTranslater::NewString(const CStr format, ...)
+{
+	TCHAR buffer[256];
+	va_list va;
+	va_start(va, format);
+	_vstprintf_s(buffer, 256, format, va);
+	va_end(va);
+	size_t count = ((_tcslen(buffer) + 1) * sizeof(TCHAR)+sizeof(void*)-1) & ~(sizeof(void*)-1);
+	CStr str = allocator.Alloc<TCHAR>(count);
+	_tcscpy_s(str, count, buffer);
+	return str;
 }
 
 // 当要将控制流图中的一个自循环节点归约时
@@ -384,21 +397,21 @@ void CTranslater::OnReduceSelfLoop(ControlTreeNodeEx* node)
 	{
 		if (body->condition == nullptr)
 			throw Exception(_T("非叶子自循环节点异常"));
-		node->statement = allocator.New<CDoWhileStatement>(body->condition, body->statement);
+		node->statement = allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, body->condition, body->statement);
 		return;
 	}
-	CExpression* condition = nullptr;
+	CNode* condition = nullptr;
 	auto block = this->subroutine->GetBasicBlocks()[body->index];
 	uint32_t jumpAddr;
 	auto a = TranslateRegion(condition, block, jumpAddr);
-	node->statement = allocator.New<CDoWhileStatement>(condition, a);
+	node->statement = allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, a);
 }
 
 void CTranslater::OnReduceList(ControlTreeNodeEx* node)
 {
 	auto first = node->pair.first;
 	auto second = node->pair.second;
-	CExpression* condition = nullptr;
+	CNode* condition = nullptr;
 	auto blocks = this->subroutine->GetBasicBlocks();
 	uint32_t jumpAddr;
 	if (first->type == CTNTYPE_LEAF)
@@ -409,7 +422,7 @@ void CTranslater::OnReduceList(ControlTreeNodeEx* node)
 	{
 		second->statement = TranslateRegion(condition, blocks[second->index], jumpAddr);
 	}
-	node->statement = allocator.New<CListStatement>(first->statement, second->statement);
+	node->statement = allocator.New<CNode>(CNodeKind::STAT_LIST, first->statement, second->statement);
 	node->condition = condition;
 }
 
@@ -417,14 +430,14 @@ void CTranslater::OnReducePoint2Loop(ControlTreeNodeEx* node)
 {
 	auto first = node->pair.first;
 	auto second = node->pair.second;
-	CExpression* condition = nullptr;
+	CNode* condition = nullptr;
 	auto blocks = this->subroutine->GetBasicBlocks();
 	uint32_t jumpAddr;
 	if (first->type == CTNTYPE_LEAF)
 	{
 		first->statement = TranslateRegion(condition, blocks[first->index], jumpAddr);
 		// 跳转边翻译为 goto 语句
-		auto gotoStat = allocator.New<CGotoStatement>(GetLabelName(jumpAddr).c_str());
+		auto gotoStat = allocator.New<CNode>(CNodeKind::STAT_GOTO, GetLabelName(jumpAddr));
 		first->statement = CombineListIf(first->statement, condition, gotoStat);
 	}
 	else
@@ -439,15 +452,15 @@ void CTranslater::OnReducePoint2Loop(ControlTreeNodeEx* node)
 	{
 		throw Exception(_T("未实现"));
 	}
-	node->statement = allocator.New<CListStatement>(first->statement, second->statement);
-	node->statement = allocator.New<CDoWhileStatement>(condition, node->statement);
+	node->statement = allocator.New<CNode>(CNodeKind::STAT_LIST, first->statement, second->statement);
+	node->statement = allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, node->statement);
 }
 
 void CTranslater::OnReduceIf(ControlTreeNodeEx* node)
 {
 	auto cond = node->_if.condition;
 	auto body = node->_if.then;
-	CExpression* condition = nullptr;
+	CNode* condition = nullptr;
 	auto blocks = this->subroutine->GetBasicBlocks();
 	uint32_t jumpAddr;
 	if (cond->type == CTNTYPE_LEAF)
@@ -458,7 +471,7 @@ void CTranslater::OnReduceIf(ControlTreeNodeEx* node)
 	{
 		throw Exception(_T("未实现"));
 	}
-	CExpression* ifCond = condition;
+	CNode* ifCond = condition;
 	if (body->type == CTNTYPE_LEAF)
 	{
 		body->statement = TranslateRegion(condition, blocks[body->index], jumpAddr);
@@ -472,7 +485,7 @@ void CTranslater::OnReduceIfElse(ControlTreeNodeEx* node)
 	auto cond = node->_if.condition;
 	auto then = node->_if.then;
 	auto _else = node->_if._else;
-	CExpression* condition = nullptr;
+	CNode* condition = nullptr;
 	auto blocks = this->subroutine->GetBasicBlocks();
 	uint32_t jumpAddr;
 	if (cond->type == CTNTYPE_LEAF)
@@ -483,7 +496,7 @@ void CTranslater::OnReduceIfElse(ControlTreeNodeEx* node)
 	{
 		throw Exception(_T("未实现"));
 	}
-	CExpression* ifCond = condition;
+	CNode* ifCond = condition;
 	// 需要根据跳转地址来判断哪个基本块是 then 部分，哪个是 else 部分
 	if (jumpAddr == blocks[then->index]->GetStartAddress())
 	{
@@ -512,7 +525,7 @@ void CTranslater::OnReduceIfOr(ControlTreeNodeEx* node)
 	auto c = node->_if._else;
 	auto blocks = this->subroutine->GetBasicBlocks();
 	uint32_t jumpAddr;
-	CExpression* condition1 = nullptr, *condition2 = nullptr;
+	CNode* condition1 = nullptr, *condition2 = nullptr;
 	if (a->type == CTNTYPE_LEAF)
 	{
 		a->statement = TranslateRegion(condition1, blocks[a->index], jumpAddr);
@@ -538,7 +551,7 @@ void CTranslater::OnReduceIfOr(ControlTreeNodeEx* node)
 	}
 	// 用 || 连接 a 和 b 的条件，b的条件要取反，因为b条件满足时跳转到d
 	condition2 = GetNotExpression(condition2);
-	condition1 = allocator.New<CBinaryExpression>(CNodeKind::EXPR_OR, condition1, condition2);
+	condition1 = allocator.New<CNode>(CNodeKind::EXPR_OR, condition1, condition2);
 	if (c->type == CTNTYPE_LEAF)
 	{
 		c->statement = TranslateRegion(condition2, blocks[c->index], jumpAddr);

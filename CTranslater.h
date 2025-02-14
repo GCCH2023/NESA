@@ -29,10 +29,10 @@ struct ControlTreeNodeEx : BasicBlock
 			ControlTreeNodeEx* _else;
 		} _if;
 	};
-	CStatement* statement;  // 对应的C语句，如果一个基本块只有一条跳转语句，那么这个字段为空
+	CNode* statement;  // 对应的C语句，如果一个基本块只有一条跳转语句，那么这个字段为空
 	// 对应的条件表达式，两个顺序基本块构成的循环，必然是先归约语句序列，而后是循环，那么就要保存
 	// 后面基本块的条件表达式
-	CExpression* condition;
+	CNode* condition;
 };
 
 class CTranslater
@@ -100,26 +100,28 @@ protected:
 	void OnReduceIfOr(ControlTreeNodeEx* node);
 protected:
 	// 将三地址码操作数转换为C表达式
-	CExpression* GetExpression(TACOperand& operand);
+	CNode* GetExpression(TACOperand& operand);
 	// 条件跳转语句翻译
-	CExpression* ConditionalJump(CExpression*& condition, CNodeKind kind, TAC* tac, uint32_t& jumpAddr);
+	CNode* ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac, uint32_t& jumpAddr);
 	// 翻译区域代码为抽象语法树节点
-	CStatement* TranslateRegion(CExpression*& condition, TACBasicBlock* tacBlock, uint32_t& jumpAddr);
+	CNode* TranslateRegion(CNode*& condition, TACBasicBlock* tacBlock, uint32_t& jumpAddr);
 	// 根据跳转地址获取对应的标签语句
 	// CLabelStatement* GetLabel(uint32_t jumpAddr);
 	// 获取标签名称
-	String GetLabelName(uint32_t jumpAddr);
+	CStr GetLabelName(uint32_t jumpAddr);
 	// 创建分支基本块的语句
 	// 也就是语句序列后面跟着一个if语句
 	// 一个基本块通常前面是顺序执行的指令，最后以条件跳转指令结尾
 	// statement 是 if 前面的语句，可以为空，表示这个基本块只有一条条件跳转指令
 	// condition是if的条件，body是if条件为真要执行的语句, elseBody 是条件为假要执行的语句
-	CStatement* CombineListIf(CStatement* statement, CExpression* condition, CStatement* body, CStatement* elseBody = nullptr);
+	CNode* CombineListIf(CNode* statement, CNode* condition, CNode* body, CNode* elseBody = nullptr);
 	// 对表达式进行取反
 	// 可能会修改输入的表达式的类型
-	CExpression* GetNotExpression(CExpression* expr);
+	CNode* GetNotExpression(CNode* expr);
 	// 回填标签语句
 	void PatchLabels();
+	// 创建一个字符串
+	CStr NewString(const CStr format, ...);
 protected:
 	NesDataBase& db;
 	Allocator& allocator;  // 用于创建输出结果
@@ -136,10 +138,10 @@ private:
 
 	ControlTreeNodeEx ctrees[32];  // 控制树节点列表
 
-	CVariable* registers[5];  // AXYPSP 5个寄存器
-	CStatement* noneStatement;  // 空语句
-	// std::unordered_map<Nes::Address, CLabelStatement*> labels;  // 地址到标签语句的映射
-	std::vector<Nes::Address> labels;
-	std::unordered_map<Nes::Address, CStatement*> blockStatements;  // 地址到基本块对应的语句的映射
+	CNode* registers[5];  // AXYPSP 5个寄存器
+	CNode* noneStatement;  // 空语句
+	std::unordered_map<Nes::Address, CStr> labels;  // 地址到标签语句的映射
+	//std::vector<Nes::Address> labels;
+	std::unordered_map<Nes::Address, CNode*> blockStatements;  // 地址到基本块对应的语句的映射
 };
 

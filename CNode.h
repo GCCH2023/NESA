@@ -45,39 +45,6 @@ enum class CNodeKind
 	EXPR_NOT,  // !
 };
 
-// C语言语法节点
-struct CNode
-{
-	CNodeKind kind;  // 节点的类型
-	uint32_t address;  // 对应的NES地址
-
-	CNode(CNodeKind kind, uint32_t address);
-};
-
-// C语言表达式节点
-struct CExpression : public CNode
-{
-	CExpression(CNodeKind kind, uint32_t address = 0);
-};
-
-// 单目表达式
-struct CSingleExpression : public CExpression
-{
-	CExpression* operand;
-
-	CSingleExpression(CNodeKind kind, CExpression* operand);
-};
-
-
-// 双目表达式
-struct CBinaryExpression : public CExpression
-{
-	CExpression* left;
-	CExpression* right;
-
-	CBinaryExpression(CNodeKind kind, CExpression* left, CExpression* right);
-};
-
 enum VariableKind
 {
 	VAR_KIND_GLOBAL,  // 全局变量
@@ -85,115 +52,74 @@ enum VariableKind
 	VAR_KIND_FUNCTION,  // 函数
 };
 
-// 变量
-struct CVariable : public CExpression
+using CStr = TCHAR*;
+
+// C语言语法节点
+struct CNode
 {
-	String name;
-	VariableKind varKind;
+	CNodeKind kind;  // 节点的类型
+	uint32_t address;  // 对应的NES地址
 
-	CVariable(LPCTSTR name, VariableKind kind = VAR_KIND_GLOBAL);
+	
+	union
+	{
+		struct
+		{
+			CStr name;
+			CNode* body;
+		}l;  // 标签语句
+		struct
+		{
+			CStr name;  // 变量名
+			VariableKind varKind;
+		}v;
+		struct
+		{
+			int value;
+		}i;  // 整数常量
+		struct
+		{
+			CNode* x;
+			CNode* y;
+			CNode* z;
+		}e;  // 表达式或语句, 如果是语句，则x是条件表达式, y 是 then 语句，z是else 语句
+		struct
+		{
+			CNode* condition;
+			CNode* then;
+			CNode* _else;
+		}s;
+		struct
+		{
+			CStr name;  // 函数名称
+			CNode* params;  // 参数链表
+		}f;
+	};
+	CNode* next = nullptr;
+
+	CNode();
+	CNode(CNodeKind kind, uint32_t address);
+	// 创建变量
+	CNode(CStr name, VariableKind varKind = VAR_KIND_GLOBAL);
+	// 创建函数调用或标签语句
+	CNode(CStr name, CNode* params);
+	// 创建整数
+	CNode(int value);
+	// 创建表达式或语句
+	CNode(CNodeKind kind, CNode* x = nullptr, CNode* y = nullptr, CNode* z = nullptr);
+	// 创建goto语句
+	CNode(CNodeKind kind, CStr name);
 };
-
-// 整数常量
-struct CInteger : public CExpression
-{
-	int value;
-
-	CInteger(int value);
-};
-
-// C语言语句节点
-struct CStatement : public CNode
-{
-	CStatement(CNodeKind kind, uint32_t address = 0);
-};
-
-// 语句序列
-struct CListStatement : public CStatement
-{
-	CStatement* first;
-	CStatement* second;
-
-	CListStatement(CStatement* first = nullptr, CStatement* second = nullptr);
-};
-
-// 表达式语句
-struct CExpressionStatement : public CStatement
-{
-	CExpression* expression;
-
-	CExpressionStatement(CExpression* expression = nullptr);
-};
-
-// 函数调用语句
-struct CCallStatement : public CStatement
-{
-	CVariable* funcName;  // 函数名称
-	CExpression** args;  // 函数参数数组，以 空结尾
-
-	CCallStatement(CVariable* funcName = nullptr);
-};
-
-// 函数调用语句
-struct CWhileStatement : public CStatement
-{
-	CExpression* expression;
-	CStatement* body;
-
-	CWhileStatement(CExpression* expression = nullptr, CStatement* body = nullptr);
-};
-
-// 函数调用语句
-struct CDoWhileStatement : public CStatement
-{
-	CExpression* expression;
-	CStatement* body;
-
-	CDoWhileStatement(CExpression* expression = nullptr, CStatement* body = nullptr);
-};
-
-struct CIfStatement : public CStatement
-{
-	CExpression* condition;
-	CStatement* body;
-	CStatement* _else;
-
-	CIfStatement(CExpression* condition = nullptr, CStatement* body = nullptr, CStatement* _else = nullptr);
-};
-
-struct CLabelStatement : public CStatement
-{
-	CStatement* statement;
-	String name;
-
-	CLabelStatement(LPCTSTR name, CStatement* statement = nullptr);
-};
-
-
-struct CGotoStatement : public CStatement
-{
-	String label;
-
-	CGotoStatement(LPCTSTR label = nullptr);
-};
-
-struct CReturnStatement : public CStatement
-{
-	CExpression* value;  // 返回值，空代表没有返回值
-
-	CReturnStatement(CExpression* value = nullptr);
-};
-
 
 class Function
 {
 public:
 
-	inline void SetBody(CStatement* body) { this->body = body; }
-	inline CStatement* GetBody() { return body; }
+	inline void SetBody(CNode* body) { this->body = body; }
+	inline CNode* GetBody() { return body; }
 
 public:
-	CStatement* body;  // 函数体
+	CNode* body;  // 函数体
 	String name;
 };
 
