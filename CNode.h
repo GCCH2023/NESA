@@ -26,6 +26,7 @@ enum class CNodeKind
 	EXPR_ASSIGN, // 赋值
 	EXPR_BOR,  // 位或 |
 	EXPR_BAND,  // 位与 &
+	EXPR_XOR,  // 异或 ^
 
 	EXPR_GREAT,  // 大于 >
 	EXPR_GREAT_EQUAL,  // 大于等于 >=
@@ -36,6 +37,7 @@ enum class CNodeKind
 
 	EXPR_INDEX,  // 索引 z = x[y]
 	EXPR_REF,  // 解引用 *p
+	EXPR_ADDR,  // 取地址 &a
 
 	EXPR_BOR_ASSIGN,  // |= 
 	EXPR_BAND_ASSIGN,  // &=

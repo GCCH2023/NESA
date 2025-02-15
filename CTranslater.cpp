@@ -189,6 +189,11 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
+		case	TACOperator::XOR:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_XOR, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
 		case	TACOperator::ARG:
 		{
 									// 若干个 ARG 后面跟着一个 CALL
@@ -270,6 +275,24 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 									// 返回值以后再考虑吧
 									current = allocator.New<CNode>(CNodeKind::STAT_RETURN);
 									break;
+		}
+		case TACOperator::ROR:
+		{
+								 // C语言中没有ROR运算符，翻译为函数调用好了
+								 // void Ror(int*, int)
+								 CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
+								 params->next = GetExpression(tac->y);
+								 current = allocator.New<CNode>(NewString(_T("Ror")), params);
+								 break;
+		}
+		case TACOperator::ROL:
+		{
+								 // C语言中没有ROL运算符，翻译为函数调用好了
+								 // void Rol(int*, int)
+								 CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
+								 params->next = GetExpression(tac->y);
+								 current = allocator.New<CNode>(NewString(_T("Rol")), params);
+								 break;
 		}
 		default:
 		{

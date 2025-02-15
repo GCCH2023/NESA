@@ -166,6 +166,10 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 							return os << obj->e.x << _T(" & ") << obj->e.y;
 	}
+	case CNodeKind::EXPR_XOR:
+	{
+								 return os << obj->e.x << _T(" ^ ") << obj->e.y;
+	}
 	case CNodeKind::EXPR_ADD:
 	{
 						   return os << obj->e.x << _T(" + ") << obj->e.y;
@@ -194,7 +198,10 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 						   return os << _T("*") << obj->e.x;
 	}
-
+	case CNodeKind::EXPR_ADDR:
+	{
+								return os << _T("&") << obj->e.x;
+	}
 
 	case CNodeKind::EXPR_GREAT:
 	{
