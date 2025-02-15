@@ -19,11 +19,20 @@ protected:
 	TAC* TranslateCmp(const Instruction& instruction, const Instruction& next, TACOperand reg);
 	// 添加一条三地址码
 	void AddTAC(TAC* tac);
+	// 记录三地址码的开始索引
+	void SaveTACStart();
+	// 根据基本块中NES指令的索引，获取对应的三地址码
+	TAC* GetBlockTAC(int index);
+	// 翻译条件跳转指令
+	TAC* TranslateConditionalJump(std::vector<Instruction>& instructions, int index, uint32_t need, TACOperator op);
 private:
 	NesDataBase& db;
 	Allocator& allocator;
 	NesSubroutine* nesSub;
 	TACSubroutine* tacSub;
 	TACBasicBlock* tacBlock;
+	// 在将一个基本块的NES指令翻译为三地址码的过程中，
+	// 记录下每条指令对应的三地址码的开始索引
+	std::vector<int> tacStarts;
 };
 

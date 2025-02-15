@@ -5,7 +5,8 @@ using namespace Nes;
 TACTranslater::TACTranslater(NesDataBase& db_, Allocator& allocator_) :
 db(db_),
 allocator(allocator_),
-tacSub(nullptr)
+tacSub(nullptr),
+tacStarts(32)
 {
 
 }
@@ -47,23 +48,44 @@ TACSubroutine* TACTranslater::Translate(NesSubroutine* subroutine)
 	return this->tacSub;
 }
 
+// index : 条件跳转指令的索引
+// need : 需要的标志位
+TAC* TACTranslater::TranslateConditionalJump(std::vector<Instruction>& instructions, int index, uint32_t need, TACOperator op)
+{
+	for (int i = index - 1; i >= 0; --i)
+	{
+		auto& instruction = instructions[i];
+		if ((instruction.GetEntry().kind & need) != 0)  // 写入了必要的标志位
+		{
+			// 查找这条指令对应的三地址码
+			TAC* tac = GetBlockTAC(i);
+			// 翻译成 if x ? y goto z 的形式
+			return allocator.New<TAC>(op, GetOperand(instructions[index]), tac->z, TACOperand(0));
+		}
+	}
+	TCHAR buffer[256];
+	_stprintf_s(buffer, _T("地址 %04X 分析失败：跳转指令所在的基本块没有指令写入需要的标志位"), instructions[index].address);
+	throw Exception(buffer);
+}
+
 TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 {
-	TCHAR buffer[256];
 	// 首先构造指令队列，方便后面往前查找
 	std::vector<Instruction> instructions(256);
 	instructions.clear();
 	db.GetInstructions(instructions, block->GetStartAddress(), block->GetEndAddress());
 	
 	this->tacBlock = allocator.New<TACBasicBlock>(block->GetStartAddress(), block->GetEndAddress());
+	this->tacStarts.clear();
 
 	// 遍历指令构造三地址码
-	TAC* tac = nullptr, *lastTuple = nullptr;
+	TAC* tac = nullptr;
 	Instruction* last = nullptr;
 	for (size_t index = 0; index < instructions.size();++index)
 	{
 		auto& i = instructions[index];
 		const OpcodeEntry& entry = GetOpcodeEntry(i.GetOperatorByte());
+		this->SaveTACStart();  // 记录这条指令对应的三地址码开始索引
 		switch (entry.opcode)
 		{
 		case Nes::Opcode::None:
@@ -84,64 +106,22 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 			tac = allocator.New<TAC>(TACOperator::SHR, GetOperand(i), GetOperand(i), TACOperand(1));
 			break;
 		case Nes::Opcode::Bpl:
-			// 需要和前面的指令合并
-			if ((last->GetEntry().kind & OpKind::Write_N) == 0)
-			{
-				_stprintf_s(buffer, _T("地址 %04X 分析失败：跳转指令的上一条指令没有写入需要的标志位"), i.address);
-				throw Exception(buffer);
-			}
-			// 创建新的三地址码，前一条指令的结果变为这一条的操作数
-			tac = allocator.New<TAC>(TACOperator::IFGEQ, GetOperand(i), lastTuple->z, TACOperand(0));
+			tac = TranslateConditionalJump(instructions, index, OpKind::Write_N, TACOperator::IFGEQ);
 			break;
 		case Nes::Opcode::Bmi:
-			// 需要和前面的指令合并
-			if ((last->GetEntry().kind & OpKind::Write_N) == 0)
-			{
-				_stprintf_s(buffer, _T("地址 %04X 分析失败：跳转指令的上一条指令没有写入需要的标志位"), i.address);
-				throw Exception(buffer);
-			}
-			// 创建新的三地址码，前一条指令的结果变为这一条的操作数
-			tac = allocator.New<TAC>(TACOperator::IFLESS, GetOperand(i), lastTuple->z, TACOperand(0));
+			tac = TranslateConditionalJump(instructions, index, OpKind::Write_N, TACOperator::IFLESS);
 			break;
 		case Nes::Opcode::Bne:
-			// 需要和前面的指令合并
-			if ((last->GetEntry().kind & OpKind::Write_Z) == 0)
-			{
-				_stprintf_s(buffer, _T("地址 %04X 分析失败：跳转指令的上一条指令没有写入需要的标志位"), i.address);
-				throw Exception(buffer);
-			}
-			// 创建新的三地址码，前一条指令的结果变为这一条的操作数
-			tac = allocator.New<TAC>(TACOperator::IFNEQ, GetOperand(i), lastTuple->z, TACOperand(0));
+			tac = TranslateConditionalJump(instructions, index, OpKind::Write_Z, TACOperator::IFNEQ);
 			break;
 		case Nes::Opcode::Beq:
-			// 需要和前面的指令合并
-			if ((last->GetEntry().kind & OpKind::Write_Z) == 0)
-			{
-				_stprintf_s(buffer, _T("地址 %04X 分析失败：跳转指令的上一条指令没有写入需要的标志位"), i.address);
-				throw Exception(buffer);
-			}
-			// 创建新的三地址码，前一条指令的结果变为这一条的操作数
-			tac = allocator.New<TAC>(TACOperator::IFEQ, GetOperand(i), lastTuple->z, TACOperand(0));
+			tac = TranslateConditionalJump(instructions, index, OpKind::Write_Z, TACOperator::IFEQ);
 			break;
 		case Nes::Opcode::Bcc:
-			// 需要和前面的指令合并
-			if ((last->GetEntry().kind & OpKind::Write_C) == 0)
-			{
-				_stprintf_s(buffer, _T("地址 %04X 分析失败：跳转指令的上一条指令没有写入需要的标志位"), i.address);
-				throw Exception(buffer);
-			}
-			// 创建新的三地址码，前一条指令的结果变为这一条的操作数
-			tac = allocator.New<TAC>(TACOperator::IFEQ, GetOperand(i), lastTuple->z, TACOperand(0));
+			tac = TranslateConditionalJump(instructions, index, OpKind::Write_C, TACOperator::IFEQ);
 			break;
 		case Nes::Opcode::Bcs:
-			// 需要和前面的指令合并
-			if ((last->GetEntry().kind & OpKind::Write_C) == 0)
-			{
-				_stprintf_s(buffer, _T("地址 %04X 分析失败：跳转指令的上一条指令没有写入需要的标志位"), i.address);
-				throw Exception(buffer);
-			}
-			// 创建新的三地址码，前一条指令的结果变为这一条的操作数
-			tac = allocator.New<TAC>(TACOperator::IFNEQ, GetOperand(i), lastTuple->z, TACOperand(0));
+			tac = TranslateConditionalJump(instructions, index, OpKind::Write_C, TACOperator::IFNEQ);
 			break;
 		case Nes::Opcode::Cli:
 			tac = allocator.New<TAC>(TACOperator::BAND, RegisterP, RegisterP, (uint8_t)~Flags::I);
@@ -316,7 +296,6 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 		{
 			tac->address = i.GetAddress();
 			AddTAC(tac);
-			lastTuple = tac;
 			tac = nullptr;
 		}
 		last = &i;
@@ -426,4 +405,17 @@ void TACTranslater::AddTAC(TAC* tac)
 {
 	this->tacSub->AddTAC(tac);
 	this->tacBlock->AddTAC(tac);
+}
+
+void TACTranslater::SaveTACStart()
+{
+	this->tacStarts.push_back(this->tacBlock->GetCodesCount());
+}
+
+TAC* TACTranslater::GetBlockTAC(int index)
+{
+	auto& tacs = this->tacBlock->GetCodes();
+	// 一条NES指令可能对应多条三地址码，需要返回的是它对应的最后一条三地址码
+	int end = (size_t)(index + 1) < this->tacStarts.size() ? this->tacStarts[index + 1] - 1 : tacs.size() - 1;
+	return tacs[end];
 }

@@ -170,7 +170,7 @@ void NesAnalyzer::Analyze()
 {
 	NesSubroutineParser parser(db);
 
-	Nes::Address addr = db.GetInterruptResetAddress();
+	Nes::Address addr = db.GetInterruptNmiAddress();
 
 	AnalyzeSubroutine(parser, addr);
 
