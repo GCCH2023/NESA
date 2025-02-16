@@ -650,7 +650,7 @@ Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType t
 
 Node CTranslater::CreateBasicBlock()
 {
-	if (blockCount >= 32)
+	if (blockCount >= MAX_NODE)
 		throw Exception(_T("基本块数量过多"));
 	blocks[blockCount].index = blockCount;
 	return blockCount++;
@@ -658,7 +658,7 @@ Node CTranslater::CreateBasicBlock()
 
 Node CTranslater::CreateControlTreeNode()
 {
-	if (controlTreeNodeCount >= 32)
+	if (controlTreeNodeCount >= MAX_NODE)
 		throw Exception(_T("控制树节点数量过多"));
 	ctrees[controlTreeNodeCount] = tempAllocator.New<ControlTreeNodeEx>();
 	ctrees[controlTreeNodeCount]->index = controlTreeNodeCount;
@@ -987,9 +987,9 @@ void CTranslater::DumpCFG()
 	{
 		auto block = &blocks[i];
 		COUT << _T("block ") << i << _T(" , 前驱 : ");
-		block->pred.Dump();
+		DumpNodeSet(block->pred);
 		COUT << _T(" 后继 : ");
-		block->succ.Dump();
+		DumpNodeSet(block->succ);
 		COUT << endl;
 	}
 }

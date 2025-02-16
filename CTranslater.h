@@ -136,10 +136,10 @@ protected:
 
 private:
 	Allocator tempAllocator;  // 用于创建临时节点
-	BasicBlock blocks[32];  // 基本块列表，每个基本块对应控制流图中的一个节点
+	BasicBlock blocks[MAX_NODE];  // 基本块列表，每个基本块对应控制流图中的一个节点
 	int blockCount;
 
-	ControlTreeNodeEx* ctrees[32];  // 控制树节点列表
+	ControlTreeNodeEx* ctrees[MAX_NODE];  // 控制树节点列表
 	int controlTreeNodeCount;
 
 	CNode* registers[5];  // AXYPSP 5个寄存器

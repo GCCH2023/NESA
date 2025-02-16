@@ -7,9 +7,9 @@ class TAC;
 
 struct AXYSet
 {
-	BitSet32 a;
-	BitSet32 x;
-	BitSet32 y;
+	NodeSet a;
+	NodeSet x;
+	NodeSet y;
 
 	AXYSet& operator|=(const AXYSet& other);
 };
@@ -35,11 +35,11 @@ struct TacAxyDefinition
 	std::vector<int> ydefs;
 
 	//// 获取 寄存器 A 的掩码
-	//inline BitSet32 GetAMask() const { return (1 << adefs.size()) - 1; }
+	//inline NodeSet GetAMask() const { return (1 << adefs.size()) - 1; }
 	//// 获取 寄存器 X 的掩码
-	//inline BitSet32 GetXMask() const { return ((1 << xdefs.size()) - 1) << adefs.size(); }
+	//inline NodeSet GetXMask() const { return ((1 << xdefs.size()) - 1) << adefs.size(); }
 	//// 获取 寄存器 Y 的掩码
-	//inline BitSet32 GetYMask() const { return ((1 << ydefs.size()) - 1) << (adefs.size() + xdefs.size()); }
+	//inline NodeSet GetYMask() const { return ((1 << ydefs.size()) - 1) << (adefs.size() + xdefs.size()); }
 
 	void CheckDefinitionLimit();
 

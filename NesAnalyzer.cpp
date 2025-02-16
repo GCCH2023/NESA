@@ -10,7 +10,7 @@
 struct SubroutineData
 {
 	size_t index;  // 在列表中的索引
-	BitSet32 calls;  // 调用的函数，需要先分析
+	NodeSet calls;  // 调用的函数，需要先分析
 };
 
 NesAnalyzer::NesAnalyzer(NesDataBase& db_):
@@ -76,8 +76,12 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 {
 	// 首先给所有子程序编号
 	auto& subroutines = db.GetSubroutines();
-	if (subroutines.size() > 32)
-		throw Exception(_T("位集无法表示32个以上的子程序"));  // 需要自定义类来实现
+	if (subroutines.size() > MAX_NODE)
+	{
+		Sprintf<> s;
+		s.Format(_T("位集无法表示 %d 个以上的子程序"), MAX_NODE);
+		throw Exception(s.ToString());  // 需要自定义类来实现
+	}
 
 	size_t index = 0;
 	// 创建附加数据用于分析
@@ -98,13 +102,13 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 		}
 	}
 	// 迭代分析所有子程序
-	BitSet32 analyzeSubs = 0;  // 已经分析过了的子程序集
+	NodeSet analyzeSubs = 0;  // 已经分析过了的子程序集
 	Allocator tempAllocator;
 	TACTranslater tacTranslater(db, tempAllocator);
 	int iter = 0;
 	while (true)
 	{
-		BitSet32 oldState = analyzeSubs;
+		NodeSet oldState = analyzeSubs;
 		//printf("迭代次数 %d\n", iter++);
 		// 遍历每个子程序，分析满足条件的
 		for (auto sub : subroutines)
@@ -122,7 +126,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 		if (analyzeSubs == oldState)
 		{
 			// 判断是否全部分析完毕，也可能是存在环状调用导致分析无法进行下去
-			BitSet32 mask = (1 << subroutines.size()) - 1;
+			NodeSet mask = (1 << subroutines.size()) - 1;
 			if (analyzeSubs != mask)
 			{
 				throw Exception(_T("分析失败：分析子程序调用关系时遇到环状调用"));
@@ -141,7 +145,7 @@ void NesAnalyzer::AnalyzeTACSubroutine(TACSubroutine* subroutine)
 	// 如果入口基本块中使用了AXY，则AXY作为参数
 	auto entry = *blocks.begin();
 	auto lives = (BasicBlockLiveVariableSet*)entry->tag;
-	subroutine->flag = lives->in.ToInteger();
+	subroutine->flag = (uint32_t)lives->in.ToInteger();
 
 	// 进行到达定值分析，如果AXY能够到达返回基本块块，则可能是返回值
 	ReachingDefinition rd(db, allocator);

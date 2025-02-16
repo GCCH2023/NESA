@@ -123,6 +123,9 @@
     <ClInclude Include="Sprintf.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="BitSet.h">
+      <Filter>Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

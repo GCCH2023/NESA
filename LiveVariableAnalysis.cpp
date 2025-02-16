@@ -94,7 +94,7 @@ void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks)
 //}
 
 // 分析寄存器 AXY 的引用（定义或使用）情况
-void AnalyzeAXYOperandReference(TACOperand& operand, BitSet32& defs, BitSet32& uses, BitSet32& state)
+void AnalyzeAXYOperandReference(TACOperand& operand, NodeSet& defs, NodeSet& uses, NodeSet& state)
 {
 	if (operand.IsRegister())
 	{
@@ -116,8 +116,8 @@ void LiveVariableAnalysis::Initialize()
 {
 	for (auto block : this->subroutine->GetBasicBlocks())
 	{
-		BitSet32 defs = 0;  // 前3位表示 AXY 是否定义
-		BitSet32 uses = 0;  // 前3位表示 AXY 是否被使用
+		NodeSet defs = 0;  // 前3位表示 AXY 是否定义
+		NodeSet uses = 0;  // 前3位表示 AXY 是否被使用
 		auto blockSet = allocator.New<BasicBlockLiveVariableSet>();
 		for (auto tac : block->GetCodes())
 		{

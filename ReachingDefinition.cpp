@@ -220,8 +220,12 @@ bool BasicBlockReachingDefinitionSet::EvalOut()
 
 void TacAxyDefinition::CheckDefinitionLimit()
 {
-	if (adefs.size() > 32 || xdefs.size() > 32 || ydefs.size() > 32)
-		throw Exception(_T("对子程序进行到达定值分析时，AXY中的一个定值点数量超过32\n"));
+	if (adefs.size() > MAX_NODE || xdefs.size() > MAX_NODE || ydefs.size() > MAX_NODE)
+	{
+		Sprintf<> s;
+		s.Format(_T("对子程序进行到达定值分析时，AXY中的一个定值点数量超过 %d"), MAX_NODE);
+		throw Exception(s.ToString());
+	}
 }
 
 void TacAxyDefinition::GetDefinitionTACList(std::vector<TAC*>& result, AXYSet& set, TACSubroutine* tacSub)

@@ -4,10 +4,10 @@
 
 struct BasicBlockLiveVariableSet
 {
-	BitSet32 uses;
-	BitSet32 defs;
-	BitSet32 in;
-	BitSet32 out;
+	NodeSet uses;
+	NodeSet defs;
+	NodeSet in;
+	NodeSet out;
 };
 
 // 进行活跃变量分析
