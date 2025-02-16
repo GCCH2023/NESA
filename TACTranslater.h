@@ -24,7 +24,7 @@ protected:
 	// 根据基本块中NES指令的索引，获取对应的三地址码
 	TAC* GetBlockTAC(int index);
 	// 翻译条件跳转指令
-	TAC* TranslateConditionalJump(std::vector<Instruction>& instructions, int index, uint32_t need, TACOperator op);
+	TAC* TranslateConditionalJump(std::vector<Instruction>& instructions, size_t index, uint32_t need, TACOperator op);
 private:
 	NesDataBase& db;
 	Allocator& allocator;

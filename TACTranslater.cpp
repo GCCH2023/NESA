@@ -50,9 +50,9 @@ TACSubroutine* TACTranslater::Translate(NesSubroutine* subroutine)
 
 // index : 条件跳转指令的索引
 // need : 需要的标志位
-TAC* TACTranslater::TranslateConditionalJump(std::vector<Instruction>& instructions, int index, uint32_t need, TACOperator op)
+TAC* TACTranslater::TranslateConditionalJump(std::vector<Instruction>& instructions, size_t index, uint32_t need, TACOperator op)
 {
-	for (int i = index - 1; i >= 0; --i)
+	for (int i = (int)index - 1; i >= 0; --i)
 	{
 		auto& instruction = instructions[i];
 		if ((instruction.GetEntry().kind & need) != 0)  // 写入了必要的标志位
@@ -409,13 +409,13 @@ void TACTranslater::AddTAC(TAC* tac)
 
 void TACTranslater::SaveTACStart()
 {
-	this->tacStarts.push_back(this->tacBlock->GetCodesCount());
+	this->tacStarts.push_back((int)this->tacBlock->GetCodesCount());
 }
 
 TAC* TACTranslater::GetBlockTAC(int index)
 {
 	auto& tacs = this->tacBlock->GetCodes();
 	// 一条NES指令可能对应多条三地址码，需要返回的是它对应的最后一条三地址码
-	int end = (size_t)(index + 1) < this->tacStarts.size() ? this->tacStarts[index + 1] - 1 : tacs.size() - 1;
+	int end = (size_t)(index + 1) < this->tacStarts.size() ? this->tacStarts[index + 1] - 1 : (int)tacs.size() - 1;
 	return tacs[end];
 }
