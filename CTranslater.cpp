@@ -228,7 +228,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 		{
 									 // 如果有参数，则鄙视 若干个 ARG 后面跟着一个 CALL
 									 // 直接出现 CALL，说明没有参数
-									 current = allocator.New<CNode>(NewString(_T("sub_%04X"), tac->z.GetValue()));
+									 current = allocator.New<CNode>(NewString(_T("sub_%04X"), tac->z.GetValue()), (CNode*)nullptr);
 									 break;
 		}
 
