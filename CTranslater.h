@@ -51,10 +51,12 @@ protected:
 	void BuildCFG(Edge edges[], size_t count);
 	// 重置内部数据
 	void Reset();
-	// 归约操作
+	// 将若干节点归约为一个节点，并生成这个节点的C语句
 	Node CReduce(Node parent, std::vector<Node> children, CtrlTreeNodeType type);
-	// 创建一个新的节点
-	Node Create_Node();
+	// 创建一个新的基本块
+	Node CreateBasicBlock();
+	// 创建一个新的控制树节点
+	Node CreateControlTreeNode();
 	// 归约两个区域构成的连续区域  a -> b
 	Node ReduceRegionList(NodeSet& N, Node a, Node b);
 	// 归约自循环 a -> a
@@ -133,10 +135,12 @@ protected:
 	void DumpCFG();
 
 private:
+	Allocator tempAllocator;  // 用于创建临时节点
 	BasicBlock blocks[32];  // 基本块列表，每个基本块对应控制流图中的一个节点
 	int blockCount;
 
-	ControlTreeNodeEx ctrees[32];  // 控制树节点列表
+	ControlTreeNodeEx* ctrees[32];  // 控制树节点列表
+	int controlTreeNodeCount;
 
 	CNode* registers[5];  // AXYPSP 5个寄存器
 	CNode* noneStatement;  // 空语句

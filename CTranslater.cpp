@@ -6,7 +6,8 @@ CTranslater::CTranslater(Allocator& allocator_, NesDataBase& db_) :
 db(db_),
 allocator(allocator_),
 function(nullptr),
-subroutine(nullptr)
+subroutine(nullptr),
+tempAllocator(1024 * 1024)
 {
 	registers[Nes::NesRegisters::A] = allocator.New<CNode>(NewString(_T("A")));
 	registers[Nes::NesRegisters::X] = allocator.New<CNode>(NewString(_T("X")));
@@ -68,14 +69,14 @@ ControlTreeNodeEx* CTranslater::Analyze(Edge edges[], size_t count)
 	PatchLabels();
 
 	Node n = N.ToVector()[0];
-	if (ctrees[n].statement == nullptr)
+	if (ctrees[n]->statement == nullptr)
 	{
 		CNode* condition = nullptr;
 		uint32_t jumpAddr;
 		auto block = this->subroutine->GetBasicBlocks()[n];
-		ctrees[n].statement = TranslateRegion(condition, block, jumpAddr);
+		ctrees[n]->statement = TranslateRegion(condition, block, jumpAddr);
 	}
-	return &ctrees[n];
+	return ctrees[n];
 }
 
 void CTranslater::BuildCFG(Edge edges[], size_t count)
@@ -105,7 +106,10 @@ void CTranslater::BuildCFG(Edge edges[], size_t count)
 void CTranslater::Reset()
 {
 	memset(blocks, 0, sizeof(blocks));
+	memset(ctrees, 0, sizeof(ctrees));
 	blockCount = 0;
+	controlTreeNodeCount = 0;
+	tempAllocator.Reset();
 }
 
 CNode* CTranslater::GetExpression(TACOperand& operand)
@@ -594,7 +598,7 @@ void CTranslater::OnReduceIfOr(ControlTreeNodeEx* node)
 
 Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType type)
 {
-	ControlTreeNodeEx* ctNode = &ctrees[parent];
+	ControlTreeNodeEx* ctNode = ctrees[parent];
 	ctNode->type = type;
 	ctNode->index = parent;
 	switch (type)
@@ -603,34 +607,34 @@ Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType t
 		throw Exception(_T("不能将区域归约为叶子区域"));
 		break;
 	case CTNTYPE_LIST:
-		ctNode->pair.first = &ctrees[children[0]];
-		ctNode->pair.second = &ctrees[children[1]];
+		ctNode->pair.first = ctrees[children[0]];
+		ctNode->pair.second = ctrees[children[1]];
 		OnReduceList(ctNode);
 		break;
 	case CTNTYPE_P2LOOP:
-		ctNode->pair.first = &ctrees[children[0]];
-		ctNode->pair.second = &ctrees[children[1]];
+		ctNode->pair.first = ctrees[children[0]];
+		ctNode->pair.second = ctrees[children[1]];
 		OnReducePoint2Loop(ctNode);
 		break;
 	case CTNTYPE_SELF_LOOP:
-		ctNode->node = &ctrees[children[0]];
+		ctNode->node = ctrees[children[0]];
 		OnReduceSelfLoop(ctNode);
 		break;
 	case CTNTYPE_IF:
-		ctNode->_if.condition = &ctrees[children[0]];
-		ctNode->_if.then = &ctrees[children[1]];
+		ctNode->_if.condition = ctrees[children[0]];
+		ctNode->_if.then = ctrees[children[1]];
 		OnReduceIf(ctNode);
 		break;
 	case CTNTYPE_IF_ELSE:
-		ctNode->_if.condition = &ctrees[children[0]];
-		ctNode->_if.then = &ctrees[children[1]];
-		ctNode->_if._else = &ctrees[children[2]];
+		ctNode->_if.condition = ctrees[children[0]];
+		ctNode->_if.then = ctrees[children[1]];
+		ctNode->_if._else = ctrees[children[2]];
 		OnReduceIfElse(ctNode);
 		break;
 	case CTNTYPE_IF_OR:
-		ctNode->_if.condition = &ctrees[children[0]];
-		ctNode->_if.then = &ctrees[children[1]];
-		ctNode->_if._else = &ctrees[children[2]];
+		ctNode->_if.condition = ctrees[children[0]];
+		ctNode->_if.then = ctrees[children[1]];
+		ctNode->_if._else = ctrees[children[2]];
 		OnReduceIfOr(ctNode);
 		break;
 	}
@@ -644,7 +648,7 @@ Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType t
 	return parent;
 }
 
-Node CTranslater::Create_Node()
+Node CTranslater::CreateBasicBlock()
 {
 	if (blockCount >= 32)
 		throw Exception(_T("基本块数量过多"));
@@ -652,18 +656,27 @@ Node CTranslater::Create_Node()
 	return blockCount++;
 }
 
+Node CTranslater::CreateControlTreeNode()
+{
+	if (controlTreeNodeCount >= 32)
+		throw Exception(_T("控制树节点数量过多"));
+	ctrees[controlTreeNodeCount] = tempAllocator.New<ControlTreeNodeEx>();
+	ctrees[controlTreeNodeCount]->index = controlTreeNodeCount;
+	return controlTreeNodeCount++;
+}
+
 Node CTranslater::ReduceRegionList(NodeSet& N, Node a, Node b)
 {
-	Node r = Create_Node();
+	Node r = CreateControlTreeNode();
 	// r 的前驱是 a 的前驱
-	ctrees[r].pred = ctrees[a].pred;
-	for (auto pred : ctrees[a].Pred())
-		ctrees[pred].succ.Replace(a, r);
+	ctrees[r]->pred = ctrees[a]->pred;
+	for (auto pred : ctrees[a]->Pred())
+		ctrees[pred]->succ.Replace(a, r);
 
 	// r 的后继是 b 的后继
-	ctrees[r].succ = ctrees[b].succ;
-	for (auto s : ctrees[b].Succ())
-		ctrees[s].pred.Replace(b, r);
+	ctrees[r]->succ = ctrees[b]->succ;
+	for (auto s : ctrees[b]->Succ())
+		ctrees[s]->pred.Replace(b, r);
 
 	// 使用 r 代替 a, b
 	N.Replace({ a, b }, { r });
@@ -672,16 +685,16 @@ Node CTranslater::ReduceRegionList(NodeSet& N, Node a, Node b)
 
 Node CTranslater::ReduceRegionSelfLoop(NodeSet& N, Node a)
 {
-	Node r = Create_Node();
+	Node r = CreateControlTreeNode();
 	// r 的前驱是 a 除了 a 之外的前驱
-	ctrees[r].pred = ctrees[a].pred - a;
-	for (auto pred : ctrees[r].Pred())
-		ctrees[pred].succ.Replace(a, r);
+	ctrees[r]->pred = ctrees[a]->pred - a;
+	for (auto pred : ctrees[r]->Pred())
+		ctrees[pred]->succ.Replace(a, r);
 
 	// r 的后继是 a 除了 a 之外的后继
-	ctrees[r].succ = ctrees[a].succ - a;
-	for (auto s : ctrees[r].Succ())
-		ctrees[s].pred.Replace(a, r);
+	ctrees[r]->succ = ctrees[a]->succ - a;
+	for (auto s : ctrees[r]->Succ())
+		ctrees[s]->pred.Replace(a, r);
 
 	// 使用 r 代替 a
 	N.Replace(a, r);
@@ -690,17 +703,17 @@ Node CTranslater::ReduceRegionSelfLoop(NodeSet& N, Node a)
 
 Node CTranslater::ReduceRegionIfElse(NodeSet& N, Node a, Node b, Node c)
 {
-	Node r = Create_Node();
+	Node r = CreateControlTreeNode();
 	// r 的前驱是 a 的前驱
-	ctrees[r].pred = ctrees[a].pred;
-	for (auto pred : ctrees[a].Pred())
-		ctrees[pred].succ.Replace(a, r);
+	ctrees[r]->pred = ctrees[a]->pred;
+	for (auto pred : ctrees[a]->Pred())
+		ctrees[pred]->succ.Replace(a, r);
 
 	// r 的后继是 b 和 c 的后继，且 b 和 c 都只有一个相同的后继
-	ctrees[r].succ = ctrees[b].succ;
-	for (auto s : ctrees[b].Succ())
+	ctrees[r]->succ = ctrees[b]->succ;
+	for (auto s : ctrees[b]->Succ())
 	{
-		ctrees[s].pred.Replace({ b, c }, { r });
+		ctrees[s]->pred.Replace({ b, c }, { r });
 	}
 
 	// 使用 r 代替 a, b, c
@@ -710,17 +723,17 @@ Node CTranslater::ReduceRegionIfElse(NodeSet& N, Node a, Node b, Node c)
 
 Node CTranslater::ReduceRegionIfOr(NodeSet& N, Node a, Node b, Node c)
 {
-	Node r = Create_Node();
+	Node r = CreateControlTreeNode();
 	// r 的前驱是 a 的前驱
-	ctrees[r].pred = ctrees[a].pred;
-	for (auto pred : ctrees[a].Pred())
-		ctrees[pred].succ.Replace(a, r);
+	ctrees[r]->pred = ctrees[a]->pred;
+	for (auto pred : ctrees[a]->Pred())
+		ctrees[pred]->succ.Replace(a, r);
 
 	// r 的后继是 b 和 c 的后继 d，且 b -> c, b -> d, c -> d
-	ctrees[r].succ = ctrees[c].succ;
-	for (auto s : ctrees[r].Succ())
+	ctrees[r]->succ = ctrees[c]->succ;
+	for (auto s : ctrees[r]->Succ())
 	{
-		ctrees[s].pred.Replace({ b, c }, { r });
+		ctrees[s]->pred.Replace({ b, c }, { r });
 	}
 
 	// 使用 r 代替 a, b, c
@@ -730,17 +743,17 @@ Node CTranslater::ReduceRegionIfOr(NodeSet& N, Node a, Node b, Node c)
 
 Node CTranslater::ReduceRegionIf(NodeSet& N, Node a, Node b)
 {
-	Node r = Create_Node();
+	Node r = CreateControlTreeNode();
 	// r 的前驱是 a 的前驱
-	ctrees[r].pred = ctrees[a].pred;
-	for (auto pred : ctrees[a].Pred())
-		ctrees[pred].succ.Replace(a, r);
+	ctrees[r]->pred = ctrees[a]->pred;
+	for (auto pred : ctrees[a]->Pred())
+		ctrees[pred]->succ.Replace(a, r);
 
 	// r 的后继是 a 和 b 的后继，且 a 和 b 都只有一个相同的后继
-	ctrees[r].succ = ctrees[b].succ;
-	for (auto s : ctrees[b].Succ())
+	ctrees[r]->succ = ctrees[b]->succ;
+	for (auto s : ctrees[b]->Succ())
 	{
-		ctrees[s].pred.Replace({ a, b }, { r });
+		ctrees[s]->pred.Replace({ a, b }, { r });
 	}
 
 	// 使用 r 代替 a, b
@@ -751,35 +764,35 @@ Node CTranslater::ReduceRegionIf(NodeSet& N, Node a, Node b)
 Node CTranslater::ReduceRegionPoint2Loop(NodeSet& N, Node a, Node b)
 {
 	//COUT << "2点循环:\n";
-	//ctrees[a].pred.Dump();
+	//ctrees[a]->pred.Dump();
 	//COUT << endl;
-	//ctrees[b].succ.Dump();
+	//ctrees[b]->succ.Dump();
 	//COUT << endl;
-	Node r = Create_Node();
+	Node r = CreateControlTreeNode();
 	// r 的前驱是 a 除了 b 之外的前驱
-	ctrees[r].pred = ctrees[a].pred - b;
+	ctrees[r]->pred = ctrees[a]->pred - b;
 
-	for (auto pred : ctrees[r].Pred())
-		ctrees[pred].succ.Replace(a, r);
+	for (auto pred : ctrees[r]->Pred())
+		ctrees[pred]->succ.Replace(a, r);
 
 	// r 的后继是 b 除了 a 之外的后继
-	ctrees[r].succ = ctrees[b].succ - a;
-	for (auto s : ctrees[r].Succ())
-		ctrees[s].pred.Replace(b, r);
+	ctrees[r]->succ = ctrees[b]->succ - a;
+	for (auto s : ctrees[r]->Succ())
+		ctrees[s]->pred.Replace(b, r);
 
 	// a 的除 b 之外的后继翻译为 goto 语句
-	for (auto s : ctrees[a].Succ())
+	for (auto s : ctrees[a]->Succ())
 	{
 		if (s == b)
 			continue;
 		// a goto s 这条边的goto应该是叶子节点到叶子节点的边
 		// COUT << a << " goto " << s << endl;
 		// 移除这条边
-		ctrees[a].succ -= s;
-		ctrees[s].pred -= a;
+		ctrees[a]->succ -= s;
+		ctrees[s]->pred -= a;
 		// GetLeafEdges({ a, s });
-		/*SetSub(ctrees[s].pred, a);
-		SetUnion(ctrees[s].pred, r);*/
+		/*SetSub(ctrees[s]->pred, a);
+		SetUnion(ctrees[s]->pred, r);*/
 	}
 
 	// 替换 a，b 为 r
@@ -845,8 +858,8 @@ std::vector<Edge> CTranslater::GetLeafEdges(Edge e)
 	result.clear();
 	vector<Node> entries;
 	vector<Node> exits;
-	GetLeafEntry(&ctrees[e.from], entries);
-	GetLeafExit(&ctrees[e.to], exits);
+	GetLeafEntry(ctrees[e.from], entries);
+	GetLeafExit(ctrees[e.to], exits);
 	for (auto from : entries)
 	{
 		for (auto to : exits)
@@ -863,9 +876,11 @@ void CTranslater::InitializeBaseControlTree(NodeSet N)
 	//memset(ctrees, 0, sizeof(ctrees));
 	for (auto n : Nodes(N))
 	{
-		*(BasicBlock*)&ctrees[n] = blocks[n];
-		ctrees[n].type = CTNTYPE_LEAF;
+		ctrees[n] = tempAllocator.New<ControlTreeNodeEx>();
+		*(BasicBlock*)ctrees[n] = blocks[n];
+		ctrees[n]->type = CTNTYPE_LEAF;
 	}
+	controlTreeNodeCount = blockCount;
 }
 
 
@@ -884,12 +899,12 @@ NodeSet CTranslater::CAnalysis(NodeSet N)
 		old = N;
 		for (auto n : Nodes(N))
 		{
-			switch (ctrees[n].GetSuccCount())
+			switch (ctrees[n]->GetSuccCount())
 			{
 			case 1:
 			{
-					  Node succ = ctrees[n].Succ()[0];
-					  if (ctrees[succ].GetPredCount() == 1)
+					  Node succ = ctrees[n]->Succ()[0];
+					  if (ctrees[succ]->GetPredCount() == 1)
 					  {
 						  ReduceRegionList(N, n, succ);
 						  // 下一次循环
@@ -899,9 +914,9 @@ NodeSet CTranslater::CAnalysis(NodeSet N)
 			}
 			case 2:
 			{
-					  auto succ = ctrees[n].Succ();
-					  auto b = &ctrees[succ[0]];
-					  auto c = &ctrees[succ[1]];
+					  auto succ = ctrees[n]->Succ();
+					  auto b = ctrees[succ[0]];
+					  auto c = ctrees[succ[1]];
 					  // a -> b, a -> c, b -> d, c -> d 归约为 if else 结构
 					  if (b->succ == c->succ && b->GetSuccCount() == 1 &&
 						  b->GetPredCount() == 1 && c->GetPredCount() == 1)
@@ -944,7 +959,7 @@ NodeSet CTranslater::CAnalysis(NodeSet N)
 			}
 			}
 			// 循环检测
-			for (auto s : ctrees[n].Succ())
+			for (auto s : ctrees[n]->Succ())
 			{
 				if (s == n)  // 自循环检测
 				{
@@ -952,7 +967,7 @@ NodeSet CTranslater::CAnalysis(NodeSet N)
 					goto NEXT;
 				}
 				// 两点循环 a -> b && b -> a 并且 b 只有一个前驱
-				if (ctrees[s].succ.Contains(n) && ctrees[s].GetPredCount() == 1)
+				if (ctrees[s]->succ.Contains(n) && ctrees[s]->GetPredCount() == 1)
 				{
 					ReduceRegionPoint2Loop(N, n, s);
 					goto NEXT;

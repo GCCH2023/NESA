@@ -46,6 +46,12 @@ public:
 		return obj;
 	}
 
+	// 重置内存
+	void Reset()
+	{
+		memset(baseAddress, 0, current - baseAddress);
+		current = baseAddress;
+	}
 private:
 	// 提交新的内存块
 	void Expand()
