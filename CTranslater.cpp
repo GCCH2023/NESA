@@ -198,6 +198,16 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
+		case TACOperator::SHL:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_SHIFT_LEFT, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
+		case TACOperator::SHR:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_SHIFT_RIGHT, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
 		case	TACOperator::ARG:
 		{
 									// 若干个 ARG 后面跟着一个 CALL
@@ -296,6 +306,20 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 								 CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
 								 params->next = GetExpression(tac->y);
 								 current = allocator.New<CNode>(NewString(_T("Rol")), params);
+								 break;
+		}
+		case TACOperator::PUSH:
+		{
+								  // 还不知道怎么翻译push，先翻译为函数调用吧
+								  CNode* params = GetExpression(tac->x);
+								  current = allocator.New<CNode>(NewString(_T("Push")), params);
+								  break;
+		}
+		case TACOperator::POP:
+		{
+								 // 还不知道怎么翻译pop，先翻译为函数调用吧
+								 current = allocator.New<CNode>(NewString(_T("Pop")), (CNode*)nullptr);
+								 current = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), current);
 								 break;
 		}
 		default:
@@ -496,7 +520,10 @@ void CTranslater::OnReduceIf(ControlTreeNodeEx* node)
 	}
 	else
 	{
-		throw Exception(_T("未实现"));
+		// 如果不是叶子节点，则之前的归约必然要保留有条件
+		if (!cond->condition)
+			throw Exception(_T("翻译为 if 语句的过程中缺少 if 语句的条件表达式"));
+		condition = cond->condition;
 	}
 	CNode* ifCond = condition;
 	if (body->type == CTNTYPE_LEAF)
@@ -945,12 +972,14 @@ NodeSet CTranslater::CAnalysis(NodeSet N)
 						  b->succ.Contains(c->index))
 					  {
 						  ReduceRegionIf(N, n, b->index);
+						  //DumpCurrentCFG(N);
 						  goto NEXT;
 					  }
 					  if (c->GetPredCount() == 1 && c->GetSuccCount() == 1 &&
 						  c->succ.Contains(b->index))
 					  {
 						  ReduceRegionIf(N, n, c->index);
+						  //DumpCurrentCFG(N);
 						  goto NEXT;
 					  }
 					  // 检测 if
@@ -963,7 +992,9 @@ NodeSet CTranslater::CAnalysis(NodeSet N)
 			{
 				if (s == n)  // 自循环检测
 				{
+					//DumpCurrentCFG(N);
 					ReduceRegionSelfLoop(N, n);
+					//DumpCurrentCFG(N);
 					goto NEXT;
 				}
 				// 两点循环 a -> b && b -> a 并且 b 只有一个前驱
@@ -990,6 +1021,33 @@ void CTranslater::DumpCFG()
 		DumpNodeSet(block->pred);
 		COUT << _T(" 后继 : ");
 		DumpNodeSet(block->succ);
+		COUT << endl;
+	}
+}
+
+void CTranslater::DumpControlTree()
+{
+	for (int i = 0; i < controlTreeNodeCount; ++i)
+	{
+		auto block = ctrees[i];
+		COUT << _T("tree node ") << i << _T(" , 前驱 : ");
+		DumpNodeSet(block->pred);
+		COUT << _T(" 后继 : ");
+		DumpNodeSet(block->succ);
+		COUT << endl;
+	}
+}
+
+void CTranslater::DumpCurrentCFG(NodeSet& N)
+{
+	auto nodes = Nodes(N);
+	for (auto i : nodes)
+	{
+		auto node = ctrees[i];
+		COUT << _T("tree node ") << i << _T(" , 前驱 : ");
+		DumpNodeSet(node->pred);
+		COUT << _T(" 后继 : ");
+		DumpNodeSet(node->succ);
 		COUT << endl;
 	}
 }

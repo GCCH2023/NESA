@@ -27,6 +27,8 @@ enum class CNodeKind
 	EXPR_BOR,  // 位或 |
 	EXPR_BAND,  // 位与 &
 	EXPR_XOR,  // 异或 ^
+	EXPR_SHIFT_LEFT,  // 左移 <<
+	EXPR_SHIFT_RIGHT,  // 右移 >>
 
 	EXPR_GREAT,  // 大于 >
 	EXPR_GREAT_EQUAL,  // 大于等于 >=

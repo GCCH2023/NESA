@@ -48,7 +48,7 @@ void ParseNes(const TCHAR* rom)
 		//return;
 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = db.GetInterruptResetAddress();
+		Nes::Address addr = db.GetInterruptNmiAddress();
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n»ù±¾¿é:\n");
 		parser.Dump();

@@ -14,7 +14,7 @@ kind(CNodeKind::EXPR_VARIABLE)
 	v.name = name;
 }
 
-CNode::CNode(int value):
+CNode::CNode(int value) :
 kind(CNodeKind::EXPR_INTEGER)
 {
 	i.value = value;
@@ -28,14 +28,14 @@ kind(kind_)
 	e.z = z;
 }
 
-CNode::CNode(CStr name, CNode* params /*= nullptr*/):
+CNode::CNode(CStr name, CNode* params /*= nullptr*/) :
 kind(CNodeKind::STAT_CALL)
 {
 	f.name = name;
 	f.params = params;
 }
 
-CNode::CNode(CNodeKind kind_, CStr name):
+CNode::CNode(CNodeKind kind_, CStr name) :
 kind(kind_)
 {
 	l.name = name;
@@ -131,17 +131,17 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	}
 	case CNodeKind::STAT_CALL:
 	{
-							auto node = (const CNode*)obj;
-							os << node->f.name << _T("(");
-							if (node->f.params == nullptr)
-								return os << _T(");\n");
-							for (CNode* param = node->f.params; param; param = param->next)
-							{
-								if (param != node->f.params)
-									os << _T(", ");
-								os << param;
-							}
-							return os << _T(");\n");
+								 Indent(os, indent);
+								 os << obj->f.name << _T("(");
+								 if (obj->f.params == nullptr)
+									 return os << _T(");\n");
+								 for (CNode* param = obj->f.params; param; param = param->next)
+								 {
+									 if (param != obj->f.params)
+										 os << _T(", ");
+									 os << param;
+								 }
+								 return os << _T(");\n");
 	}
 	case CNodeKind::STAT_RETURN:
 	{
@@ -160,23 +160,31 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	}
 	case CNodeKind::EXPR_BOR:
 	{
-						   return os << obj->e.x << _T(" | ") << obj->e.y;
+								return os << obj->e.x << _T(" | ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_BAND:
 	{
-							return os << obj->e.x << _T(" & ") << obj->e.y;
+								 return os << obj->e.x << _T(" & ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_XOR:
 	{
-								 return os << obj->e.x << _T(" ^ ") << obj->e.y;
+								return os << obj->e.x << _T(" ^ ") << obj->e.y;
+	}
+	case CNodeKind::EXPR_SHIFT_LEFT:
+	{
+									   return os << obj->e.x << _T(" << ") << obj->e.y;
+	}
+	case CNodeKind::EXPR_SHIFT_RIGHT:
+	{
+										return os << obj->e.x << _T(" >> ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_ADD:
 	{
-						   return os << obj->e.x << _T(" + ") << obj->e.y;
+								return os << obj->e.x << _T(" + ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_SUB:
 	{
-						   return os << obj->e.x << _T(" - ") << obj->e.y;
+								return os << obj->e.x << _T(" - ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_AND:
 	{
@@ -184,48 +192,48 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	}
 	case CNodeKind::EXPR_OR:
 	{
-								return os << obj->e.x << _T(" || ") << obj->e.y;
+							   return os << obj->e.x << _T(" || ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_NOT:
 	{
-							   return os <<_T("!") << obj->e.y;
+								return os << _T("!") << obj->e.y;
 	}
 	case CNodeKind::EXPR_ASSIGN:
 	{
-							  return os << obj->e.x << _T(" = ") << obj->e.y;
+								   return os << obj->e.x << _T(" = ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_REF:
 	{
-						   return os << _T("*") << obj->e.x;
+								return os << _T("*") << obj->e.x;
 	}
 	case CNodeKind::EXPR_ADDR:
 	{
-								return os << _T("&") << obj->e.x;
+								 return os << _T("&") << obj->e.x;
 	}
 
 	case CNodeKind::EXPR_GREAT:
 	{
-							 return os << obj->e.x << _T(" > ") << obj->e.y;
+								  return os << obj->e.x << _T(" > ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_GREAT_EQUAL:
 	{
-								   return os << obj->e.x << _T(" >= ") << obj->e.y;
+										return os << obj->e.x << _T(" >= ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_EQUAL:
 	{
-							 return os << obj->e.x << _T(" == ") << obj->e.y;
+								  return os << obj->e.x << _T(" == ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_NOT_EQUAL:
 	{
-								 return os << obj->e.x << _T(" != ") << obj->e.y;
+									  return os << obj->e.x << _T(" != ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_LESS:
 	{
-							return os << obj->e.x << _T(" < ") << obj->e.y;
+								 return os << obj->e.x << _T(" < ") << obj->e.y;
 	}
 	case CNodeKind::EXPR_LESS_EQUAL:
 	{
-								  return os << obj->e.x << _T(" <= ") << obj->e.y;
+									   return os << obj->e.x << _T(" <= ") << obj->e.y;
 	}
 	default:
 		throw Exception(_T("输出节点字符串: 未实现的节点类型"));

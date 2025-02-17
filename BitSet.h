@@ -55,15 +55,15 @@ public:
 	// 对位集进行取反操作，也就是求补集
 	inline BitSet operator~() const { return BitSet(~data); }
 	// 添加一个元素
-	inline BitSet& operator+=(int index) { data |= (T)(1 << index); return *this; }
+	inline BitSet& operator+=(int index) { data |= ((T)1 << index); return *this; }
 	// 添加指定位集中的元素
 	inline BitSet& operator+=(const BitSet& a) { data |= a.data; return *this; }
 	// 移除一个元素
-	inline BitSet& operator-=(int index) { data &= ~(1 << index); return *this; }
+	inline BitSet& operator-=(int index) { data &= ~((T)1 << index); return *this; }
 	// 移除指定位集中的元素
 	inline BitSet& operator-=(const BitSet& a) { data &= ~a.data; return *this; }
 	// 获取移除一个元素后的位集
-	inline BitSet operator-(int index) const { return BitSet(data & ~(1 << index)); }
+	inline BitSet operator-(int index) const { return BitSet(data & ~((T)1 << index)); }
 	// 给集合赋值
 	inline BitSet& operator=(T value) { data = value; return *this; }
 	// 判断两个位集是否相等
@@ -73,9 +73,14 @@ public:
 	inline bool operator!=(const BitSet other) const { return data != other.data; }
 	inline bool operator!=(T value) const { return data != value; }
 	// 位集中是否包含指定元素
-	inline bool Contains(int index) const { return (data & (T)(1 << index)) != 0; }
+	inline bool Contains(int index) const { return (data & ((T)1 << index)) != 0; }
 	// 替换位集中的 a 元素为 b 元素
-	inline BitSet& Replace(int a, int b) { *this -= a; *this += b; return *this; }
+	inline BitSet& Replace(int a, int b)
+	{
+		*this -= a;
+		*this += b;
+		return *this; 
+	}
 	// 替换位集中的子位集 a 为指定位集 b
 	inline BitSet& Replace(const BitSet& a, const BitSet& b)
 	{

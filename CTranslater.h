@@ -132,8 +132,12 @@ protected:
 
 protected:
 	// 调试使用
+	// 输出所有基本块构成的控制流图
 	void DumpCFG();
-
+	// 输出所有控制树节点构成的控制流图
+	void DumpControlTree();
+	// 输出当前分析的节点集
+	void DumpCurrentCFG(NodeSet& N);
 private:
 	Allocator tempAllocator;  // 用于创建临时节点
 	BasicBlock blocks[MAX_NODE];  // 基本块列表，每个基本块对应控制流图中的一个节点
