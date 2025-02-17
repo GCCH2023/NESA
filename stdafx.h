@@ -19,6 +19,7 @@
 #include <list>
 #include <algorithm>
 #include <unordered_map>
+#include <assert.h>
 
 #include <windows.h>
 

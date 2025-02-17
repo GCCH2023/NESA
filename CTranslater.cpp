@@ -493,7 +493,7 @@ void CTranslater::OnReducePoint2Loop(ControlTreeNodeEx* node)
 	}
 	else
 	{
-		throw Exception(_T("未实现"));
+		throw Exception(_T("2点循环的第一个节点不是叶子节点的归约未实现"));
 	}
 	if (second->type == CTNTYPE_LEAF)
 	{
@@ -501,7 +501,9 @@ void CTranslater::OnReducePoint2Loop(ControlTreeNodeEx* node)
 	}
 	else
 	{
-		throw Exception(_T("未实现"));
+		assert(second->statement);
+		assert(second->condition);
+		condition = second->condition;
 	}
 	node->statement = allocator.New<CNode>(CNodeKind::STAT_LIST, first->statement, second->statement);
 	node->statement = allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, node->statement);
@@ -548,7 +550,10 @@ void CTranslater::OnReduceIfElse(ControlTreeNodeEx* node)
 	}
 	else
 	{
-		throw Exception(_T("未实现"));
+		// 如果不是叶子节点，则之前的归约必然要保留有条件
+		if (!cond->condition)
+			throw Exception(_T("翻译为 if - else 语句的过程中缺少 if 语句的条件表达式"));
+		condition = cond->condition;
 	}
 	CNode* ifCond = condition;
 	// 需要根据跳转地址来判断哪个基本块是 then 部分，哪个是 else 部分
@@ -586,7 +591,10 @@ void CTranslater::OnReduceIfOr(ControlTreeNodeEx* node)
 	}
 	else
 	{
-		throw Exception(_T("未实现"));
+		// 如果不是叶子节点，则之前的归约必然要保留有条件
+		if (!a->condition)
+			throw Exception(_T("翻译为 if - or 语句的过程中缺少 if 语句的第1个条件表达式"));
+		condition1 = a->condition;
 	}
 	// 需要根据跳转地址来判断哪个基本块是 then 部分，哪个是 else 部分
 	if (jumpAddr == blocks[b->index]->GetStartAddress())
@@ -599,9 +607,12 @@ void CTranslater::OnReduceIfOr(ControlTreeNodeEx* node)
 	{
 		b->statement = TranslateRegion(condition2, blocks[b->index], jumpAddr);
 	}
-	else if (b == b)
+	else
 	{
-		throw Exception(_T("未实现"));
+		// 如果不是叶子节点，则之前的归约必然要保留有条件
+		if (!b->condition)
+			throw Exception(_T("翻译为 if 语句的过程中缺少 if 语句的第2个条件表达式"));
+		condition2 = b->condition;
 	}
 	// 用 || 连接 a 和 b 的条件，b的条件要取反，因为b条件满足时跳转到d
 	condition2 = GetNotExpression(condition2);

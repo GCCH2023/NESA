@@ -201,7 +201,7 @@ bool NesSubroutineParser::CheckBlocksAddress(Nes::Address start, Nes::Address en
 
 	// 如果是尾调用的话，就把 JMP 当作调用指令来处理
 	// 移除所有函数范围外的地址，把这些地址当作函数调用处理
-	for (int i = blockStartAddrs.size() - 1; i > 0; --i)
+	for (int i = (int)blockStartAddrs.size() - 1; i > 0; --i)
 	{
 		if (blockStartAddrs[i] > this->subroutine->GetEndAddress())
 		{
