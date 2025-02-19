@@ -13,6 +13,8 @@ using namespace Nes;
 #include "ReachingDefinition.h"
 #include "LiveVariableAnalysis.h"
 #include "NesAnalyzer.h"
+#include "TACPeephole.h"
+#include "TACDeadCodeElimination.h"
 
 void ParseNes(const TCHAR* rom)
 {
@@ -48,7 +50,7 @@ void ParseNes(const TCHAR* rom)
 		//return;
 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = db.GetInterruptNmiAddress();
+		Nes::Address addr = db.GetInterruptResetAddress();
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
 		parser.Dump();
@@ -60,9 +62,9 @@ void ParseNes(const TCHAR* rom)
 		tacSub->Dump();
 
 		// 生成C代码
-		CTranslater translater(allocator, db);
-		auto func = translater.TranslateSubroutine(tacSub);
-		COUT << func->GetBody();
+		//CTranslater translater(allocator, db);
+		//auto func = translater.TranslateSubroutine(tacSub);
+		//COUT << func->GetBody();
 
 		// 分析定值到达
 		//ReachingDefinition rd(db, allocator);
@@ -71,6 +73,18 @@ void ParseNes(const TCHAR* rom)
 		// 活跃变量分析
 		//LiveVariableAnalysis lva(db, allocator);
 		//lva.Analyze(tacSub);
+
+		// 对三地址码进行窥孔优化
+		TACPeephole ph(db);
+		ph.Optimize(tacSub);
+		COUT << _T("\n窥孔优化后:\n");
+		tacSub->Dump();
+
+		// 对三地址码进行死代码消除
+		TACDeadCodeElimination dce(db);
+		dce.Optimize(tacSub);
+		COUT << _T("\n死代码消除后:\n");
+		tacSub->Dump();
 	}
 	catch (Exception& e)
 	{

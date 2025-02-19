@@ -107,6 +107,10 @@ public:
 	TACOperand z;
 };
 
+// 计算常量操作数的值
+// 如果不是常量抛出异常
+// 如果是单目操作码的话，y的值应该是整数0
+TACOperand Evaluate(TACOperator op, TACOperand x, TACOperand y);
 OStream& operator<<(OStream& os, const TAC* obj);
 // 输出带地址的三地址码
 OStream& DumpAddressTAC(OStream& os, const TAC* tac);
@@ -146,9 +150,8 @@ public:
 	// 输出内容
 	void Dump();
 
-	// 添加一条三地址码
-	inline void AddTAC(TAC* code) { codes.push_back(code); }
-	inline TACList& GetCodes() { return codes; }
+	// 获取所有三地址码
+	TACList GetCodes();
 
 	// 添加一个基本块
 	inline void AddBasicBlock(TACBasicBlock* block) { blocks.push_back(block); }
@@ -165,7 +168,6 @@ public:
 
 	uint32_t flag;  // 低3位表示AXY作为参数，3 - 5位表示AXY作为返回值
 private:
-	TACList codes;  // 三地址码列表
 	TACBasicBlockList blocks;  // 基本块列表
 	int tempCount;  // 临时变量计数器
 };

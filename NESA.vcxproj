@@ -167,6 +167,9 @@
     <ClInclude Include="Sprintf.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TAC.h" />
+    <ClInclude Include="TACDeadCodeElimination.h" />
+    <ClInclude Include="TACOptimizer.h" />
+    <ClInclude Include="TACPeephole.h" />
     <ClInclude Include="TACTranslater.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -197,6 +200,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TAC.cpp" />
+    <ClCompile Include="TACDeadCodeElimination.cpp" />
+    <ClCompile Include="TACOptimizer.cpp" />
+    <ClCompile Include="TACPeephole.cpp" />
     <ClCompile Include="TACTranslater.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

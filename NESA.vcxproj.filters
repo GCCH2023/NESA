@@ -126,6 +126,15 @@
     <ClInclude Include="BitSet.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="TACOptimizer.h">
+      <Filter>IR</Filter>
+    </ClInclude>
+    <ClInclude Include="TACPeephole.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TACDeadCodeElimination.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -192,6 +201,15 @@
       <Filter>DataFlow</Filter>
     </ClCompile>
     <ClCompile Include="NesAnalyzer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TACOptimizer.cpp">
+      <Filter>IR</Filter>
+    </ClCompile>
+    <ClCompile Include="TACPeephole.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TACDeadCodeElimination.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -16,7 +16,7 @@ allocator(allocator_)
 // 输出每个基本块的入口活跃变量集和出口活跃变量集
 void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks)
 {
-	Sprintf<> s;
+	Sprintf<512> s;
 	s.Format(_T("基本块的活跃变量集：\n"));
 	for (auto block : blocks)
 	{
@@ -54,45 +54,6 @@ void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks)
 	COUT << s.ToString();
 }
 
-// 只分析寄存器 A, X, Y，其他寄存器和临时变量或者全局变量忽略掉
-//void LiveVariableAnalysis::Analyze(TACSubroutine* subroutine)
-//{
-//	if (!subroutine)
-//		return;
-//
-//	this->subroutine = subroutine;
-//
-//	Initialize();
-//
-//	bool isEnd = false;
-//	// 迭代
-//	int iter = 0;
-//	while (!isEnd)
-//	{
-//		isEnd = true;
-//		//s.Append(_T("迭代 %d\n", iter++);
-//		bool isEntry = true;
-//		// 遍历基本块
-//		for (auto block : subroutine->GetBasicBlocks())
-//		{
-//			auto blockSet = (BasicBlockLiveVariableSet*)block->tag;
-//			// OUT[B] = 所有后继活跃变量的并集
-//			// IN[B] = useB 并 (OUT[B] - defB)
-//			for (TACBasicBlock* next : block->nexts)
-//			{
-//				auto nextSet = (BasicBlockLiveVariableSet*)next->tag;
-//				blockSet->out |= nextSet->in;
-//			}
-//			auto value = blockSet->in;
-//			blockSet->in = (blockSet->out & ~blockSet->defs) | blockSet->uses;
-//			if (blockSet->in != value)
-//				isEnd = false;
-//		}
-//	}
-//
-//	// DumpAllBasicBlockLiveVariables(subroutine->GetBasicBlocks());
-//}
-
 // 分析寄存器 AXY 的引用（定义或使用）情况
 void AnalyzeAXYOperandReference(TACOperand& operand, NodeSet& defs, NodeSet& uses, NodeSet& state)
 {
@@ -125,24 +86,27 @@ void LiveVariableAnalysis::Initialize()
 			if (tac->op == TACOperator::CALL)
 			{
 				auto sub = db.FindSubroutine(tac->z.GetValue());
-				if (sub->flag & SUBF_PARAM)
+				if (sub)  // 找不到说明还没分析，先不管
 				{
-					if ((defs & sub->flag) == 0)  // 使用前没有定值
+					if (sub->flag & SUBF_PARAM)
 					{
-						blockSet->uses |= sub->flag & SUBF_PARAM;
+						if ((defs & sub->flag) == 0)  // 使用前没有定值
+						{
+							blockSet->uses |= sub->flag & SUBF_PARAM;
+						}
+						uses |= sub->flag & SUBF_PARAM;  // 标记使用
 					}
-					uses |= sub->flag & SUBF_PARAM;  // 标记使用
-				}
-				auto rets = (sub->flag & SUBF_RETURN) >> 3;
-				if (rets)
-				{
-					if ((uses & rets) == 0)  // 定值前没有使用
+					auto rets = (sub->flag & SUBF_RETURN) >> 3;
+					if (rets)
 					{
-						blockSet->defs |= rets;
+						if ((uses & rets) == 0)  // 定值前没有使用
+						{
+							blockSet->defs |= rets;
+						}
+						defs |= rets;  // 标记定值
 					}
-					defs |= rets;  // 标记定值
+					continue;
 				}
-				continue;
 			}
 			AnalyzeAXYOperandReference(tac->x, defs, uses, blockSet->uses);
 			AnalyzeAXYOperandReference(tac->y, defs, uses, blockSet->uses);

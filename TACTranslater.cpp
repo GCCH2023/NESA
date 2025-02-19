@@ -403,7 +403,7 @@ TAC* TACTranslater::TranslateCmp(const Instruction& instruction, const Instructi
 
 void TACTranslater::AddTAC(TAC* tac)
 {
-	this->tacSub->AddTAC(tac);
+	// this->tacSub->AddTAC(tac);
 	this->tacBlock->AddTAC(tac);
 }
 

@@ -11,6 +11,7 @@ struct BasicBlockLiveVariableSet
 };
 
 // 进行活跃变量分析
+// 结果保存在基本块 tag 中，类型为 BasicBlockLiveVariableSet*
 class LiveVariableAnalysis : public DataFlowAnalyzer
 {
 public:

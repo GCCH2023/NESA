@@ -77,6 +77,48 @@ const TCHAR* ToString(TACOperator op)
 	return names[(int)op];
 }
 
+template <typename T>
+T RotateLeft(T value, int shift)
+{
+	const int bits = sizeof(T)* CHAR_BIT; // 计算类型的位数
+	shift %= bits; // 确保 shift 在有效范围内
+	return (value << shift) | (value >> (bits - shift));
+}
+
+template <typename T>
+T RotateRight(T value, int shift)
+{
+	const int bits = sizeof(T)* CHAR_BIT; // 计算类型的位数
+	shift %= bits; // 确保 shift 在有效范围内
+	return (value >> shift) | (value << (bits - shift));
+}
+
+
+TACOperand Evaluate(TACOperator op, TACOperand x, TACOperand y)
+{
+	if (!x.IsInterger() || !y.IsInterger())
+		throw Exception(_T("要求值的两个操作数不是整数"));
+	// 因为是 NES 相关的三地址码，所以只考虑一个字节的运算
+	uint8_t a = x.GetValue();
+	uint8_t b = y.GetValue();
+	switch (op)
+	{
+	case TACOperator::ADD: return TACOperand((uint8_t)(a + b));
+	case TACOperator::SUB:  return TACOperand((uint8_t)(a - b));
+	case TACOperator::BOR:  return TACOperand((uint8_t)(a | b));
+	case TACOperator::BAND: return TACOperand((uint8_t)(a & b));
+	case TACOperator::BNOT:  return TACOperand((uint8_t)~a);
+	case TACOperator::XOR: return TACOperand((uint8_t)(a ^ b));
+	case TACOperator::SHR: return TACOperand((uint8_t)(a >> b));
+	case TACOperator::SHL: return TACOperand((uint8_t)(a << b));
+	case TACOperator::ROR: return TACOperand(RotateRight(a, b));
+	case TACOperator::ROL: return TACOperand(RotateLeft(a, b));
+	}
+	Sprintf<> s;
+	s.Format(_T("无法进行求值的操作码 "), ToString(op));
+	throw Exception(s);
+}
+
 OStream& operator<<(OStream& os, const TACOperand& obj)
 {
 	switch (obj.GetKind())
@@ -266,10 +308,21 @@ NesRegion(startAddress, endAddress)
 
 void TACSubroutine::Dump()
 {
-	for (auto tac : codes)
+	for (auto tac : GetCodes())
 	{
 		DumpAddressTAC(COUT, tac) << std::endl;
 	}
+}
+
+TACList TACSubroutine::GetCodes()
+{
+	TACList tacs;
+	for (auto block : GetBasicBlocks())
+	{
+		auto& codes = block->GetCodes();
+		tacs.insert(tacs.end(), codes.begin(), codes.end());
+	}
+	return tacs;
 }
 
 TACBasicBlock::TACBasicBlock()
