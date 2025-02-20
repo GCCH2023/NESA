@@ -165,86 +165,86 @@ OStream& operator<<(OStream& out, const TAC* tuple)
 	switch (tuple->op)
 	{
 	case TACOperator::ADD:
-		out << tuple->z << " = " << tuple->x << " + " << tuple->y;
+		out << tuple->z << _T(" = ") << tuple->x << _T(" + ") << tuple->y;
 		break;
 	case TACOperator::SUB:
-		out << tuple->z << " = " << tuple->x << " - " << tuple->y;
+		out << tuple->z << _T(" = ") << tuple->x << _T(" - ") << tuple->y;
 		break;
 	case TACOperator::BOR:
-		out << tuple->z << " = " << tuple->x << " | " << tuple->y;
+		out << tuple->z << _T(" = ") << tuple->x << _T(" | ") << tuple->y;
 		break;
 	case TACOperator::BAND:
-		out << tuple->z << " = " << tuple->x << " & " << tuple->y;
+		out << tuple->z << _T(" = ") << tuple->x << _T(" & ") << tuple->y;
 		break;
 	case TACOperator::BNOT:
-		out << tuple->z << " = ~" << tuple->x;
+		out << tuple->z << _T(" = ~") << tuple->x;
 		break;
 	case TACOperator::XOR:
-		out << tuple->z << " = " << tuple->x << " ^ " << tuple->y;
+		out << tuple->z << _T(" = ") << tuple->x << _T(" ^ ") << tuple->y;
 		break;
 	case TACOperator::ASSIGN:
-		out << tuple->z << " = " << tuple->x;
+		out << tuple->z << _T(" = ") << tuple->x;
 		break;
 	case TACOperator::INDEX:
 		if (tuple->y.IsZero())
-			out << tuple->z << " = [" << tuple->x << "]";
+			out << tuple->z << _T(" = [") << tuple->x << _T("]");
 		else
-			out << tuple->z << " = " << tuple->x << "[" << tuple->y << "]";
+			out << tuple->z << _T(" = ") << tuple->x << _T("[") << tuple->y << _T("]");
 		break;
 	case TACOperator::REF:
 		if (tuple->y.IsZero())
-			out << "[" << tuple->x << "] = " << tuple->z;
+			out << _T("[") << tuple->x << _T("] = ") << tuple->z;
 		else
-			out << tuple->x << "[" << tuple->y << "] = " << tuple->z;
+			out << tuple->x << _T("[") << tuple->y << _T("] = ") << tuple->z;
 		break;
 	case TACOperator::IFGREAT:
-		out << "if " << tuple->x << " > " << tuple->y << " goto " << tuple->z;
+		out << _T("if ") << tuple->x << _T(" > ") << tuple->y << _T(" goto ") << tuple->z;
 		break;
 	case TACOperator::IFGEQ:
-		out << "if " << tuple->x << " >= " << tuple->y << " goto " << tuple->z;
+		out << _T("if ") << tuple->x << _T(" >= ") << tuple->y << _T(" goto ") << tuple->z;
 		break;
 	case TACOperator::IFLESS:
-		out << "if " << tuple->x << " < " << tuple->y << " goto " << tuple->z;
+		out << _T("if ") << tuple->x << _T(" < ") << tuple->y << _T(" goto ") << tuple->z;
 		break;
 	case TACOperator::IFNEQ:
-		out << "if " << tuple->x << " != " << tuple->y << " goto " << tuple->z;
+		out << _T("if ") << tuple->x << _T(" != ") << tuple->y << _T(" goto ") << tuple->z;
 		break;
 	case TACOperator::IFEQ:
-		out << "if " << tuple->x << " == " << tuple->y << " goto " << tuple->z;
+		out << _T("if ") << tuple->x << _T(" == ") << tuple->y << _T(" goto ") << tuple->z;
 		break;
 	case TACOperator::CALL:
-		out << "call " << tuple->z;
+		out << _T("call ") << tuple->x << _T(", ") << tuple->y;
 		break;
 	case TACOperator::GOTO:
-		out << "goto " << tuple->z;
+		out << _T("goto ") << tuple->z;
 		break;
 	case TACOperator::RETURN:
-		out << "return";
+		out << _T("return");
 		break;
 	case TACOperator::SHL:
-		out << tuple->z << " = " << tuple->x << " << " << tuple->y;
+		out << tuple->z << _T(" = ") << tuple->x << _T(") << _T(") << tuple->y;
 		break;
 	case TACOperator::SHR:
-		out << tuple->z << " = " << tuple->x << " >> " << tuple->y;
+		out << tuple->z << _T(" = ") << tuple->x << _T(" >> ") << tuple->y;
 		break;
 	case TACOperator::ROL:
-		out << tuple->z << " = " << tuple->x << " O< " << tuple->y;
+		out << tuple->z << _T(" = ") << tuple->x << _T(" O< ") << tuple->y;
 		break;
 	case TACOperator::ROR:
-		out << tuple->z << " = " << tuple->x << " O> " << tuple->y;
+		out << tuple->z << _T(" = ") << tuple->x << _T(" O> ") << tuple->y;
 		break;
 	case TACOperator::PUSH:
-		out << "push " << tuple->x;
+		out << _T("push ") << tuple->x;
 		break;
 	case TACOperator::POP:
-		out << "pop " << tuple->z;
+		out << _T("pop ") << tuple->z;
 		break;
 
 	case TACOperator::BREAK:
-		out << "BRK";
+		out << _T("BRK");
 		break;
 	case TACOperator::BIT:
-		out << tuple->x << " BIT " << tuple->y;  // 暂时先这样
+		out << tuple->x << _T(" BIT ") << tuple->y;  // 暂时先这样
 		break;
 	default:
 		throw Exception(_T("输出三地址码: 未实现的三地址码操作码"));

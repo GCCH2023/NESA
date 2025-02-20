@@ -22,7 +22,7 @@ enum class TACOperator
 	INDEX,  // 索引 z = x[y]
 	REF,  // 解引用 x[y] = z
 	ARG,  // 传递一个函数参数，相当于 x86 中的 push x
-	CALL, // 函数调用 z 是函数地址
+	CALL, // z = x(y)，x 是函数地址，y是参数数量
 	GOTO, // goto z
 	RETURN,  // return
 	SHR,  // 逻辑右移，z = x >> y，丢弃最低位
@@ -70,6 +70,8 @@ public:
 	inline bool IsMemory() const { return GetKind() == MEMORY; }
 	// 获取值
 	inline uint32_t GetValue() const { return data & VALUE_MASK; }
+	// 设置值
+	inline void SetValue(int value) { data |= value & VALUE_MASK; }
 	// 获取类别
 	inline uint32_t GetKind() const { return data & KIND_MASK; }
 	// 设置类别

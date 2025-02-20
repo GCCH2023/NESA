@@ -147,23 +147,28 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 		case Nes::Opcode::Jsr:
 		{
 								 // 
-								 tac = allocator.New<TAC>(TACOperator::CALL, GetOperand(i));
-								 tac->z.SetKind(TACOperand::ADDRESS);
-								 auto sub = db.FindSubroutine(tac->z.GetValue());
+								 int argCount = 0;
+								 tac = allocator.New<TAC>(TACOperator::CALL, 0, GetOperand(i), 0);
+								 tac->x.SetKind(TACOperand::ADDRESS);
+								 auto sub = db.FindSubroutine(tac->x.GetValue());
 								 if (sub && sub->flag & SUBF_PARAM)
 								 {
 									 if (sub->flag & SUBF_PARAM_A)
 									 {
 										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterA));
+										 ++argCount;
 									 }
 									 if (sub->flag & SUBF_PARAM_X)
 									 {
 										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterX));
+										 ++argCount;
 									 }
 									 if (sub->flag & SUBF_PARAM_Y)
 									 {
 										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterY));
+										 ++argCount;
 									 }
+									 tac->y.SetValue(argCount);
 								 }
 								 break;
 		}
@@ -200,8 +205,8 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 										 jumpAddr >= this->nesSub->GetEndAddress())
 									 {
 										 // 认为是尾调用
-										 tac = allocator.New<TAC>(TACOperator::CALL, GetOperand(i));
-										 tac->z.SetKind(TACOperand::ADDRESS);
+										 tac = allocator.New<TAC>(TACOperator::CALL, 0, GetOperand(i), 0);
+										 tac->x.SetKind(TACOperand::ADDRESS);
 										 break;
 									 }
 								 }
