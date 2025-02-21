@@ -143,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h" />
+    <ClInclude Include="ASTManager.h" />
     <ClInclude Include="BitSet.h" />
     <ClInclude Include="Cartridge.h" />
     <ClInclude Include="CNode.h" />
@@ -174,6 +175,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ASTManager.cpp" />
     <ClCompile Include="Cartridge.cpp" />
     <ClCompile Include="CNode.cpp" />
     <ClCompile Include="CTranslater.cpp" />

@@ -135,6 +135,9 @@
     <ClInclude Include="TACDeadCodeElimination.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ASTManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -210,6 +213,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="TACDeadCodeElimination.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ASTManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
