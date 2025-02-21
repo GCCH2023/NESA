@@ -322,6 +322,35 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 								 current = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), current);
 								 break;
 		}
+
+		case TACOperator::CLI:
+		{
+								 // 翻译为函数调用
+								 current = allocator.New<CNode>(NewString(_T("Cli")), (CNode*)nullptr);
+								 break;
+		}
+		case TACOperator::SEI:
+		{
+								 // 翻译为函数调用
+								 current = allocator.New<CNode>(NewString(_T("Sei")), (CNode*)nullptr);
+								 break;
+		}
+		case TACOperator::CLD:
+		{
+								 // 翻译为函数调用
+								 current = allocator.New<CNode>(NewString(_T("Cld")), (CNode*)nullptr);
+								 break;
+		}
+		case TACOperator::SED:
+		{
+								 // 翻译为函数调用
+								 current = allocator.New<CNode>(NewString(_T("Sed")), (CNode*)nullptr);
+								 break;
+		}
+		//case TACOperator::CLC:
+		//case TACOperator::SEC:
+		//case TACOperator::CLV:
+			// 进位和溢出标志都是和其他指令配合使用的，抽象语法树中不应该出现
 		default:
 		{
 				   TCHAR buffer[64];

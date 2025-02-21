@@ -32,8 +32,16 @@ enum class TACOperator
 	PUSH, // x 入栈
 	POP,  // 出栈到 z
 
+	// 与 6502 相关的操作码
 	BREAK,  // brk
 	BIT,  // bit，还不知道该怎么翻译（不知道这个指令的用法）
+	CLI,
+	SEI,
+	CLC,
+	SEC,
+	CLV,
+	CLD,
+	SED,
 };
 
 const TCHAR* ToString(TACOperator op);

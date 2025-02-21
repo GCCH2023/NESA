@@ -124,25 +124,25 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 			tac = TranslateConditionalJump(instructions, index, OpKind::Write_C, TACOperator::IFNEQ);
 			break;
 		case Nes::Opcode::Cli:
-			tac = allocator.New<TAC>(TACOperator::BAND, RegisterP, RegisterP, (uint8_t)~Flags::I);
+			tac = allocator.New<TAC>(TACOperator::CLI);
 			break;
 		case Nes::Opcode::Sei:
-			tac = allocator.New<TAC>(TACOperator::BOR, RegisterP, RegisterP, Flags::I);
+			tac = allocator.New<TAC>(TACOperator::SEI);
 			break;
 		case Nes::Opcode::Clc:
-			tac = allocator.New<TAC>(TACOperator::BAND, RegisterP, RegisterP, (uint8_t)~Flags::C);
+			tac = allocator.New<TAC>(TACOperator::CLC);
 			break;
 		case Nes::Opcode::Sec:
-			tac = allocator.New<TAC>(TACOperator::BOR, RegisterP, RegisterP, Flags::C);
+			tac = allocator.New<TAC>(TACOperator::SEC);
 			break;
 		case Nes::Opcode::Clv:
-			tac = allocator.New<TAC>(TACOperator::BAND, RegisterP, RegisterP, (uint8_t)~Flags::V);
+			tac = allocator.New<TAC>(TACOperator::CLV);
 			break;
 		case Nes::Opcode::Cld:
-			tac = allocator.New<TAC>(TACOperator::BAND, RegisterP, RegisterP, (uint8_t)~Flags::D);
+			tac = allocator.New<TAC>(TACOperator::CLD);
 			break;
 		case Nes::Opcode::Sed:
-			tac = allocator.New<TAC>(TACOperator::BOR, RegisterP, RegisterP, Flags::D);
+			tac = allocator.New<TAC>(TACOperator::SED);
 			break;
 		case Nes::Opcode::Jsr:
 		{
