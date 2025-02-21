@@ -371,7 +371,10 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 		last = current;
 	}
 	auto ret = list ? list : current;
-	blockStatements[tacBlock->GetStartAddress()] = ret;  // 记录下这个基本块对应的地址及语句
+	Nes::Address firstAddr = codes.empty() ? tacBlock->GetStartAddress() : codes[0]->address;
+	blockStatements[firstAddr] = ret;  // 记录下这个基本块对应的地址及语句
+	if (!ret)
+		ret = noneStatement;  // 可能有一个基本块只由一条跳转指令构成
 	return ret;
 }
 
@@ -468,6 +471,14 @@ CStr CTranslater::NewString(const CStr format, ...)
 	return str;
 }
 
+CNode* CTranslater::NewDoWhile(CNode* condition, CNode* body)
+{
+	// do ; while (condition) => while (condition) ;
+	if (body == noneStatement)
+		return allocator.New<CNode>(CNodeKind::STAT_WHILE, condition, body);
+	return allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, body);
+}
+
 // 当要将控制流图中的一个自循环节点归约时
 // a -> a
 void CTranslater::OnReduceSelfLoop(ControlTreeNodeEx* node)
@@ -477,14 +488,14 @@ void CTranslater::OnReduceSelfLoop(ControlTreeNodeEx* node)
 	{
 		if (body->condition == nullptr)
 			throw Exception(_T("非叶子自循环节点异常"));
-		node->statement = allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, body->condition, body->statement);
+		node->statement = NewDoWhile(body->condition, body->statement);
 		return;
 	}
 	CNode* condition = nullptr;
 	auto block = this->subroutine->GetBasicBlocks()[body->index];
 	uint32_t jumpAddr;
 	auto a = TranslateRegion(condition, block, jumpAddr);
-	node->statement = allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, a);
+	node->statement = NewDoWhile(condition, a);
 }
 
 void CTranslater::OnReduceList(ControlTreeNodeEx* node)
@@ -535,7 +546,7 @@ void CTranslater::OnReducePoint2Loop(ControlTreeNodeEx* node)
 		condition = second->condition;
 	}
 	node->statement = allocator.New<CNode>(CNodeKind::STAT_LIST, first->statement, second->statement);
-	node->statement = allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, node->statement);
+	node->statement = NewDoWhile(condition, node->statement);
 }
 
 void CTranslater::OnReduceIf(ControlTreeNodeEx* node)

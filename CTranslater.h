@@ -124,6 +124,8 @@ protected:
 	void PatchLabels();
 	// 创建一个字符串
 	CStr NewString(const CStr format, ...);
+	// 创建一个do while 节点
+	CNode* NewDoWhile(CNode* condition, CNode* body);
 protected:
 	NesDataBase& db;
 	Allocator& allocator;  // 用于创建输出结果

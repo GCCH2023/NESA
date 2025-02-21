@@ -33,6 +33,7 @@ void TACPeephole::Optimize(TACSubroutine* subroutine)
 	for (auto block : subroutine->GetBasicBlocks())
 	{
 		memset(axyValue, 0, sizeof(axyValue));
+		last = nullptr;  // 只在一个基本块内进行优化
 		for (auto tac : block->GetCodes())
 		{
 			// 1. 首先，尝试用常量替换操作数 x 和 y

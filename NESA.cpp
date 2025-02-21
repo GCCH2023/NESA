@@ -74,9 +74,9 @@ void ParseNes(const TCHAR* rom)
 		tacSub->Dump();
 
 		// 生成C代码
-		/*CTranslater translater(allocator, db);
+		CTranslater translater(allocator, db);
 		auto func = translater.TranslateSubroutine(tacSub);
-		COUT << func->GetBody();*/
+		COUT << func->GetBody();
 
 		// 分析定值到达
 		//ReachingDefinition rd(db, allocator);
