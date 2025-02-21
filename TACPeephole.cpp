@@ -28,13 +28,14 @@ TACPeephole::~TACPeephole()
 void TACPeephole::Optimize(TACSubroutine* subroutine)
 {
 	TACValue axyValue[3];
+	TAC* last = nullptr;
 	// 遍历基本块
 	for (auto block : subroutine->GetBasicBlocks())
 	{
 		memset(axyValue, 0, sizeof(axyValue));
 		for (auto tac : block->GetCodes())
 		{
-			// 首先，尝试用常量替换操作数 x 和 y
+			// 1. 首先，尝试用常量替换操作数 x 和 y
 			if (tac->x.IsRegister() && tac->x.GetValue() <= Nes::NesRegisters::Y)
 			{
 				int index = tac->x.GetValue();
@@ -47,7 +48,7 @@ void TACPeephole::Optimize(TACSubroutine* subroutine)
 				if (axyValue[index].kind == TACValueKind::Constant)
 					tac->y = axyValue[index].value;
 			}
-			// 接着尝试常量折叠
+			// 2. 接着尝试常量折叠
 			try
 			{
 				tac->x = Evaluate(tac->op, tac->x, tac->y);
@@ -57,6 +58,19 @@ void TACPeephole::Optimize(TACSubroutine* subroutine)
 			{
 				// 不能折叠就算了
 			}
+			// 3. 尝试 赋值替换 a = b, c = a, 替换为 c = b
+			if (last && last->op == TACOperator::ASSIGN)
+			{
+				if (tac->x == last->z)
+				{
+					tac->x = last->x;
+				}
+				if (tac->y == last->z)
+				{
+					tac->y = last->x;
+				}
+			}
+
 			// 最后更新寄存器的值
 			if (tac->z.IsRegister() && tac->z.GetValue() <= Nes::NesRegisters::Y)
 			{
@@ -69,6 +83,8 @@ void TACPeephole::Optimize(TACSubroutine* subroutine)
 					axyValue[tac->z.GetValue()] = { TACValueKind::Unknown, tac->x };
 				}
 			}
+
+			last = tac;
 		}
 	}
 }

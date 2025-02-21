@@ -15,6 +15,7 @@ TACDeadCodeElimination::~TACDeadCodeElimination()
 
 // 如何一条三地址码是跳转地址，那么消除后，这个地址就没了
 // 应该改为跳转到下一条代码的地址，目前没有实现
+// 基本块的开始地址保留最初的地址好了
 void TACDeadCodeElimination::Optimize(TACSubroutine* subroutine)
 {
 	Allocator allocator(4 * 1024 * 1024);
@@ -22,10 +23,13 @@ void TACDeadCodeElimination::Optimize(TACSubroutine* subroutine)
 	LiveVariableAnalysis lva(db, allocator);
 	lva.Analyze(subroutine);
 
+	std::unordered_map<uint32_t, TACBasicBlock*> addrMap;  // 基本块第一条指令的地址到基本块的映射
+
 	// 遍历每个基本块，消除死代码（对寄存器赋值了但没有使用到的三地址码）
 	for (auto block : subroutine->GetBasicBlocks())
 	{
 		auto& codes = block->GetCodes();
+		addrMap[codes[0]->address] = block;
 		NodeSet axyUses;  // AXY 是否被当前基本块当前代码后面的代码使用
 		for (auto it = codes.rbegin(); it != codes.rend();)
 		{
@@ -54,6 +58,23 @@ void TACDeadCodeElimination::Optimize(TACSubroutine* subroutine)
 			}
 			++it;
 		}
+	}
 
+	// 修正跳转地址
+	for (auto block : subroutine->GetBasicBlocks())
+	{
+		auto& codes = block->GetCodes();
+		if (codes.empty())
+			continue;
+		auto tac = *codes.rbegin();
+		if (tac->IsConditionalJump())
+		{
+			// 本来是跳转到基本块的第一条指令的地址的，
+			// 前面 n 条指令可能被删除了，
+			// 现在跳转到删除后的基本块的第一条指令的地址
+			auto b = addrMap[tac->z.GetValue()];
+			uint32_t newAddr = b->GetCodes()[0]->address;
+			tac->z.SetValue(newAddr);
+		}
 	}
 }

@@ -220,7 +220,10 @@ OStream& operator<<(OStream& out, const TAC* tac)
 		out << _T("if ") << tac->x << _T(" == ") << tac->y << _T(" goto ") << tac->z;
 		break;
 	case TACOperator::CALL:
-		out << _T("call ") << tac->x << _T(", ") << tac->y;
+		out << _T("sub_") << tac->x << _T("(");
+		if (tac->y.GetValue())
+			out << tac->y.GetValue();
+		out << _T(")");
 		break;
 	case TACOperator::GOTO:
 		out << _T("goto ") << tac->z;

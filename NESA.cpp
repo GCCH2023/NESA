@@ -61,19 +61,6 @@ void ParseNes(const TCHAR* rom)
 		COUT << _T("\n三地址码:\n");
 		tacSub->Dump();
 
-		// 生成C代码
-		//CTranslater translater(allocator, db);
-		//auto func = translater.TranslateSubroutine(tacSub);
-		//COUT << func->GetBody();
-
-		// 分析定值到达
-		//ReachingDefinition rd(db, allocator);
-		//rd.Analyze(tacSub);
-
-		// 活跃变量分析
-		//LiveVariableAnalysis lva(db, allocator);
-		//lva.Analyze(tacSub);
-
 		// 对三地址码进行窥孔优化
 		TACPeephole ph(db);
 		ph.Optimize(tacSub);
@@ -85,6 +72,21 @@ void ParseNes(const TCHAR* rom)
 		dce.Optimize(tacSub);
 		COUT << _T("\n死代码消除后:\n");
 		tacSub->Dump();
+
+		// 生成C代码
+		/*CTranslater translater(allocator, db);
+		auto func = translater.TranslateSubroutine(tacSub);
+		COUT << func->GetBody();*/
+
+		// 分析定值到达
+		//ReachingDefinition rd(db, allocator);
+		//rd.Analyze(tacSub);
+
+		// 活跃变量分析
+		//LiveVariableAnalysis lva(db, allocator);
+		//lva.Analyze(tacSub);
+
+	
 	}
 	catch (Exception& e)
 	{

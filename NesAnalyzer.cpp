@@ -6,6 +6,8 @@
 #include "LiveVariableAnalysis.h"
 #include "TACTranslater.h"
 #include "LiveVariableAnalysis.h"
+#include "TACPeephole.h"
+#include "TACDeadCodeElimination.h"
 
 struct SubroutineData
 {
@@ -139,6 +141,14 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 void NesAnalyzer::AnalyzeTACSubroutine(TACSubroutine* subroutine)
 {
 	auto& blocks = subroutine->GetBasicBlocks();
+	// 1. 进行窥孔优化
+	TACPeephole tacPh(db);
+	tacPh.Optimize(subroutine);
+
+	// 2. 进行死代码消除
+	TACDeadCodeElimination tacDce(db);
+	tacDce.Optimize(subroutine);
+
 	// 进行活跃变量分析，以确定是否使用AXY作为参数
 	LiveVariableAnalysis lva(db, allocator);
 	lva.Analyze(subroutine);

@@ -79,7 +79,7 @@ public:
 	// 获取值
 	inline uint32_t GetValue() const { return data & VALUE_MASK; }
 	// 设置值
-	inline void SetValue(int value) { data |= value & VALUE_MASK; }
+	inline void SetValue(int value) { data = (value & VALUE_MASK) | (data & ~VALUE_MASK); }
 	// 获取类别
 	inline uint32_t GetKind() const { return data & KIND_MASK; }
 	// 设置类别
@@ -109,6 +109,9 @@ public:
 	TAC(TACOperator op, TACOperand z);
 	TAC(TACOperator op, TACOperand z, TACOperand x);
 	TAC(TACOperator op, TACOperand z, TACOperand x, TACOperand y);
+
+	// 是否条件跳转
+	inline bool IsConditionalJump() const { return op >= TACOperator::IFGEQ && op <= TACOperator::IFEQ; };
 public:
 	uint32_t address;
 	TACOperator op;
