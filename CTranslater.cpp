@@ -361,12 +361,12 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 		// 构建语句列表
 		if (tail)
 		{
-			tail->e.y = allocator.New<CNode>(CNodeKind::STAT_LIST, tail->e.y, current);
+			tail->e.y = allocator.New<CNode>(CNodeKind::STAT_PAIR, tail->e.y, current);
 			tail = tail->e.y;
 		}
 		else if (last)
 		{
-			tail = list = allocator.New<CNode>(CNodeKind::STAT_LIST, last, current);
+			tail = list = allocator.New<CNode>(CNodeKind::STAT_PAIR, last, current);
 		}
 		last = current;
 	}
@@ -410,7 +410,7 @@ CNode* CTranslater::CombineListIf(CNode* statement, CNode* condition, CNode* bod
 	auto ifStat = allocator.New<CNode>(CNodeKind::STAT_IF, condition, body, elseBody);
 	if (!statement)
 		return ifStat;
-	return allocator.New<CNode>(CNodeKind::STAT_LIST, statement, ifStat);
+	return allocator.New<CNode>(CNodeKind::STAT_PAIR, statement, ifStat);
 }
 
 CNode* CTranslater::GetNotExpression(CNode* expr)
@@ -513,7 +513,7 @@ void CTranslater::OnReduceList(ControlTreeNodeEx* node)
 	{
 		second->statement = TranslateRegion(condition, blocks[second->index], jumpAddr);
 	}
-	node->statement = allocator.New<CNode>(CNodeKind::STAT_LIST, first->statement, second->statement);
+	node->statement = allocator.New<CNode>(CNodeKind::STAT_PAIR, first->statement, second->statement);
 	node->condition = condition;
 }
 
@@ -545,7 +545,7 @@ void CTranslater::OnReducePoint2Loop(ControlTreeNodeEx* node)
 		assert(second->condition);
 		condition = second->condition;
 	}
-	node->statement = allocator.New<CNode>(CNodeKind::STAT_LIST, first->statement, second->statement);
+	node->statement = allocator.New<CNode>(CNodeKind::STAT_PAIR, first->statement, second->statement);
 	node->statement = NewDoWhile(condition, node->statement);
 }
 

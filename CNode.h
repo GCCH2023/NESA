@@ -10,6 +10,7 @@ enum class CNodeKind
 	EXPR_INTEGER,  // 整数常量
 
 	// 语句子类
+	STAT_PAIR,  // 语句对
 	STAT_LIST,  // 语句列表
 	STAT_EXPR,  // 表达式语句
 	STAT_CALL,  // 函数调用
@@ -98,6 +99,11 @@ struct CNode
 			CStr name;  // 函数名称
 			CNode* params;  // 参数链表
 		}f;
+		struct
+		{
+			CNode* head;
+			CNode* tail;
+		}list; // 语句列表
 	};
 	CNode* next = nullptr;
 
