@@ -62,11 +62,11 @@ void AnalyzeAXYOperandReference(TACOperand& operand, NodeSet& defs, NodeSet& use
 		int index = operand.GetValue();
 		if (index <= Nes::NesRegisters::Y)
 		{
-			if ((defs & (1 << index)) == 0)  // 使用前没有定值
+			if (!defs.Contains(index))  // 使用前没有定值
 			{
-				state |= (1 << index);
+				state += index;
 			}
-			uses |= 1 << index;  // 标记使用
+			uses += index;  // 标记使用
 		}
 	}
 }
@@ -92,18 +92,18 @@ void LiveVariableAnalysis::Initialize()
 					{
 						if ((defs & sub->flag) == 0)  // 使用前没有定值
 						{
-							blockSet->uses |= sub->flag & SUBF_PARAM;
+							blockSet->uses |= NodeSet(sub->flag & SUBF_PARAM);
 						}
-						uses |= sub->flag & SUBF_PARAM;  // 标记使用
+						uses |= NodeSet(sub->flag & SUBF_PARAM);  // 标记使用
 					}
 					auto rets = (sub->flag & SUBF_RETURN) >> 3;
 					if (rets)
 					{
-						if ((uses & rets) == 0)  // 定值前没有使用
+						if ((uses & NodeSet(rets)) == 0)  // 定值前没有使用
 						{
-							blockSet->defs |= rets;
+							blockSet->defs |= NodeSet(rets);
 						}
-						defs |= rets;  // 标记定值
+						defs |= NodeSet(rets);  // 标记定值
 					}
 					continue;
 				}
@@ -113,21 +113,23 @@ void LiveVariableAnalysis::Initialize()
 			AnalyzeAXYOperandReference(tac->z, uses, defs, blockSet->defs);
 			block->tag = blockSet;
 		}
-		/*s.Append(_T("基本块%04X，使用: ", block->GetStartAddress());
-		if (blockSet->uses & 1)
-			s.Append(_T("A, ");
-		if (blockSet->uses & 2)
-			s.Append(_T("X, ");
-		if (blockSet->uses & 4)
-			s.Append(_T("Y, ");
-		s.Append(_T(", 定义: ");
-		if (blockSet->defs & 1)
-			s.Append(_T("A, ");
-		if (blockSet->defs & 2)
-			s.Append(_T("X, ");
-		if (blockSet->defs & 4)
-			s.Append(_T("Y, ");
-		s.Append(_T("\n");*/
+		/*Sprintf<> s;
+		s.Append(_T("基本块%04X，使用: "), block->GetStartAddress());
+		if (blockSet->uses.Contains(Nes::NesRegisters::A))
+			s.Append(_T("A, "));
+		if (blockSet->uses.Contains(Nes::NesRegisters::X))
+			s.Append(_T("X, "));
+		if (blockSet->uses.Contains(Nes::NesRegisters::Y))
+			s.Append(_T("Y, "));
+		s.Append(_T(", 定义: "));
+		if (blockSet->defs.Contains(Nes::NesRegisters::A))
+			s.Append(_T("A, "));
+		if (blockSet->defs.Contains(Nes::NesRegisters::X))
+			s.Append(_T("X, "));
+		if (blockSet->defs.Contains(Nes::NesRegisters::Y))
+			s.Append(_T("Y, "));
+		s.Append(_T("\n"));
+		COUT << s.ToString();*/
 	}
 }
 

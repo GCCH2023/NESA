@@ -256,6 +256,9 @@ OStream& operator<<(OStream& out, const TAC* tac)
 	case TACOperator::BIT:
 		out << tac->x << _T(" BIT ") << tac->y;  // 暂时先这样
 		break;
+	case TACOperator::ARG:
+		out << _T("ARG ") << tac->x;  // 暂时先这样
+		break;
 	case TACOperator::CLI:
 	case TACOperator::SEI:
 	case TACOperator::CLD:

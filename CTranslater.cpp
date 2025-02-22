@@ -230,7 +230,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 									if (codes[i]->op != TACOperator::CALL)
 										throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
 									// 最后是 CALL 指令
-									auto call = allocator.New<CNode>(NewString(_T("sub_%04X"), codes[i]->z.GetValue()), params);
+									auto call = allocator.New<CNode>(NewString(_T("sub_%04X"), codes[i]->x.GetValue()), params);
 									current = call;
 									break;
 		}
@@ -238,7 +238,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 		{
 									 // 如果有参数，则鄙视 若干个 ARG 后面跟着一个 CALL
 									 // 直接出现 CALL，说明没有参数
-									 current = allocator.New<CNode>(NewString(_T("sub_%04X"), tac->z.GetValue()), (CNode*)nullptr);
+									 current = allocator.New<CNode>(NewString(_T("sub_%04X"), tac->x.GetValue()), (CNode*)nullptr);
 									 break;
 		}
 

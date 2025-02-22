@@ -18,7 +18,7 @@ protected:
 	// reg 指示是哪个寄存器
 	TAC* TranslateCmp(const Instruction& instruction, const Instruction& next, TACOperand reg);
 	// 添加一条三地址码
-	void AddTAC(TAC* tac);
+	void AddTAC(TAC* tac, Nes::Address address);
 	// 记录三地址码的开始索引
 	void SaveTACStart();
 	// 根据基本块中NES指令的索引，获取对应的三地址码

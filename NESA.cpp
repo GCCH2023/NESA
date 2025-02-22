@@ -29,25 +29,34 @@ void ParseNes(const TCHAR* rom)
 		s.Append(_T("中断向量处理程序 IRQ : 0x%04X\n"), db.GetInterruptIrqAddress());
 		COUT << s.ToString();
 
-		//NesAnalyzer nesa(db);
-		//nesa.Analyze();
+		NesAnalyzer nesa(db);
+		nesa.Analyze();
 
-		//for (auto sub : db.GetSubroutines())
-		//{
-		//	// 生成三地址码
-		//	TACTranslater ntt(db, allocator);
-		//	TACSubroutine* tacSub = ntt.Translate(sub);
-		//	/*COUT << _T("\n三地址码:\n");
-		//	tacSub->Dump();*/
+		for (auto sub : db.GetSubroutines())
+		{
+			// 生成三地址码
+			TACTranslater ntt(db, allocator);
+			TACSubroutine* tacSub = ntt.Translate(sub);
+			/*COUT << _T("\n三地址码:\n");
+			tacSub->Dump();*/
 
-		//	// 生成C代码
-		//	CTranslater translater(allocator, db);
-		//	auto func = translater.TranslateSubroutine(tacSub);
+			// 1. 进行窥孔优化
+			TACPeephole tacPh(db);
+			tacPh.Optimize(tacSub);
 
-		//	COUT << endl << func->name.c_str() << _T(":") << endl;
-		//	COUT << func->GetBody();
-		//}
-		//return;
+			// 2. 进行死代码消除
+			TACDeadCodeElimination tacDce(db);
+			tacDce.Optimize(tacSub);
+
+
+			// 3. 生成C代码
+			CTranslater translater(allocator, db);
+			auto func = translater.TranslateSubroutine(tacSub);
+
+			COUT << endl << func->name.c_str() << _T(":") << endl;
+			COUT << func->GetBody();
+		}
+		return;
 
 		NesSubroutineParser parser(db);
 		Nes::Address addr = db.GetInterruptResetAddress();

@@ -155,17 +155,17 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 								 {
 									 if (sub->flag & SUBF_PARAM_A)
 									 {
-										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterA));
+										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterA), i.GetAddress());
 										 ++argCount;
 									 }
 									 if (sub->flag & SUBF_PARAM_X)
 									 {
-										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterX));
+										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterX), i.GetAddress());
 										 ++argCount;
 									 }
 									 if (sub->flag & SUBF_PARAM_Y)
 									 {
-										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterY));
+										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterY), i.GetAddress());
 										 ++argCount;
 									 }
 									 tac->y.SetValue(argCount);
@@ -299,8 +299,7 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 		}
 		if (tac)
 		{
-			tac->address = i.GetAddress();
-			AddTAC(tac);
+			AddTAC(tac, i.GetAddress());
 			tac = nullptr;
 		}
 		last = &i;
@@ -324,9 +323,8 @@ TACOperand TACTranslater::GetOperand(const Instruction& instruction)
 								// 需要额外添加一条三地址码用于计算地址
 								int temp = this->tacSub->NewTemp(2);
 								TACOperand result(TACOperand::TEMP | temp);  // 创建一个临时变量保存计算结果地址
-								TAC* tuple = allocator.New<TAC>(TACOperator::ADD, result, RegisterX, instruction.GetOperandAddress());
-								tuple->address = instruction.GetAddress();
-								AddTAC(tuple);
+								TAC* tac = allocator.New<TAC>(TACOperator::ADD, result, RegisterX, instruction.GetOperandAddress());
+								AddTAC(tac, instruction.GetAddress());
 								// 然后返回临时变量作为地址
 								result.SetKind(TACOperand::MEMORY);
 								return result;
@@ -336,9 +334,8 @@ TACOperand TACTranslater::GetOperand(const Instruction& instruction)
 								// 需要额外添加一条三地址码用于计算地址
 								int temp = this->tacSub->NewTemp(2);
 								TACOperand result(TACOperand::TEMP | temp);  // 创建一个临时变量保存计算结果地址
-								TAC* tuple = allocator.New<TAC>(TACOperator::ADD, result, RegisterX, instruction.GetOperandAddress());
-								tuple->address = instruction.GetAddress();
-								AddTAC(tuple);
+								TAC* tac = allocator.New<TAC>(TACOperator::ADD, result, RegisterX, instruction.GetOperandAddress());
+								AddTAC(tac, instruction.GetAddress());
 								// 然后返回临时变量
 								result.SetKind(TACOperand::MEMORY);
 								return result;
@@ -354,9 +351,8 @@ TACOperand TACTranslater::GetOperand(const Instruction& instruction)
 								int temp = this->tacSub->NewTemp(2);
 								TACOperand result(TACOperand::TEMP | temp);  // 创建一个临时变量保存计算结果地址
 								TACOperand zeroPageAddr(TACOperand::MEMORY | instruction.GetByte());  // 从零页指定2字节单元取出地址
-								TAC* tuple = allocator.New<TAC>(TACOperator::ADD, result, RegisterY, zeroPageAddr);
-								tuple->address = instruction.GetAddress();
-								AddTAC(tuple);
+								TAC* tac = allocator.New<TAC>(TACOperator::ADD, result, RegisterY, zeroPageAddr);
+								AddTAC(tac, instruction.GetAddress());
 								// 然后返回临时变量作为地址
 								result.SetKind(TACOperand::MEMORY);
 								return result;
@@ -376,7 +372,7 @@ TAC* TACTranslater::TranslateCmp(const Instruction& instruction, const Instructi
 {
 	TCHAR buffer[128];
 	// 首先用一条临时三地址码占位
-	auto tuple = allocator.New<TAC>(TACOperator::NOP, TACOperand(), reg, GetOperand(instruction));
+	auto tac = allocator.New<TAC>(TACOperator::NOP, TACOperand(), reg, GetOperand(instruction));
 	// 要求下一条指令必须是条件跳转指令
 	auto& entry = next.GetEntry();
 	if ((entry.kind & OpKind::ConditionalJump) == 0)
@@ -387,28 +383,29 @@ TAC* TACTranslater::TranslateCmp(const Instruction& instruction, const Instructi
 	switch (entry.opcode)
 	{
 	case Opcode::Bcs:
-		tuple->op = TACOperator::IFGEQ;
+		tac->op = TACOperator::IFGEQ;
 		break;
 	case Opcode::Beq:
-		tuple->op = TACOperator::IFEQ;
+		tac->op = TACOperator::IFEQ;
 	case Opcode::Bne:
-		tuple->op = TACOperator::IFNEQ;
+		tac->op = TACOperator::IFNEQ;
 		break;
 	case Opcode::Bcc:
-		tuple->op = TACOperator::IFLESS;
+		tac->op = TACOperator::IFLESS;
 		break;
 	//case Opcode::Bvc:
 	//case Opcode::Bvs:
 	default:
 		throw "未实现";
 	}
-	tuple->z = TACOperand(TACOperand::ADDRESS | next.GetConditionalJumpAddress());
-	return tuple;
+	tac->z = TACOperand(TACOperand::ADDRESS | next.GetConditionalJumpAddress());
+	return tac;
 }
 
-void TACTranslater::AddTAC(TAC* tac)
+void TACTranslater::AddTAC(TAC* tac, Nes::Address address)
 {
 	// this->tacSub->AddTAC(tac);
+	tac->address = address;
 	this->tacBlock->AddTAC(tac);
 }
 
