@@ -35,6 +35,10 @@ struct ControlTreeNodeEx : BasicBlock
 	CNode* condition;
 };
 
+// 将基本块构成的控制流图翻译为C语句
+// 但是需要注意的是：控制流图中的边无法表示代码的前后顺序
+// 比如 a -> b, b -> a, 可以归约为 两种循环，但是从指令来看
+// 必然只有一种，这两条边中只可能有一条回边
 class CTranslater
 {
 public:
