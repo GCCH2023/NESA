@@ -126,6 +126,10 @@ protected:
 	CStr NewString(const CStr format, ...);
 	// 创建一个do while 节点
 	CNode* NewDoWhile(CNode* condition, CNode* body);
+	// 创建一个列表语句节点
+	CNode* NewStatementList(CNode* head, CNode* tail);
+	// 创建一个只有两条语句的语句列表节点
+	CNode* NewStatementPair(CNode* first, CNode* second);
 protected:
 	NesDataBase& db;
 	Allocator& allocator;  // 用于创建输出结果

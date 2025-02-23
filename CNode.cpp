@@ -58,15 +58,9 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 {
 	switch (obj->kind)
 	{
-	case CNodeKind::STAT_PAIR:
-	{
-								 DumpCNode(os, obj->e.x, indent);
-								 DumpCNode(os, obj->e.y, indent);
-								 return os;
-	}
 	case CNodeKind::STAT_LIST:
 	{
-								 for (auto n = obj->list.head; n != obj->list.tail; n = n->next)
+								 for (auto n = obj->list.head; n; n = n->next)
 									 DumpCNode(os, n, indent);
 								 return os;
 	}

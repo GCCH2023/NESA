@@ -160,9 +160,8 @@ CNode* CTranslater::ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac,
 
 CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock, uint32_t& jumpAddr)
 {
-	CNode* current = nullptr, *last = nullptr, *tail = nullptr;
+	CNode* current = nullptr, *head = nullptr, *tail = nullptr;
 	CNode* expr = nullptr;
-	CNode* list = nullptr;
 	auto& codes = tacBlock->GetCodes();
 	for (size_t i = 0; i < codes.size(); ++i)
 	{
@@ -359,22 +358,19 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 		}
 		}
 		// 构建语句列表
-		if (tail)
+		if (!head)
 		{
-			tail->e.y = allocator.New<CNode>(CNodeKind::STAT_PAIR, tail->e.y, current);
-			tail = tail->e.y;
+			head = tail = current;
 		}
-		else if (last)
+		else
 		{
-			tail = list = allocator.New<CNode>(CNodeKind::STAT_PAIR, last, current);
+			tail->next = current;
+			tail = current;
 		}
-		last = current;
 	}
-	auto ret = list ? list : current;
 	Nes::Address firstAddr = codes.empty() ? tacBlock->GetStartAddress() : codes[0]->address;
+	auto ret = NewStatementList(head, tail);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
 	blockStatements[firstAddr] = ret;  // 记录下这个基本块对应的地址及语句
-	if (!ret)
-		ret = noneStatement;  // 可能有一个基本块只由一条跳转指令构成
 	return ret;
 }
 
@@ -410,7 +406,7 @@ CNode* CTranslater::CombineListIf(CNode* statement, CNode* condition, CNode* bod
 	auto ifStat = allocator.New<CNode>(CNodeKind::STAT_IF, condition, body, elseBody);
 	if (!statement)
 		return ifStat;
-	return allocator.New<CNode>(CNodeKind::STAT_PAIR, statement, ifStat);
+	return NewStatementPair(statement, ifStat);
 }
 
 CNode* CTranslater::GetNotExpression(CNode* expr)
@@ -479,6 +475,22 @@ CNode* CTranslater::NewDoWhile(CNode* condition, CNode* body)
 	return allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, body);
 }
 
+CNode* CTranslater::NewStatementList(CNode* head, CNode* tail)
+{
+	if (!head)
+		return noneStatement;
+	if (head == tail)
+		return head;
+	return allocator.New<CNode>(CNodeKind::STAT_LIST, head, tail);
+}
+
+CNode* CTranslater::NewStatementPair(CNode* first, CNode* second)
+{
+	assert(first->next == nullptr);
+	first->next = second;
+	return NewStatementList(first, second);
+}
+
 // 当要将控制流图中的一个自循环节点归约时
 // a -> a
 void CTranslater::OnReduceSelfLoop(ControlTreeNodeEx* node)
@@ -513,7 +525,7 @@ void CTranslater::OnReduceList(ControlTreeNodeEx* node)
 	{
 		second->statement = TranslateRegion(condition, blocks[second->index], jumpAddr);
 	}
-	node->statement = allocator.New<CNode>(CNodeKind::STAT_PAIR, first->statement, second->statement);
+	node->statement = NewStatementPair(first->statement, second->statement);
 	node->condition = condition;
 }
 
@@ -545,7 +557,7 @@ void CTranslater::OnReducePoint2Loop(ControlTreeNodeEx* node)
 		assert(second->condition);
 		condition = second->condition;
 	}
-	node->statement = allocator.New<CNode>(CNodeKind::STAT_PAIR, first->statement, second->statement);
+	node->statement = NewStatementPair(first->statement, second->statement);
 	node->statement = NewDoWhile(condition, node->statement);
 }
 
