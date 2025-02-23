@@ -261,19 +261,24 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 			continue;
 		case TACOperator::GOTO:
 		{
-								  // goto 在控制流图中对应一条边，可能被处理成循环结构，也可能就是对应goto语句，
+								  // 新：当作条件总是真的跳转语句来翻译
+								  pCondition = allocator.New<CNode>(1);
+								  jumpAddr = tac->z.GetValue();
+								  continue;
+
+								  // 旧： goto 在控制流图中对应一条边，可能被处理成循环结构，也可能就是对应goto语句，
 								  // 还不知道该怎么处理
-								  if (tac->z.GetValue() == tac->address)
-								  {
-									  // 跳转到自己的语句翻译为 while (1);
-									  //expr = allocator.New<CInteger>(1);
-									  //current = allocator.New<CWhileStatement>(expr, noneStatement);
-									  current = noneStatement;
-									  pCondition = allocator.New<CNode>(1);
-									  break;
-								  }
-								  auto label = GetLabelName(tac->z.GetValue());
-								  current = allocator.New<CNode>(CNodeKind::STAT_GOTO, label);
+								  //if (tac->z.GetValue() == tac->address)
+								  //{
+									 // // 跳转到自己的语句翻译为 while (1);
+									 // //expr = allocator.New<CInteger>(1);
+									 // //current = allocator.New<CWhileStatement>(expr, noneStatement);
+									 // current = noneStatement;
+									 // pCondition = allocator.New<CNode>(1);
+									 // break;
+								  //}
+								  //auto label = GetLabelName(tac->z.GetValue());
+								  //current = allocator.New<CNode>(CNodeKind::STAT_GOTO, label);
 								  break;
 		}
 		case TACOperator::BIT:
@@ -470,7 +475,8 @@ CStr CTranslater::NewString(const CStr format, ...)
 CNode* CTranslater::NewDoWhile(CNode* condition, CNode* body)
 {
 	// do ; while (condition) => while (condition) ;
-	if (body == noneStatement)
+	// 没有循环体或者条件总是为真，则转换为 while 循环
+	if (body == noneStatement || condition->kind == CNodeKind::EXPR_INTEGER)
 		return allocator.New<CNode>(CNodeKind::STAT_WHILE, condition, body);
 	return allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, body);
 }
@@ -753,13 +759,13 @@ Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType t
 		OnReduceIfOr(ctNode);
 		break;
 	}
-	//COUT << "归约 " << ToString(type) << " " << parent << " : ";
-	//for (auto n : children)
-	//	COUT << n << ", ";
-	//COUT << endl;
-	//ctNode->Dump();
-	//COUT << ctNode->statement;
-	//COUT << endl;
+	COUT << "归约 " << ToString(type) << " " << parent << " : ";
+	for (auto n : children)
+		COUT << n << ", ";
+	COUT << endl;
+	ctNode->Dump();
+	COUT << ctNode->statement;
+	COUT << endl;
 	return parent;
 }
 
@@ -1021,6 +1027,11 @@ NodeSet CTranslater::CAnalysis(NodeSet N)
 					  Node succ = ctrees[n]->Succ()[0];
 					  if (ctrees[succ]->GetPredCount() == 1)
 					  {
+						  if (succ == n)
+						  {
+							  ReduceRegionSelfLoop(N, n);
+							  goto NEXT;
+						  }
 						  ReduceRegionList(N, n, succ);
 						  // 下一次循环
 						  goto NEXT;
@@ -1095,6 +1106,7 @@ NodeSet CTranslater::CAnalysis(NodeSet N)
 		}
 
 	NEXT:
+		// DumpCurrentCFG(N);
 		;
 	}
 	return N;

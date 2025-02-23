@@ -112,7 +112,8 @@ void ParseNes(const TCHAR* rom)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
+	ParseNes(_T(R"(D:\FC\ÒÆ¶¯.nes)"));
+	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
 	system("pause");
 	return 0;
 }
