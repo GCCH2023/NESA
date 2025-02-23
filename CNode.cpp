@@ -145,6 +145,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	}
 	case CNodeKind::STAT_RETURN:
 	{
+								   Indent(os, indent);
 								   if (obj->e.x)
 									   return os << _T("return ") << obj->e.x << _T(";\n");
 								   else
@@ -243,4 +244,84 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 OStream& operator<<(OStream& os, const CNode* obj)
 {
 	return DumpCNode(os, obj, 0);
+}
+
+OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)
+{
+	switch (obj->kind)
+	{
+	case CNodeKind::STAT_LIST:
+	{
+								 Indent(os, indent);
+								 os << _T("list:\n");
+								 Indent(os, indent);
+								 os << _T("{\n");
+								 for (auto n = obj->list.head; n; n = n->next)
+									 DumpCNodeStructures(os, n, indent + 1);
+								 Indent(os, indent);
+								 os << _T("}\n");
+								 return os;
+	}
+	case CNodeKind::STAT_EXPR:
+	{
+								 Indent(os, indent);
+								 return os << _T("expr\n");
+	}
+	case CNodeKind::STAT_WHILE:
+	{
+								  Indent(os, indent);
+								  os << _T("while:\n");
+								  DumpCNodeStructures(os, obj->s.then, indent + 1);
+								  return os;
+	}
+	case CNodeKind::STAT_DO_WHILE:
+	{
+									 Indent(os, indent);
+									 os << _T("do while:\n");
+									 DumpCNodeStructures(os, obj->e.y, indent + 1);
+									 return os;
+	}
+	case CNodeKind::STAT_IF:
+	{
+							   Indent(os, indent);
+							   os << _T("if:\n");
+							   DumpCNodeStructures(os, obj->s.then, indent + 1);
+							   if (obj->s._else)
+							   {
+								   Indent(os, indent);
+								   os << _T("else:\n");
+								   DumpCNodeStructures(os, obj->s._else, indent + 1);
+							   }
+							   return os;
+	}
+	case CNodeKind::STAT_GOTO:
+	{
+								 Indent(os, indent);
+								 os << _T("goto\n");
+								 return os;
+	}
+	case CNodeKind::STAT_LABEL:
+	{
+								  Indent(os, indent);
+								  os << _T("label:\n");
+								  DumpCNodeStructures(os, obj->l.body, indent);
+								  return os;
+	}
+	case CNodeKind::STAT_NONE:
+	{
+								 Indent(os, indent);
+								 return os << _T("null\n");
+	}
+	case CNodeKind::STAT_CALL:
+	{
+								 Indent(os, indent);
+								 return os << _T("call\n");
+	}
+	case CNodeKind::STAT_RETURN:
+	{
+								   Indent(os, indent);
+								   return os << _T("return\n");
+	}
+	}
+	return os;
 }

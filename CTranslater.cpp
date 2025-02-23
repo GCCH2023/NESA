@@ -487,6 +487,31 @@ CNode* CTranslater::NewStatementList(CNode* head, CNode* tail)
 CNode* CTranslater::NewStatementPair(CNode* first, CNode* second)
 {
 	assert(first->next == nullptr);
+	// 尝试优化
+	// 在这里优化，可能有一个问题：有的地方可能引用了其中一个指针
+	// 合并后，被丢弃了，引用失效。
+	// 但是这个问题也不算是问题，因为区域归约后，子区域一般不访问了
+	if (first->kind == CNodeKind::STAT_LIST)
+	{
+		if (second->kind == CNodeKind::STAT_LIST)
+		{
+			// 合并到末尾
+			first->list.tail->next = second->list.head;
+			first->list.tail = second->list.tail;
+			return first;
+		}
+		// 添加到末尾
+		first->list.tail->next = second;
+		first->list.tail = second;
+		return first;
+	}
+	else if (second->kind == CNodeKind::STAT_LIST)
+	{
+		// 添加到开头
+		first->next = second->list.head;
+		second->list.head = first;
+		return second;
+	}
 	first->next = second;
 	return NewStatementList(first, second);
 }

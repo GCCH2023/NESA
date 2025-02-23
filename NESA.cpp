@@ -87,6 +87,9 @@ void ParseNes(const TCHAR* rom)
 		auto func = translater.TranslateSubroutine(tacSub);
 		COUT << func->GetBody();
 
+		COUT << _T("\n语法树结构:\n");
+		DumpCNodeStructures(COUT, func->GetBody(), 0);
+
 		// 分析定值到达
 		//ReachingDefinition rd(db, allocator);
 		//rd.Analyze(tacSub);
