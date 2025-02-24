@@ -98,12 +98,12 @@ protected:
 	void InitializeBaseControlTree(NodeSet N);
 
 protected:
-	void OnReduceSelfLoop(ControlTreeNodeEx* node);
-	void OnReduceList(ControlTreeNodeEx* node);
-	void OnReducePoint2Loop(ControlTreeNodeEx* node);
-	void OnReduceIf(ControlTreeNodeEx* node);
-	void OnReduceIfElse(ControlTreeNodeEx* node);
-	void OnReduceIfOr(ControlTreeNodeEx* node);
+	void OnReduceSelfLoop(Node node);
+	void OnReduceList(Node first, Node second);
+	void OnReducePoint2Loop(Node first, Node second);
+	void OnReduceIf(Node _if, Node then);
+	void OnReduceIfElse(Node _if, Node then, Node _else);
+	void OnReduceIfOr(Node _if, Node then, Node _else);
 protected:
 	// 将三地址码操作数转换为C表达式
 	CNode* GetExpression(TACOperand& operand);
