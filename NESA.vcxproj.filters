@@ -129,14 +129,20 @@
     <ClInclude Include="TACOptimizer.h">
       <Filter>IR</Filter>
     </ClInclude>
-    <ClInclude Include="ASTManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="TACDeadCodeElimination.h">
       <Filter>IR</Filter>
     </ClInclude>
     <ClInclude Include="TACPeephole.h">
       <Filter>IR</Filter>
+    </ClInclude>
+    <ClInclude Include="CTreeOptimizer.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="CTreeVisitor.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="ASTManager.h">
+      <Filter>C</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -209,14 +215,20 @@
     <ClCompile Include="TACOptimizer.cpp">
       <Filter>IR</Filter>
     </ClCompile>
-    <ClCompile Include="ASTManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="TACDeadCodeElimination.cpp">
       <Filter>IR</Filter>
     </ClCompile>
     <ClCompile Include="TACPeephole.cpp">
       <Filter>IR</Filter>
+    </ClCompile>
+    <ClCompile Include="CTreeOptimizer.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="CTreeVisitor.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="ASTManager.cpp">
+      <Filter>C</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

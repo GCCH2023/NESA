@@ -15,6 +15,7 @@ using namespace Nes;
 #include "NesAnalyzer.h"
 #include "TACPeephole.h"
 #include "TACDeadCodeElimination.h"
+#include "CTreeOptimizer.h"
 
 void ParseNes(const TCHAR* rom)
 {
@@ -90,6 +91,13 @@ void ParseNes(const TCHAR* rom)
 		COUT << _T("\n语法树结构:\n");
 		DumpCNodeStructures(COUT, func->GetBody(), 0);
 
+		// 优化C代码结构
+		CTreeOptimizer ctreeOptimizer;
+		ctreeOptimizer.Optimize(func->GetBody());
+		COUT << _T("\n优化语法树结构后:\n");
+		DumpCNodeStructures(COUT, func->GetBody(), 0);
+		COUT << endl << func->GetBody();
+
 		// 分析定值到达
 		//ReachingDefinition rd(db, allocator);
 		//rd.Analyze(tacSub);
@@ -112,8 +120,8 @@ void ParseNes(const TCHAR* rom)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	ParseNes(_T(R"(D:\FC\移动.nes)"));
-	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
+	// ParseNes(_T(R"(D:\FC\移动.nes)"));
+	ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
 	system("pause");
 	return 0;
 }

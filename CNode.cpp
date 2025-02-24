@@ -236,6 +236,10 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 									   return os << obj->e.x << _T(" <= ") << obj->e.y;
 	}
+	case CNodeKind::EXPR_INDEX:
+	{
+								  return os << obj->e.x << _T("[") << obj->e.y << _T("]");
+	}
 	default:
 		throw Exception(_T("输出节点字符串: 未实现的节点类型"));
 	}

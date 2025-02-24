@@ -149,6 +149,7 @@
     <ClInclude Include="CNode.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="CTranslater.h" />
+    <ClInclude Include="CTreeVisitor.h" />
     <ClInclude Include="DataFlowAnalyzer.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="Instruction.h" />
@@ -173,12 +174,14 @@
     <ClInclude Include="TACPeephole.h" />
     <ClInclude Include="TACTranslater.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="CTreeOptimizer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ASTManager.cpp" />
     <ClCompile Include="Cartridge.cpp" />
     <ClCompile Include="CNode.cpp" />
     <ClCompile Include="CTranslater.cpp" />
+    <ClCompile Include="CTreeVisitor.cpp" />
     <ClCompile Include="DataFlowAnalyzer.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Instruction.cpp" />
@@ -206,6 +209,7 @@
     <ClCompile Include="TACOptimizer.cpp" />
     <ClCompile Include="TACPeephole.cpp" />
     <ClCompile Include="TACTranslater.cpp" />
+    <ClCompile Include="CTreeOptimizer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

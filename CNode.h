@@ -1,13 +1,10 @@
 #pragma once
 
+// !!!增加节点类型时，注意修改CNode中的判断类型函数
 enum class CNodeKind
 {
 	NONE,  // 未确定
 	NORMAL,  // 普通语句
-
-	// 表达式子类
-	EXPR_VARIABLE,  // 变量
-	EXPR_INTEGER,  // 整数常量
 
 	// 语句子类
 	STAT_LIST,  // 语句列表
@@ -20,6 +17,10 @@ enum class CNodeKind
 	STAT_GOTO,
 	STAT_LABEL,
 	STAT_RETURN,
+
+	// 表达式子类
+	EXPR_VARIABLE,  // 变量
+	EXPR_INTEGER,  // 整数常量
 
 	EXPR_ADD,  // 加法
 	EXPR_SUB,  // 减法
@@ -37,7 +38,7 @@ enum class CNodeKind
 	EXPR_LESS,  // 小于 <
 	EXPR_LESS_EQUAL,  // 小于等于 <=
 
-	EXPR_INDEX,  // 索引 z = x[y]
+	EXPR_INDEX,  // 索引 x[y]
 	EXPR_REF,  // 解引用 *p
 	EXPR_ADDR,  // 取地址 &a
 
@@ -86,13 +87,13 @@ struct CNode
 			CNode* x;
 			CNode* y;
 			CNode* z;
-		}e;  // 表达式或语句, 如果是语句，则x是条件表达式, y 是 then 语句，z是else 语句
+		}e;  // 表达式的三个操作数
 		struct
 		{
 			CNode* condition;
 			CNode* then;
 			CNode* _else;
-		}s;
+		}s;  // if, while, do while
 		struct
 		{
 			CStr name;  // 函数名称
@@ -118,6 +119,11 @@ struct CNode
 	CNode(CNodeKind kind, CNode* x = nullptr, CNode* y = nullptr, CNode* z = nullptr);
 	// 创建goto语句
 	CNode(CNodeKind kind, CStr name);
+
+	// 是否是语句节点
+	bool IsStatement() const { return kind >= CNodeKind::STAT_LIST && kind <= CNodeKind::STAT_RETURN; }
+	// 是否是表达式节点
+	bool IsExpression() const { return kind >= CNodeKind::EXPR_VARIABLE && kind <= CNodeKind::EXPR_NOT; }
 };
 
 class Function
