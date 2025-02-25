@@ -63,6 +63,9 @@ void CTreeVisitor::VisitChildren(CNode* node)
 		OnVisit(node->l.body);
 		break;
 	case CNodeKind::STAT_RETURN:
+		if (node->e.x)
+			OnVisit(node->e.x);
+		break;
 	case CNodeKind::EXPR_REF:
 	case CNodeKind::EXPR_ADDR:
 	case CNodeKind::EXPR_NOT:

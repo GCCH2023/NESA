@@ -60,7 +60,7 @@ void ParseNes(const TCHAR* rom)
 		//return;
 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = db.GetInterruptResetAddress();
+		Nes::Address addr = 0xC06E; // db.GetInterruptResetAddress();
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
 		parser.Dump();
@@ -94,7 +94,7 @@ void ParseNes(const TCHAR* rom)
 		// 优化C代码结构
 		CTreeOptimizer ctreeOptimizer;
 		ctreeOptimizer.Optimize(func->GetBody());
-		COUT << _T("\n优化语法树结构后:\n");
+		//COUT << _T("\n优化语法树结构后:\n");
 		DumpCNodeStructures(COUT, func->GetBody(), 0);
 		COUT << endl << func->GetBody();
 
@@ -120,8 +120,8 @@ void ParseNes(const TCHAR* rom)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	// ParseNes(_T(R"(D:\FC\移动.nes)"));
-	ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
+	ParseNes(_T(R"(D:\FC\移动.nes)"));
+	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
 	system("pause");
 	return 0;
 }
