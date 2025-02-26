@@ -144,6 +144,12 @@
     <ClInclude Include="ASTManager.h">
       <Filter>C</Filter>
     </ClInclude>
+    <ClInclude Include="Type.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeManager.h">
+      <Filter>C</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -228,6 +234,12 @@
       <Filter>C</Filter>
     </ClCompile>
     <ClCompile Include="ASTManager.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="Type.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="TypeManager.cpp">
       <Filter>C</Filter>
     </ClCompile>
   </ItemGroup>

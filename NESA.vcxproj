@@ -175,6 +175,8 @@
     <ClInclude Include="TACTranslater.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="CTreeOptimizer.h" />
+    <ClInclude Include="Type.h" />
+    <ClInclude Include="TypeManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ASTManager.cpp" />
@@ -210,6 +212,8 @@
     <ClCompile Include="TACPeephole.cpp" />
     <ClCompile Include="TACTranslater.cpp" />
     <ClCompile Include="CTreeOptimizer.cpp" />
+    <ClCompile Include="Type.cpp" />
+    <ClCompile Include="TypeManager.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

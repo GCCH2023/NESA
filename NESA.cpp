@@ -16,9 +16,11 @@ using namespace Nes;
 #include "TACPeephole.h"
 #include "TACDeadCodeElimination.h"
 #include "CTreeOptimizer.h"
+#include "TypeManager.h"
 
 void ParseNes(const TCHAR* rom)
 {
+	COUT << sizeof(Type) << endl;
 	Allocator allocator;
 	try
 	{
@@ -60,7 +62,7 @@ void ParseNes(const TCHAR* rom)
 		//return;
 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = 0xC06E; // db.GetInterruptResetAddress();
+		Nes::Address addr = 0xC68B; // db.GetInterruptResetAddress();
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
 		parser.Dump();
@@ -86,16 +88,16 @@ void ParseNes(const TCHAR* rom)
 		// 生成C代码
 		CTranslater translater(allocator, db);
 		auto func = translater.TranslateSubroutine(tacSub);
-		COUT << func->GetBody();
+		//COUT << func->GetBody();
 
-		COUT << _T("\n语法树结构:\n");
-		DumpCNodeStructures(COUT, func->GetBody(), 0);
+		//COUT << _T("\n语法树结构:\n");
+		//DumpCNodeStructures(COUT, func->GetBody(), 0);
 
 		// 优化C代码结构
 		CTreeOptimizer ctreeOptimizer;
 		ctreeOptimizer.Optimize(func->GetBody());
 		//COUT << _T("\n优化语法树结构后:\n");
-		DumpCNodeStructures(COUT, func->GetBody(), 0);
+		//DumpCNodeStructures(COUT, func->GetBody(), 0);
 		COUT << endl << func->GetBody();
 
 		// 分析定值到达
@@ -118,10 +120,20 @@ void ParseNes(const TCHAR* rom)
 	}
 }
 
+void TypeTest()
+{
+	Allocator allocator;
+	TypeManager tm(allocator);
+	Type* a = tm.NewArray(tm.Int, 5);
+	Type* b = tm.NewArray(tm.Int, 5);
+	COUT << boolalpha << (a == b) << endl;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
-	ParseNes(_T(R"(D:\FC\移动.nes)"));
+	// ParseNes(_T(R"(D:\FC\移动.nes)"));
 	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
+	TypeTest();
 	system("pause");
 	return 0;
 }
