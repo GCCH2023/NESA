@@ -9,6 +9,7 @@ public:
 	~TACPeephole();
 
 	virtual void Optimize(TACSubroutine* subroutine) override;
-
+	// 重置算法用到的数据
+	void Reset();
 };
 

@@ -76,12 +76,11 @@ Type* TypeManager::NewEnum(const TCHAR* name /*= nullptr*/, Enumerator* members 
 	return type;
 }
 
-Type* TypeManager::NewFunction(Type* returnType /*= nullptr*/, Parameter* params /*= nullptr*/)
+Type* TypeManager::NewFunction(Type* functionType)
 {
-	Type type(TypeKind::Function);
-	type.f.returnType = returnType;
-	type.f.params = params;
-	return GetType(&type);
+	assert(functionType);
+	assert(functionType->GetKind() == TypeKind::Function);
+	return GetType(functionType);
 }
 
 Type* TypeManager::GetType(Type* type)
@@ -89,7 +88,22 @@ Type* TypeManager::GetType(Type* type)
 	auto it = types.find(type);
 	if (it != types.end())
 		return *it;
-	auto t = allocator.New<Type>(type);
+	auto t = allocator.New<Type>(type->GetKind());
+	switch (t->GetKind())
+	{
+	case TypeKind::Function:
+	{
+							   t->f.returnType = type->f.returnType;
+							   // 需要分配参数对象
+							   for (auto p = type->f.params; p; p = p->next)
+							   {
+								   auto pa = allocator.New<Parameter>(p);
+								   t->AddParameter(pa);
+							   }
+							   break;
+	}
+
+	}
 	types.insert(t);
 	return t;
 }

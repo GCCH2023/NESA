@@ -6,6 +6,8 @@
 class TACSubroutine;
 class NesDataBase;
 class Function;
+class TypeManager;
+struct Type;
 
 struct ControlTreeNodeEx : BasicBlock
 {
@@ -42,7 +44,7 @@ struct ControlTreeNodeEx : BasicBlock
 class CTranslater
 {
 public:
-	CTranslater(Allocator& allocator, NesDataBase& db);
+	CTranslater(Allocator& allocator, NesDataBase& db, TypeManager& typeManager);
 	~CTranslater();
 
 	// 翻译子程序为C代码
@@ -134,12 +136,19 @@ protected:
 	CNode* NewStatementList(CNode* head, CNode* tail);
 	// 创建一个只有两条语句的语句列表节点
 	CNode* NewStatementPair(CNode* first, CNode* second);
+	// 创建一个空语句
+	CNode* NewNoneStatement();
+protected:  // C函数处理
+	// 创建C函数的类型
+	void SetFunctionType();
+	// 创建一个表示AXY寄存器的结构体类型
+	Type* GetAXYType();
 protected:
 	NesDataBase& db;
 	Allocator& allocator;  // 用于创建输出结果
 	Function* function;
 	TACSubroutine* subroutine;
-
+	TypeManager& typeManager;
 protected:
 	// 调试使用
 	// 输出所有基本块构成的控制流图
@@ -157,7 +166,6 @@ private:
 	int controlTreeNodeCount;
 
 	CNode* registers[5];  // AXYPSP 5个寄存器
-	CNode* noneStatement;  // 空语句
 	std::unordered_map<Nes::Address, CStr> labels;  // 地址到标签语句的映射
 	//std::vector<Nes::Address> labels;
 	std::unordered_map<Nes::Address, CNode*> blockStatements;  // 地址到基本块对应的语句的映射

@@ -45,8 +45,8 @@ public:
 	Type* NewUnion(const TCHAR* name = nullptr, Field* fileds = nullptr);
 	// 创建一个枚举
 	Type* NewEnum(const TCHAR* name = nullptr, Enumerator* members = nullptr);
-	// 创建一个函数
-	Type* NewFunction(Type* returnType = nullptr, Parameter* params = nullptr);
+	// 创建一个函数，函数类型是可以复用的
+	Type* NewFunction(Type* functionType);
 
 protected:
 	// 如果存在指定类型，则返回已有的，否则创建新的返回

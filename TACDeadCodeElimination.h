@@ -11,5 +11,6 @@ public:
 
 	virtual void Optimize(TACSubroutine* subroutine) override;
 
+	void Reset();
 };
 

@@ -16,6 +16,11 @@ void CTreeOptimizer::Optimize(CNode* root)
 	Visit(root);
 }
 
+void CTreeOptimizer::Reset()
+{
+	visited.clear();
+}
+
 // 使用后序遍历会比较好
 void CTreeOptimizer::OnVisit(CNode* node)
 {

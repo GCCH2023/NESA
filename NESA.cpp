@@ -17,6 +17,7 @@ using namespace Nes;
 #include "TACDeadCodeElimination.h"
 #include "CTreeOptimizer.h"
 #include "TypeManager.h"
+#include "Function.h"
 
 void ParseNes(const TCHAR* rom)
 {
@@ -32,61 +33,64 @@ void ParseNes(const TCHAR* rom)
 		s.Append(_T("中断向量处理程序 IRQ : 0x%04X\n"), db.GetInterruptIrqAddress());
 		COUT << s.ToString();
 
-		//NesAnalyzer nesa(db);
-		//nesa.Analyze();
+		TypeManager typeManager(allocator);
+		TACTranslater ntt(db, allocator);
+		TACPeephole tacPh(db);
+		TACDeadCodeElimination tacDce(db);
+		CTranslater translater(allocator, db, typeManager);
+		CTreeOptimizer ctreeOptimizer;
 
-		//for (auto sub : db.GetSubroutines())
-		//{
-		//	// 生成三地址码
-		//	TACTranslater ntt(db, allocator);
-		//	TACSubroutine* tacSub = ntt.Translate(sub);
-		//	/*COUT << _T("\n三地址码:\n");
-		//	tacSub->Dump();*/
+		NesAnalyzer nesa(db);
+		nesa.Analyze();
 
-		//	// 1. 进行窥孔优化
-		//	TACPeephole tacPh(db);
-		//	tacPh.Optimize(tacSub);
+		for (auto sub : db.GetSubroutines())
+		{
+			// 生成三地址码
+			TACSubroutine* tacSub = ntt.Translate(sub);
+			/*COUT << _T("\n三地址码:\n");
+			tacSub->Dump();*/
 
-		//	// 2. 进行死代码消除
-		//	TACDeadCodeElimination tacDce(db);
-		//	tacDce.Optimize(tacSub);
+			// 1. 进行窥孔优化
+			tacPh.Optimize(tacSub);
 
+			// 2. 进行死代码消除
+			tacDce.Optimize(tacSub);
 
-		//	// 3. 生成C代码
-		//	CTranslater translater(allocator, db);
-		//	auto func = translater.TranslateSubroutine(tacSub);
+			// 3. 生成C代码
+			auto func = translater.TranslateSubroutine(tacSub);
 
-		//	COUT << endl << func->name.c_str() << _T(":") << endl;
-		//	COUT << func->GetBody();
-		//}
-		//return;
+			// 4. 优化C代码
+			ctreeOptimizer.Optimize(func->GetBody());
+
+			// 5. 输出函数代码
+			COUT << endl;
+			func->DumpDeclaration();
+			COUT << endl << func->GetBody();
+		}
+		return;
 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = 0xC68B; // db.GetInterruptResetAddress();
+		Nes::Address addr = 0x90CC; // db.GetInterruptResetAddress();
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
 		parser.Dump();
 
 		// 生成三地址码
-		TACTranslater ntt(db, allocator);
 		TACSubroutine* tacSub = ntt.Translate(subroutine);
 		COUT << _T("\n三地址码:\n");
 		tacSub->Dump();
 
 		// 对三地址码进行窥孔优化
-		TACPeephole ph(db);
-		ph.Optimize(tacSub);
+		tacPh.Optimize(tacSub);
 		COUT << _T("\n窥孔优化后:\n");
 		tacSub->Dump();
 
 		// 对三地址码进行死代码消除
-		TACDeadCodeElimination dce(db);
-		dce.Optimize(tacSub);
+		tacDce.Optimize(tacSub);
 		COUT << _T("\n死代码消除后:\n");
 		tacSub->Dump();
 
 		// 生成C代码
-		CTranslater translater(allocator, db);
 		auto func = translater.TranslateSubroutine(tacSub);
 		//COUT << func->GetBody();
 
@@ -94,7 +98,6 @@ void ParseNes(const TCHAR* rom)
 		//DumpCNodeStructures(COUT, func->GetBody(), 0);
 
 		// 优化C代码结构
-		CTreeOptimizer ctreeOptimizer;
 		ctreeOptimizer.Optimize(func->GetBody());
 		//COUT << _T("\n优化语法树结构后:\n");
 		//DumpCNodeStructures(COUT, func->GetBody(), 0);
@@ -132,8 +135,8 @@ void TypeTest()
 int _tmain(int argc, _TCHAR* argv[])
 {
 	// ParseNes(_T(R"(D:\FC\移动.nes)"));
-	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
-	TypeTest();
+	ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
+	// TypeTest();
 	system("pause");
 	return 0;
 }

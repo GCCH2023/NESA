@@ -1,23 +1,22 @@
 #include "stdafx.h"
 #include "CTranslater.h"
 using namespace std;
+#include "Function.h"
+#include "TypeManager.h"
 
-#define DUMP_REDUCE  // 输出归约过程
-
-CTranslater::CTranslater(Allocator& allocator_, NesDataBase& db_) :
+CTranslater::CTranslater(Allocator& allocator_, NesDataBase& db_, TypeManager& typeManager_) :
 db(db_),
 allocator(allocator_),
 function(nullptr),
 subroutine(nullptr),
-tempAllocator(1024 * 1024)
+tempAllocator(1024 * 1024),
+typeManager(typeManager_)
 {
 	registers[Nes::NesRegisters::A] = allocator.New<CNode>(NewString(_T("A")));
 	registers[Nes::NesRegisters::X] = allocator.New<CNode>(NewString(_T("X")));
 	registers[Nes::NesRegisters::Y] = allocator.New<CNode>(NewString(_T("Y")));
 	registers[Nes::NesRegisters::P] = allocator.New<CNode>(NewString(_T("P")));
 	registers[Nes::NesRegisters::SP] = allocator.New<CNode>(NewString(_T("SP")));
-
-	noneStatement = allocator.New<CNode>(CNodeKind::STAT_NONE);
 }
 
 
@@ -29,6 +28,8 @@ Function* CTranslater::TranslateSubroutine(TACSubroutine* subroutine)
 {
 	if (!subroutine)
 		return nullptr;
+	Reset();
+
 	this->subroutine = subroutine;
 
 	// 首先构造边集
@@ -48,6 +49,7 @@ Function* CTranslater::TranslateSubroutine(TACSubroutine* subroutine)
 		}
 	}
 	auto root = Analyze(edges.data(), edges.size());
+
 	// 遍历控制树，生成C语句
 	// COUT << root->statement;
 	Function* func = allocator.New<Function>();
@@ -55,6 +57,11 @@ Function* CTranslater::TranslateSubroutine(TACSubroutine* subroutine)
 	TCHAR buffer[64];
 	_stprintf_s(buffer, _T("sub_%04X"), subroutine->GetStartAddress());
 	func->name = buffer;
+	this->function = func;
+
+	// 设置C函数的类型
+	SetFunctionType();
+
 	return func;
 }
 
@@ -83,8 +90,6 @@ ControlTreeNodeEx* CTranslater::Analyze(Edge edges[], size_t count)
 
 void CTranslater::BuildCFG(Edge edges[], size_t count)
 {
-	Reset();
-
 	for (size_t i = 0; i < count; ++i)
 	{
 		Edge& p = edges[i];
@@ -112,6 +117,10 @@ void CTranslater::Reset()
 	blockCount = 0;
 	controlTreeNodeCount = 0;
 	tempAllocator.Reset();
+	function = nullptr;
+	subroutine = nullptr;
+	labels.clear();
+	blockStatements.clear();
 }
 
 CNode* CTranslater::GetExpression(TACOperand& operand)
@@ -478,7 +487,7 @@ CNode* CTranslater::NewDoWhile(CNode* condition, CNode* body)
 {
 	// do ; while (condition) => while (condition) ;
 	// 没有循环体或者条件总是为真，则转换为 while 循环
-	if (body == noneStatement || condition->kind == CNodeKind::EXPR_INTEGER)
+	if (body->kind == CNodeKind::STAT_NONE || condition->kind == CNodeKind::EXPR_INTEGER)
 		return allocator.New<CNode>(CNodeKind::STAT_WHILE, condition, body);
 	return allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, body);
 }
@@ -486,7 +495,7 @@ CNode* CTranslater::NewDoWhile(CNode* condition, CNode* body)
 CNode* CTranslater::NewStatementList(CNode* head, CNode* tail)
 {
 	if (!head)
-		return noneStatement;
+		return NewNoneStatement();
 	if (head == tail)
 		return head;
 	return allocator.New<CNode>(CNodeKind::STAT_LIST, head, tail);
@@ -523,6 +532,70 @@ CNode* CTranslater::NewStatementPair(CNode* first, CNode* second)
 	//}
 	first->next = second;
 	return NewStatementList(first, second);
+}
+
+CNode* CTranslater::NewNoneStatement()
+{
+	return allocator.New<CNode>(CNodeKind::STAT_NONE);
+}
+
+void CTranslater::SetFunctionType()
+{
+	// 首先创建一个表示AXY寄存器的结构体
+	Type* axyType = GetAXYType();
+
+	// 创建函数类型
+	Type funcType(TypeKind::Function);
+	funcType.f.returnType = typeManager.Void;
+	if (this->subroutine->GetReturnFlag())
+	{
+		// 有返回值，那么就使用 AXY 结构体作为返回值
+		funcType.f.returnType = axyType;
+	}
+	auto param = this->subroutine->GetParamFlag();
+
+	Parameter a;
+	a.name = registers[Nes::NesRegisters::A]->v.name;
+	a.type = typeManager.UnsignedChar;
+	Parameter x;
+	x.name = registers[Nes::NesRegisters::X]->v.name;
+	x.type = typeManager.UnsignedChar;
+	Parameter y;
+	y.name = registers[Nes::NesRegisters::Y]->v.name;
+	y.type = typeManager.UnsignedChar;
+	if (param)
+	{
+		if (param & Nes::NesRegisters::A)
+			funcType.AddParameter(&a);
+		if (param & Nes::NesRegisters::X)
+			funcType.AddParameter(&x);
+		if (param & Nes::NesRegisters::Y)
+			funcType.AddParameter(&y);
+	}
+	this->function->SetType(typeManager.NewFunction(&funcType));
+}
+
+Type* CTranslater::GetAXYType()
+{
+	Field* fieldA = allocator.New<Field>();
+	fieldA->name = registers[Nes::NesRegisters::A]->v.name;
+	fieldA->align = GetTypeAlign(typeManager.UnsignedChar);
+	fieldA->type = typeManager.UnsignedChar;
+
+	Field* fieldX = allocator.New<Field>();
+	fieldX->name = registers[Nes::NesRegisters::Y]->v.name;
+	fieldX->align = GetTypeAlign(typeManager.UnsignedChar);
+	fieldX->type = typeManager.UnsignedChar;
+
+	Field* fieldY = allocator.New<Field>();
+	fieldY->name = registers[Nes::NesRegisters::Y]->v.name;
+	fieldY->align = GetTypeAlign(typeManager.UnsignedChar);
+	fieldY->type = typeManager.UnsignedChar;
+
+	fieldA->next = fieldX;
+	fieldX->next = fieldY;
+
+	return typeManager.NewStruct(NewString(_T("AXY")), fieldA);
 }
 
 // 当要将控制流图中的一个自循环节点归约时
@@ -735,6 +808,7 @@ Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType t
 	}
 	ctNode->type = type;
 	ctNode->index = parent;
+
 	//COUT << "归约 " << ToString(type) << " " << parent << " : ";
 	//for (auto n : children)
 	//	COUT << n << ", ";

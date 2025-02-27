@@ -19,10 +19,13 @@ TACSubroutine* TACTranslater::Translate(NesSubroutine* subroutine)
 {
 	if (!subroutine)
 		return nullptr;
+	Reset();
+
 	this->nesSub = subroutine;
 
 	std::unordered_map<NesBasicBlock*, TACBasicBlock*> blockMap;
 	this->tacSub = allocator.New<TACSubroutine>(subroutine->GetStartAddress(), subroutine->GetEndAddress());
+	this->tacSub->flag = subroutine->flag;
 	for (auto block : subroutine->GetBasicBlocks())
 	{
 		auto tacBlock = TranslateBasickBlock(block);
@@ -46,6 +49,14 @@ TACSubroutine* TACTranslater::Translate(NesSubroutine* subroutine)
 		tacBlock->flag = block->flag;
 	}
 	return this->tacSub;
+}
+
+void TACTranslater::Reset()
+{
+	nesSub = nullptr;;
+	tacSub = nullptr;;
+	tacBlock = nullptr;
+	tacStarts.clear();
 }
 
 // index : 条件跳转指令的索引

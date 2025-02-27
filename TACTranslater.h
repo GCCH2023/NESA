@@ -3,6 +3,7 @@
 #include "NesDataBase.h"
 
 // 将 NES 代码转换为 NES 三地址码
+// TAC 子程序，基本块，指令都在分配器上分配
 class TACTranslater
 {
 public:
@@ -10,6 +11,9 @@ public:
 	~TACTranslater();
 	// 将 NES 子程序转换为 三地址码表示的子程序
 	TACSubroutine* Translate(NesSubroutine* subroutine);
+	// 重置数据，可以复用对象
+	void Reset();
+
 protected:
 	TACBasicBlock* TranslateBasickBlock(NesBasicBlock* block);
 	// 获取指令的操作数

@@ -126,18 +126,6 @@ struct CNode
 	bool IsExpression() const { return kind >= CNodeKind::EXPR_VARIABLE && kind <= CNodeKind::EXPR_NOT; }
 };
 
-class Function
-{
-public:
-
-	inline void SetBody(CNode* body) { this->body = body; }
-	inline CNode* GetBody() { return body; }
-
-public:
-	CNode* body;  // 函数体
-	String name;
-};
-
 // 指定缩进输出抽象语法树表示的C语句
 OStream& DumpCNode(OStream& os, const CNode* root, int indent);
 // 输出抽象语法树表示的C语句

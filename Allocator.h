@@ -7,6 +7,8 @@ public:
 		capacity(capacity_)
 	{
 		baseAddress = (uint8_t*)VirtualAlloc(nullptr, capacity, MEM_RESERVE, PAGE_READWRITE);
+		if (!baseAddress)
+			throw std::bad_alloc();
 		current = endAddress = baseAddress;
 	}
 
@@ -20,6 +22,8 @@ public:
 	template<typename T>
 	T* Alloc()
 	{
+		size_t align = __alignof(T);
+		current = (uint8_t*)(((size_t)current + align - 1) & ~(align - 1));
 		T* obj = (T *)current;
 		current += sizeof(T);
 		if (current > endAddress)
@@ -31,6 +35,8 @@ public:
 	template<typename T>
 	T* Alloc(size_t count)
 	{
+		size_t align = __alignof(T);
+		current = (uint8_t*)(((size_t)current + align - 1) & ~(align - 1));
 		T* obj = (T *)current;
 		current += sizeof(T)* count;
 		if (current > endAddress)

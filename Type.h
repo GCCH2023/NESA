@@ -37,6 +37,10 @@ struct Parameter
 	const TCHAR* name;  // 名称
 	Type* type;  // 类型
 	Parameter* next;  // 指向下一个参数
+	
+	Parameter();
+	Parameter(const TCHAR* name, Type* type);
+	Parameter(const Parameter* param);
 };
 
 struct Enumerator
@@ -76,7 +80,8 @@ struct Type
 
 	Type();
 	Type(TypeKind kind, TypeQualifier qualifier = TypeQualifier::None);
-	Type(const Type* type);
+	// 不使用这个构成函数，因为附加字段一般需要动态分配，不能用现有的
+	//Type(const Type* type);
 	// 获取类别
 	inline TypeKind GetKind() const { return (TypeKind)(base & 0xFF); }
 	// 获取修饰符
@@ -89,6 +94,9 @@ struct Type
 
 	// 添加一个枚举值
 	void AddEnumerator(Enumerator* enumerator);
+
+	// 往函数类型的参数列表中添加一个参数
+	void AddParameter(Parameter* param);
 };
 
 // 获取类型占用的字节大小

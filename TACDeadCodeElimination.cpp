@@ -18,6 +18,8 @@ TACDeadCodeElimination::~TACDeadCodeElimination()
 // 基本块的开始地址保留最初的地址好了
 void TACDeadCodeElimination::Optimize(TACSubroutine* subroutine)
 {
+	Reset();
+
 	Allocator allocator(4 * 1024 * 1024);
 	// 首先进行活跃变量分析
 	LiveVariableAnalysis lva(db, allocator);
@@ -77,4 +79,9 @@ void TACDeadCodeElimination::Optimize(TACSubroutine* subroutine)
 			tac->z.SetValue(newAddr);
 		}
 	}
+}
+
+void TACDeadCodeElimination::Reset()
+{
+
 }

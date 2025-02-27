@@ -117,9 +117,6 @@
     <ClInclude Include="ReachingDefinition.h">
       <Filter>DataFlow</Filter>
     </ClInclude>
-    <ClInclude Include="NesAnalyzer.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Sprintf.h">
       <Filter>Common</Filter>
     </ClInclude>
@@ -149,6 +146,12 @@
     </ClInclude>
     <ClInclude Include="TypeManager.h">
       <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="Function.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="NesAnalyzer.h">
+      <Filter>Parser</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -215,9 +218,6 @@
     <ClCompile Include="ReachingDefinition.cpp">
       <Filter>DataFlow</Filter>
     </ClCompile>
-    <ClCompile Include="NesAnalyzer.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="TACOptimizer.cpp">
       <Filter>IR</Filter>
     </ClCompile>
@@ -241,6 +241,12 @@
     </ClCompile>
     <ClCompile Include="TypeManager.cpp">
       <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="Function.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="NesAnalyzer.cpp">
+      <Filter>Parser</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

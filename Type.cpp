@@ -111,12 +111,12 @@ pa({ 0 })
 }
 
 
-Type::Type(const Type* type):
-base(type->base),
-pa(type->pa)
-{
-
-}
+//Type::Type(const Type* type):
+//base(type->base),
+//pa(type->pa)
+//{
+//
+//}
 
 size_t Type::GetFieldsCount() const
 {
@@ -133,7 +133,10 @@ void Type::AddField(Field* field)
 	if (GetKind() != TypeKind::Struct && GetKind() != TypeKind::Union)
 		return;
 	if (!su.fields)
+	{
 		su.fields = field;
+		return;
+	}
 	Field* tail;
 	for (tail = su.fields; tail->next; tail = tail->next)
 		;
@@ -142,10 +145,54 @@ void Type::AddField(Field* field)
 
 void Type::AddEnumerator(Enumerator* enumerator)
 {
+	if (GetKind() != TypeKind::Enum)
+		return;
 	if (e.members == nullptr)
+	{
 		e.members = enumerator;
+		return;
+	}
 	Enumerator* tail;
 	for (tail = e.members; tail->next; tail = tail->next)
 		;
 	tail->next = enumerator;
+}
+
+void Type::AddParameter(Parameter* param)
+{
+	if (GetKind() != TypeKind::Function)
+		return;
+	if (f.params == nullptr)
+	{
+		f.params = param;
+		return;
+	}
+	Parameter* tail;
+	for (tail = f.params; tail->next; tail = tail->next)
+		;
+	tail->next = param;
+}
+
+Parameter::Parameter():
+name(nullptr),
+type(nullptr),
+next(nullptr)
+{
+
+}
+
+Parameter::Parameter(const TCHAR* name_, Type* type_):
+name(name_),
+type(type_),
+next(nullptr)
+{
+
+}
+
+Parameter::Parameter(const Parameter* param):
+name(param->name),
+type(param->type),
+next(nullptr)
+{
+
 }

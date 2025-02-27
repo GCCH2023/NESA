@@ -27,6 +27,8 @@ TACPeephole::~TACPeephole()
 
 void TACPeephole::Optimize(TACSubroutine* subroutine)
 {
+	Reset();
+
 	TACValue axyValue[3];
 	TAC* last = nullptr;
 	// ±éÀú»ù±¾¿é
@@ -88,4 +90,9 @@ void TACPeephole::Optimize(TACSubroutine* subroutine)
 			last = tac;
 		}
 	}
+}
+
+void TACPeephole::Reset()
+{
+
 }

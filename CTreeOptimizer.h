@@ -9,6 +9,7 @@ public:
 	~CTreeOptimizer();
 
 	void Optimize(CNode* root);
+	void Reset();
 protected:
 	virtual void OnVisit(CNode* node) override;
 	// 尝试合并两条语句，没有合并返回0，合并返回对应的类型
