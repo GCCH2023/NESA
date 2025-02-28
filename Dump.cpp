@@ -330,7 +330,7 @@ void DumpDeclaration(Function* func)
 	DumpType(t);  // 返回类型
 	COUT << _T(" ") << func->name << _T("(");
 	// 参数
-	for (auto p = type->f.params; p; p = p->next)
+	for (auto p = func->params; p; p = p->next)
 	{
 		DumpParameter(p);
 		if (p->next)

@@ -32,15 +32,11 @@ struct Field
 	Field* next;  // 指向下一个字段
 };
 
-struct Parameter
+// 函数类型的参数类型列表
+struct TypeList
 {
-	const TCHAR* name;  // 名称
-	Type* type;  // 类型
-	Parameter* next;  // 指向下一个参数
-	
-	Parameter();
-	Parameter(const TCHAR* name, Type* type);
-	Parameter(const Parameter* param);
+	Type* type;
+	TypeList* next;
 };
 
 struct Enumerator
@@ -74,7 +70,7 @@ struct Type
 		struct FunctionField
 		{
 			Type* returnType;
-			Parameter* params;
+			TypeList* params;
 		}f;
 	};
 
@@ -96,7 +92,7 @@ struct Type
 	void AddEnumerator(Enumerator* enumerator);
 
 	// 往函数类型的参数列表中添加一个参数
-	void AddParameter(Parameter* param);
+	void AddParameter(TypeList* param);
 };
 
 // 获取类型占用的字节大小

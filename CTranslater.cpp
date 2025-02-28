@@ -556,20 +556,32 @@ void CTranslater::SetFunctionType()
 	Parameter a;
 	a.name = registers[Nes::NesRegisters::A]->v.name;
 	a.type = typeManager.UnsignedChar;
+	TypeList aType = { typeManager.UnsignedChar, nullptr };
 	Parameter x;
 	x.name = registers[Nes::NesRegisters::X]->v.name;
 	x.type = typeManager.UnsignedChar;
+	TypeList xType = { typeManager.UnsignedChar, nullptr };
 	Parameter y;
 	y.name = registers[Nes::NesRegisters::Y]->v.name;
 	y.type = typeManager.UnsignedChar;
+	TypeList yType = { typeManager.UnsignedChar, nullptr };
 	if (param)
 	{
 		if (param & (1 << Nes::NesRegisters::A))
-			funcType.AddParameter(&a);
+		{
+			funcType.AddParameter(&aType);
+			this->function->AddParameter(allocator.New<Parameter>(&a));
+		}
 		if (param & (1 << Nes::NesRegisters::X))
-			funcType.AddParameter(&x);
+		{
+			funcType.AddParameter(&xType);
+			this->function->AddParameter(allocator.New<Parameter>(&x));
+		}
 		if (param & (1 << Nes::NesRegisters::Y))
-			funcType.AddParameter(&y);
+		{
+			funcType.AddParameter(&yType);
+			this->function->AddParameter(allocator.New<Parameter>(&y));
+		}
 	}
 	this->function->SetType(typeManager.NewFunction(&funcType));
 }

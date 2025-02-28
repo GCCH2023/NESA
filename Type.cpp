@@ -158,7 +158,7 @@ void Type::AddEnumerator(Enumerator* enumerator)
 	tail->next = enumerator;
 }
 
-void Type::AddParameter(Parameter* param)
+void Type::AddParameter(TypeList* param)
 {
 	if (GetKind() != TypeKind::Function)
 		return;
@@ -167,32 +167,9 @@ void Type::AddParameter(Parameter* param)
 		f.params = param;
 		return;
 	}
-	Parameter* tail;
+	TypeList* tail;
 	for (tail = f.params; tail->next; tail = tail->next)
 		;
 	tail->next = param;
 }
 
-Parameter::Parameter():
-name(nullptr),
-type(nullptr),
-next(nullptr)
-{
-
-}
-
-Parameter::Parameter(const TCHAR* name_, Type* type_):
-name(name_),
-type(type_),
-next(nullptr)
-{
-
-}
-
-Parameter::Parameter(const Parameter* param):
-name(param->name),
-type(param->type),
-next(nullptr)
-{
-
-}

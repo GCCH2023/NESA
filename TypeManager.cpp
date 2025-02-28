@@ -97,7 +97,8 @@ Type* TypeManager::GetType(Type* type)
 							   // 需要分配参数对象
 							   for (auto p = type->f.params; p; p = p->next)
 							   {
-								   auto pa = allocator.New<Parameter>(p);
+								   auto pa = allocator.New<TypeList>();
+								   pa->type = p->type;
 								   t->AddParameter(pa);
 							   }
 							   break;
@@ -134,7 +135,7 @@ bool TypeEqual::operator()(const Type* type1, const Type* type2) const
 							   auto q = type2->f.params;
 							   while (p && q)
 							   {
-								   if (p->name != q->name || p->type != q->type)
+								   if (p->type != q->type)
 									   return false;
 								   p = p->next;
 								   q = q->next;
