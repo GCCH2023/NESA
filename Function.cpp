@@ -26,6 +26,30 @@ next(nullptr)
 
 }
 
+Variable::Variable() :
+name(nullptr),
+type(nullptr),
+next(nullptr)
+{
+
+}
+
+Variable::Variable(const TCHAR* name_, Type* type_) :
+name(name_),
+type(type_),
+next(nullptr)
+{
+
+}
+
+Variable::Variable(const Variable* param) :
+name(param->name),
+type(param->type),
+next(nullptr)
+{
+
+}
+
 
 void Function::AddParameter(Parameter* param)
 {
@@ -38,4 +62,17 @@ void Function::AddParameter(Parameter* param)
 	for (tail = this->params; tail->next; tail = tail->next)
 		;
 	tail->next = param;
+}
+
+void Function::AddVariable(Variable* variable)
+{
+	if (this->variables == nullptr)
+	{
+		this->variables = variable;
+		return;
+	}
+	Variable* tail;
+	for (tail = this->variables; tail->next; tail = tail->next)
+		;
+	tail->next = variable;
 }

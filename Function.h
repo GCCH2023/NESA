@@ -13,6 +13,18 @@ struct Parameter
 	Parameter(const Parameter* param);
 };
 
+struct Variable
+{
+	const TCHAR* name;  // 名称
+	Type* type;  // 类型
+	Variable* next;  // 指向下一个参数
+
+	Variable();
+	Variable(const TCHAR* name, Type* type);
+	Variable(const Variable* param);
+};
+
+
 
 class Function
 {
@@ -25,9 +37,13 @@ public:
 	inline Type* GetType() { return type; }
 
 	void AddParameter(Parameter* param);
+
+	void AddVariable(Variable* variable);
+
 public:
 	Type* type;
 	Parameter* params;
+	Variable* variables;
 	CNode* body;  // 函数体
 	String name;
 };

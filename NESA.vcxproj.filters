@@ -154,7 +154,7 @@
       <Filter>Parser</Filter>
     </ClInclude>
     <ClInclude Include="Dump.h">
-      <Filter>头文件</Filter>
+      <Filter>C</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -252,7 +252,7 @@
       <Filter>Parser</Filter>
     </ClCompile>
     <ClCompile Include="Dump.cpp">
-      <Filter>源文件</Filter>
+      <Filter>C</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
