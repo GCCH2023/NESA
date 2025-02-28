@@ -553,7 +553,6 @@ void CTranslater::SetFunctionType()
 		funcType.f.returnType = axyType;
 	}
 	auto param = this->subroutine->GetParamFlag();
-
 	Parameter a;
 	a.name = registers[Nes::NesRegisters::A]->v.name;
 	a.type = typeManager.UnsignedChar;
@@ -565,11 +564,11 @@ void CTranslater::SetFunctionType()
 	y.type = typeManager.UnsignedChar;
 	if (param)
 	{
-		if (param & Nes::NesRegisters::A)
+		if (param & (1 << Nes::NesRegisters::A))
 			funcType.AddParameter(&a);
-		if (param & Nes::NesRegisters::X)
+		if (param & (1 << Nes::NesRegisters::X))
 			funcType.AddParameter(&x);
-		if (param & Nes::NesRegisters::Y)
+		if (param & (1 << Nes::NesRegisters::Y))
 			funcType.AddParameter(&y);
 	}
 	this->function->SetType(typeManager.NewFunction(&funcType));

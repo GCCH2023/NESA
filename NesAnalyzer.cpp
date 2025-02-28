@@ -164,7 +164,7 @@ void NesAnalyzer::AnalyzeTACSubroutine(TACSubroutine* subroutine)
 				subroutine->flag |= SUBF_RTURN_Y;
 		}
 	}
-	
+
 	DumpTACSubroutineAXY(subroutine);
 }
 

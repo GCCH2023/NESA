@@ -153,6 +153,9 @@
     <ClInclude Include="NesAnalyzer.h">
       <Filter>Parser</Filter>
     </ClInclude>
+    <ClInclude Include="Dump.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -247,6 +250,9 @@
     </ClCompile>
     <ClCompile Include="NesAnalyzer.cpp">
       <Filter>Parser</Filter>
+    </ClCompile>
+    <ClCompile Include="Dump.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

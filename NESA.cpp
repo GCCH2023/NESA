@@ -18,6 +18,7 @@ using namespace Nes;
 #include "CTreeOptimizer.h"
 #include "TypeManager.h"
 #include "Function.h"
+#include "Dump.h"
 
 void ParseNes(const TCHAR* rom)
 {
@@ -64,8 +65,7 @@ void ParseNes(const TCHAR* rom)
 
 			// 5. Êä³öº¯Êý´úÂë
 			COUT << endl;
-			func->DumpDeclaration();
-			COUT << endl << func->GetBody();
+			DumpDefinition(func);
 		}
 		return;
 

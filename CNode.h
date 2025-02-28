@@ -125,10 +125,3 @@ struct CNode
 	// 是否是表达式节点
 	bool IsExpression() const { return kind >= CNodeKind::EXPR_VARIABLE && kind <= CNodeKind::EXPR_NOT; }
 };
-
-// 指定缩进输出抽象语法树表示的C语句
-OStream& DumpCNode(OStream& os, const CNode* root, int indent);
-// 输出抽象语法树表示的C语句
-OStream& operator<<(OStream& os, const CNode* root);
-// 输出抽象语法树的语句结构（不输出表达式）
-OStream& DumpCNodeStructures(OStream& os, const CNode* root, int indent);

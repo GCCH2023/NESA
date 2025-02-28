@@ -151,6 +151,7 @@
     <ClInclude Include="CTranslater.h" />
     <ClInclude Include="CTreeVisitor.h" />
     <ClInclude Include="DataFlowAnalyzer.h" />
+    <ClInclude Include="Dump.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="Function.h" />
     <ClInclude Include="Instruction.h" />
@@ -186,6 +187,7 @@
     <ClCompile Include="CTranslater.cpp" />
     <ClCompile Include="CTreeVisitor.cpp" />
     <ClCompile Include="DataFlowAnalyzer.cpp" />
+    <ClCompile Include="Dump.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Function.cpp" />
     <ClCompile Include="Instruction.cpp" />
