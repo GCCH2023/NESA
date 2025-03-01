@@ -16,9 +16,8 @@ using namespace Nes;
 #include "TACPeephole.h"
 #include "TACDeadCodeElimination.h"
 #include "CTreeOptimizer.h"
-#include "TypeManager.h"
-#include "Function.h"
 #include "Dump.h"
+#include "CDataBase.h"
 
 void ParseNes(const TCHAR* rom)
 {
@@ -34,11 +33,11 @@ void ParseNes(const TCHAR* rom)
 		s.Append(_T("中断向量处理程序 IRQ : 0x%04X\n"), db.GetInterruptIrqAddress());
 		COUT << s.ToString();
 
-		TypeManager typeManager(allocator);
+		CDataBase cdb(allocator);
 		TACTranslater ntt(db, allocator);
 		TACPeephole tacPh(db);
 		TACDeadCodeElimination tacDce(db);
-		CTranslater translater(allocator, db, typeManager);
+		CTranslater translater(allocator, db, cdb);
 		CTreeOptimizer ctreeOptimizer;
 
 		NesAnalyzer nesa(db);

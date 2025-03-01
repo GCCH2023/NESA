@@ -2,6 +2,7 @@
 #include "Type.h"
 
 class Allocator;
+struct String;
 
 struct TypeHash
 {
@@ -19,20 +20,20 @@ struct TypeEqual
 class TypeManager
 {
 public:
-	Type* Void;
-	Type* Char;
-	Type* Short;
-	Type* Int;
-	Type* Long;
-	Type* LongLong;
-	Type* UnsignedChar;
-	Type* UnsignedShort;
-	Type* UnsignedInt;
-	Type* UnsignedLong;
-	Type* UnsignedLongLong;
-	Type* Float;
-	Type* Double;
-	Type* LongDouble;
+	static Type* Void;
+	static Type* Char;
+	static Type* Short;
+	static Type* Int;
+	static Type* Long;
+	static Type* LongLong;
+	static Type* UnsignedChar;
+	static Type* UnsignedShort;
+	static Type* UnsignedInt;
+	static Type* UnsignedLong;
+	static Type* UnsignedLongLong;
+	static Type* Float;
+	static Type* Double;
+	static Type* LongDouble;
 
 	TypeManager(Allocator& allocator);
 	// 创建一个数组类型
@@ -40,11 +41,11 @@ public:
 	// 创建一个指针类型
 	Type* NewPointer(Type* pointerToType);
 	// 创建一个结构体
-	Type* NewStruct(const TCHAR* name = nullptr, Field* fileds = nullptr);
+	Type* NewStruct(String* name = nullptr, Field* fileds = nullptr);
 	// 创建一个联合体
-	Type* NewUnion(const TCHAR* name = nullptr, Field* fileds = nullptr);
+	Type* NewUnion(String* name = nullptr, Field* fileds = nullptr);
 	// 创建一个枚举
-	Type* NewEnum(const TCHAR* name = nullptr, Enumerator* members = nullptr);
+	Type* NewEnum(String* name = nullptr, Enumerator* members = nullptr);
 	// 创建一个函数，函数类型是可以复用的
 	Type* NewFunction(Type* functionType);
 

@@ -10,6 +10,6 @@ public:
 	virtual const TCHAR* Message() const;
 
 protected:
-	String message;  // 异常提示字符串
+	StdString message;  // 异常提示字符串
 };
 

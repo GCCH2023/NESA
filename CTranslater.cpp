@@ -2,15 +2,15 @@
 #include "CTranslater.h"
 using namespace std;
 #include "Function.h"
-#include "TypeManager.h"
+#include "CDataBase.h"
 
-CTranslater::CTranslater(Allocator& allocator_, NesDataBase& db_, TypeManager& typeManager_) :
+CTranslater::CTranslater(Allocator& allocator_, NesDataBase& db_, CDataBase& cdb_) :
 db(db_),
 allocator(allocator_),
 function(nullptr),
 subroutine(nullptr),
 tempAllocator(1024 * 1024),
-typeManager(typeManager_)
+cdb(cdb_)
 {
 	registers[Nes::NesRegisters::A] = allocator.New<CNode>(NewString(_T("A")));
 	registers[Nes::NesRegisters::X] = allocator.New<CNode>(NewString(_T("X")));
@@ -56,7 +56,7 @@ Function* CTranslater::TranslateSubroutine(TACSubroutine* subroutine)
 	func->SetBody(root->statement);
 	TCHAR buffer[64];
 	_stprintf_s(buffer, _T("sub_%04X"), subroutine->GetStartAddress());
-	func->name = buffer;
+	func->name = cdb.AddString(buffer);
 	this->function = func;
 
 	// 设置C函数的类型
@@ -404,7 +404,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 //}
 
 
-CStr CTranslater::GetLabelName(uint32_t jumpAddr)
+String* CTranslater::GetLabelName(uint32_t jumpAddr)
 {
 	auto it = labels.find(jumpAddr);
 	if (it == labels.end())
@@ -470,17 +470,14 @@ void CTranslater::PatchLabels()
 	}
 }
 
-CStr CTranslater::NewString(const CStr format, ...)
+String* CTranslater::NewString(const CStr format, ...)
 {
 	TCHAR buffer[256];
 	va_list va;
 	va_start(va, format);
 	_vstprintf_s(buffer, 256, format, va);
 	va_end(va);
-	size_t count = ((_tcslen(buffer) + 1) * sizeof(TCHAR)+sizeof(void*)-1) & ~(sizeof(void*)-1);
-	CStr str = allocator.Alloc<TCHAR>(count);
-	_tcscpy_s(str, count, buffer);
-	return str;
+	return cdb.AddString(buffer);
 }
 
 CNode* CTranslater::NewDoWhile(CNode* condition, CNode* body)
@@ -546,7 +543,7 @@ void CTranslater::SetFunctionType()
 
 	// 创建函数类型
 	Type funcType(TypeKind::Function);
-	funcType.f.returnType = typeManager.Void;
+	funcType.f.returnType = TypeManager::Void;
 	if (this->subroutine->GetReturnFlag())
 	{
 		// 有返回值，那么就使用 AXY 结构体作为返回值
@@ -555,16 +552,16 @@ void CTranslater::SetFunctionType()
 	auto param = this->subroutine->GetParamFlag();
 	Parameter a;
 	a.name = registers[Nes::NesRegisters::A]->v.name;
-	a.type = typeManager.UnsignedChar;
-	TypeList aType = { typeManager.UnsignedChar, nullptr };
+	a.type = TypeManager::UnsignedChar;
+	TypeList aType = { TypeManager::UnsignedChar, nullptr };
 	Parameter x;
 	x.name = registers[Nes::NesRegisters::X]->v.name;
-	x.type = typeManager.UnsignedChar;
-	TypeList xType = { typeManager.UnsignedChar, nullptr };
+	x.type = TypeManager::UnsignedChar;
+	TypeList xType = { TypeManager::UnsignedChar, nullptr };
 	Parameter y;
 	y.name = registers[Nes::NesRegisters::Y]->v.name;
-	y.type = typeManager.UnsignedChar;
-	TypeList yType = { typeManager.UnsignedChar, nullptr };
+	y.type = TypeManager::UnsignedChar;
+	TypeList yType = { TypeManager::UnsignedChar, nullptr };
 	if (param)
 	{
 		if (param & (1 << Nes::NesRegisters::A))
@@ -583,30 +580,30 @@ void CTranslater::SetFunctionType()
 			this->function->AddParameter(allocator.New<Parameter>(&y));
 		}
 	}
-	this->function->SetType(typeManager.NewFunction(&funcType));
+	this->function->SetType(cdb.GetTypeManager().NewFunction(&funcType));
 }
 
 Type* CTranslater::GetAXYType()
 {
 	Field* fieldA = allocator.New<Field>();
 	fieldA->name = registers[Nes::NesRegisters::A]->v.name;
-	fieldA->align = GetTypeAlign(typeManager.UnsignedChar);
-	fieldA->type = typeManager.UnsignedChar;
+	fieldA->align = GetTypeAlign(TypeManager::UnsignedChar);
+	fieldA->type = TypeManager::UnsignedChar;
 
 	Field* fieldX = allocator.New<Field>();
 	fieldX->name = registers[Nes::NesRegisters::Y]->v.name;
-	fieldX->align = GetTypeAlign(typeManager.UnsignedChar);
-	fieldX->type = typeManager.UnsignedChar;
+	fieldX->align = GetTypeAlign(TypeManager::UnsignedChar);
+	fieldX->type = TypeManager::UnsignedChar;
 
 	Field* fieldY = allocator.New<Field>();
 	fieldY->name = registers[Nes::NesRegisters::Y]->v.name;
-	fieldY->align = GetTypeAlign(typeManager.UnsignedChar);
-	fieldY->type = typeManager.UnsignedChar;
+	fieldY->align = GetTypeAlign(TypeManager::UnsignedChar);
+	fieldY->type = TypeManager::UnsignedChar;
 
 	fieldA->next = fieldX;
 	fieldX->next = fieldY;
 
-	return typeManager.NewStruct(NewString(_T("AXY")), fieldA);
+	return cdb.GetTypeManager().NewStruct(cdb.AddString(_T("AXY")), fieldA);
 }
 
 // 当要将控制流图中的一个自循环节点归约时

@@ -6,8 +6,9 @@
 class TACSubroutine;
 class NesDataBase;
 class Function;
-class TypeManager;
 struct Type;
+class CDataBase;
+struct String;
 
 struct ControlTreeNodeEx : BasicBlock
 {
@@ -44,7 +45,7 @@ struct ControlTreeNodeEx : BasicBlock
 class CTranslater
 {
 public:
-	CTranslater(Allocator& allocator, NesDataBase& db, TypeManager& typeManager);
+	CTranslater(Allocator& allocator, NesDataBase& db, CDataBase& cdb);
 	~CTranslater();
 
 	// 翻译子程序为C代码
@@ -116,7 +117,7 @@ protected:
 	// 根据跳转地址获取对应的标签语句
 	// CLabelStatement* GetLabel(uint32_t jumpAddr);
 	// 获取标签名称
-	CStr GetLabelName(uint32_t jumpAddr);
+	String* GetLabelName(uint32_t jumpAddr);
 	// 创建分支基本块的语句
 	// 也就是语句序列后面跟着一个if语句
 	// 一个基本块通常前面是顺序执行的指令，最后以条件跳转指令结尾
@@ -129,7 +130,7 @@ protected:
 	// 回填标签语句
 	void PatchLabels();
 	// 创建一个字符串
-	CStr NewString(const CStr format, ...);
+	String* NewString(const CStr format, ...);
 	// 创建一个do while 节点
 	CNode* NewDoWhile(CNode* condition, CNode* body);
 	// 创建一个列表语句节点
@@ -148,7 +149,7 @@ protected:
 	Allocator& allocator;  // 用于创建输出结果
 	Function* function;
 	TACSubroutine* subroutine;
-	TypeManager& typeManager;
+	CDataBase& cdb;
 protected:
 	// 调试使用
 	// 输出所有基本块构成的控制流图
@@ -166,7 +167,7 @@ private:
 	int controlTreeNodeCount;
 
 	CNode* registers[5];  // AXYPSP 5个寄存器
-	std::unordered_map<Nes::Address, CStr> labels;  // 地址到标签语句的映射
+	std::unordered_map<Nes::Address, String*> labels;  // 地址到标签语句的映射
 	//std::vector<Nes::Address> labels;
 	std::unordered_map<Nes::Address, CNode*> blockStatements;  // 地址到基本块对应的语句的映射
 };

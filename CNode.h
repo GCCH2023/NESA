@@ -1,5 +1,7 @@
 #pragma once
 
+struct String;
+
 // !!!增加节点类型时，注意修改CNode中的判断类型函数
 enum class CNodeKind
 {
@@ -57,7 +59,6 @@ enum VariableKind
 	VAR_KIND_FUNCTION,  // 函数
 };
 
-using CStr = TCHAR*;
 
 // C语言语法节点
 struct CNode
@@ -70,12 +71,12 @@ struct CNode
 	{
 		struct
 		{
-			CStr name;
+			String* name;
 			CNode* body;
 		}l;  // 标签语句
 		struct
 		{
-			CStr name;  // 变量名
+			String* name;  // 变量名
 			VariableKind varKind;
 		}v;
 		struct
@@ -96,7 +97,7 @@ struct CNode
 		}s;  // if, while, do while
 		struct
 		{
-			CStr name;  // 函数名称
+			String* name;  // 函数名称
 			CNode* params;  // 参数链表
 		}f;
 		struct
@@ -110,15 +111,15 @@ struct CNode
 	CNode();
 	CNode(CNodeKind kind, uint32_t address);
 	// 创建变量
-	CNode(CStr name, VariableKind varKind = VAR_KIND_GLOBAL);
+	CNode(String* name, VariableKind varKind = VAR_KIND_GLOBAL);
 	// 创建函数调用或标签语句
-	CNode(CStr name, CNode* params);
+	CNode(String* name, CNode* params);
 	// 创建整数
 	CNode(int value);
 	// 创建表达式或语句
 	CNode(CNodeKind kind, CNode* x = nullptr, CNode* y = nullptr, CNode* z = nullptr);
 	// 创建goto语句
-	CNode(CNodeKind kind, CStr name);
+	CNode(CNodeKind kind, String* name);
 
 	// 是否是语句节点
 	bool IsStatement() const { return kind >= CNodeKind::STAT_LIST && kind <= CNodeKind::STAT_RETURN; }

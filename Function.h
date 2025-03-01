@@ -1,26 +1,27 @@
 #pragma once
 struct CNode;
 struct Type;
+struct String;
 
 struct Parameter
 {
-	const TCHAR* name;  // 名称
+	String* name;  // 名称
 	Type* type;  // 类型
 	Parameter* next;  // 指向下一个参数
 
 	Parameter();
-	Parameter(const TCHAR* name, Type* type);
+	Parameter(String* name, Type* type);
 	Parameter(const Parameter* param);
 };
 
 struct Variable
 {
-	const TCHAR* name;  // 名称
+	String* name;  // 名称
 	Type* type;  // 类型
 	Variable* next;  // 指向下一个参数
 
 	Variable();
-	Variable(const TCHAR* name, Type* type);
+	Variable(String* name, Type* type);
 	Variable(const Variable* param);
 };
 
@@ -45,5 +46,5 @@ public:
 	Parameter* params;
 	Variable* variables;
 	CNode* body;  // 函数体
-	String name;
+	String* name;
 };

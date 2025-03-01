@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Dump.h"
+#include "String.h"
 
 using namespace std;
 
@@ -205,6 +206,12 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 OStream& operator<<(OStream& os, const CNode* obj)
 {
 	return DumpCNode(os, obj, 0);
+}
+
+OStream& operator<<(OStream& os, const String* str)
+{
+	os << str->str;
+	return os;
 }
 
 OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)

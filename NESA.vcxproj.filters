@@ -156,6 +156,12 @@
     <ClInclude Include="Dump.h">
       <Filter>C</Filter>
     </ClInclude>
+    <ClInclude Include="CDataBase.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="String.h">
+      <Filter>Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -253,6 +259,12 @@
     </ClCompile>
     <ClCompile Include="Dump.cpp">
       <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="CDataBase.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="String.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -8,7 +8,7 @@ address(address_)
 
 }
 
-CNode::CNode(CStr name, VariableKind varKind) :
+CNode::CNode(String* name, VariableKind varKind) :
 kind(CNodeKind::EXPR_VARIABLE)
 {
 	v.name = name;
@@ -28,14 +28,14 @@ kind(kind_)
 	e.z = z;
 }
 
-CNode::CNode(CStr name, CNode* params /*= nullptr*/) :
+CNode::CNode(String* name, CNode* params /*= nullptr*/) :
 kind(CNodeKind::STAT_CALL)
 {
 	f.name = name;
 	f.params = params;
 }
 
-CNode::CNode(CNodeKind kind_, CStr name) :
+CNode::CNode(CNodeKind kind_, String* name) :
 kind(kind_)
 {
 	l.name = name;

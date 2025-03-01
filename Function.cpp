@@ -10,7 +10,7 @@ next(nullptr)
 
 }
 
-Parameter::Parameter(const TCHAR* name_, Type* type_) :
+Parameter::Parameter(String* name_, Type* type_) :
 name(name_),
 type(type_),
 next(nullptr)
@@ -34,7 +34,7 @@ next(nullptr)
 
 }
 
-Variable::Variable(const TCHAR* name_, Type* type_) :
+Variable::Variable(String* name_, Type* type_) :
 name(name_),
 type(type_),
 next(nullptr)

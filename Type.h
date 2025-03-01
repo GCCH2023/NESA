@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <tchar.h>
 
+struct String;
+
 enum class TypeQualifier
 {
 	None = 0,
@@ -26,7 +28,7 @@ const TCHAR* ToString(TypeKind typeKind);
 struct Type;
 struct Field
 {
-	const TCHAR* name;  // 名称
+	String* name;  // 名称
 	Type* type;  // 类型
 	size_t align;  // 字段的对齐字节数，默认是等于它的类型的对齐字节数
 	Field* next;  // 指向下一个字段
@@ -41,7 +43,7 @@ struct TypeList
 
 struct Enumerator
 {
-	const TCHAR* name;
+	String* name;
 	int value;
 	Enumerator* next;
 };
@@ -59,12 +61,12 @@ struct Type
 		}pa;
 		struct EnumField
 		{
-			const TCHAR* name;  // 名称
+			String* name;  // 名称
 			Enumerator* members;
 		}e;
 		struct RecordField
 		{
-			const TCHAR* name;  // 名称
+			String* name;  // 名称
 			Field* fields;
 		}su;  // struct, union
 		struct FunctionField
@@ -100,6 +102,6 @@ size_t GetTypeBytes(const Type* type);
 // 获取类型的对齐字节数
 size_t GetTypeAlign(const Type* type);
 // 获取类型的字符串表示
-//const TCHAR* ToString(Type* type);
+//String* ToString(Type* type);
 
 

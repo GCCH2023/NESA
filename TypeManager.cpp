@@ -17,22 +17,24 @@ static Type Float(TypeKind::Float);
 static Type Double(TypeKind::Double);
 static Type LongDouble(TypeKind::LongDouble);
 
+Type* TypeManager::Void = &::Void;
+Type* TypeManager::Char = &::Char;
+Type* TypeManager::Short = &::Short;
+Type* TypeManager::Int = &::Int;
+Type* TypeManager::Long = &::Long;
+Type* TypeManager::LongLong = &::LongLong;
+Type* TypeManager::UnsignedChar = &::UnsignedChar;
+Type* TypeManager::UnsignedShort = &::UnsignedShort;
+Type* TypeManager::UnsignedInt = &::UnsignedInt;
+Type* TypeManager::UnsignedLong = &::UnsignedLong;
+Type* TypeManager::UnsignedLongLong = &::UnsignedLongLong;
+Type* TypeManager::Float = &::Float;
+Type* TypeManager::Double = &::Double;
+Type* TypeManager::LongDouble = &::LongDouble;
+
+
 TypeManager::TypeManager(Allocator& allocator_) :
-allocator(allocator_),
-Void(&::Void),
-Char(&::Char),
-Short(&::Short),
-Int(&::Int),
-Long(&::Long),
-LongLong(&::LongLong),
-UnsignedChar(&::UnsignedChar),
-UnsignedShort(&::UnsignedShort),
-UnsignedInt(&::UnsignedInt),
-UnsignedLong(&::UnsignedLong),
-UnsignedLongLong(&::UnsignedLongLong),
-Float(&::Float),
-Double(&::Double),
-LongDouble(&::LongDouble)
+allocator(allocator_)
 {
 
 }
@@ -52,7 +54,7 @@ Type* TypeManager::NewPointer(Type* pointerToType)
 	return GetType(&type);
 }
 
-Type* TypeManager::NewStruct(const TCHAR* name /*= nullptr*/, Field* fileds /*= nullptr*/)
+Type* TypeManager::NewStruct(String* name /*= nullptr*/, Field* fileds /*= nullptr*/)
 {
 	Type* type = allocator.New<Type>(TypeKind::Struct);
 	type->su.name = name;
@@ -60,7 +62,7 @@ Type* TypeManager::NewStruct(const TCHAR* name /*= nullptr*/, Field* fileds /*= 
 	return type;
 }
 
-Type* TypeManager::NewUnion(const TCHAR* name /*= nullptr*/, Field* fileds /*= nullptr*/)
+Type* TypeManager::NewUnion(String* name /*= nullptr*/, Field* fileds /*= nullptr*/)
 {
 	Type* type = allocator.New<Type>(TypeKind::Union);
 	type->su.name = name;
@@ -68,7 +70,7 @@ Type* TypeManager::NewUnion(const TCHAR* name /*= nullptr*/, Field* fileds /*= n
 	return type;
 }
 
-Type* TypeManager::NewEnum(const TCHAR* name /*= nullptr*/, Enumerator* members /*= nullptr*/)
+Type* TypeManager::NewEnum(String* name /*= nullptr*/, Enumerator* members /*= nullptr*/)
 {
 	Type* type = allocator.New<Type>(TypeKind::Enum);
 	type->e.name = name;
