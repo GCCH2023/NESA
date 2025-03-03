@@ -1,4 +1,6 @@
 #pragma once
+#include "Variable.h"
+
 struct CNode;
 struct Type;
 struct String;
@@ -13,19 +15,6 @@ struct Parameter
 	Parameter(String* name, Type* type);
 	Parameter(const Parameter* param);
 };
-
-struct Variable
-{
-	String* name;  // 名称
-	Type* type;  // 类型
-	Variable* next;  // 指向下一个参数
-
-	Variable();
-	Variable(String* name, Type* type);
-	Variable(const Variable* param);
-};
-
-
 
 class Function
 {

@@ -6,7 +6,6 @@ struct String;
 enum class CNodeKind
 {
 	NONE,  // 未确定
-	NORMAL,  // 普通语句
 
 	// 语句子类
 	STAT_LIST,  // 语句列表
@@ -66,7 +65,6 @@ struct CNode
 	CNodeKind kind;  // 节点的类型
 	uint32_t address;  // 对应的NES地址
 
-	
 	union
 	{
 		struct

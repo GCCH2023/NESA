@@ -315,7 +315,7 @@ data(0)
 
 }
 
-bool TACOperand::operator==(const TACOperand& other)
+bool TACOperand::operator==(const TACOperand& other) const
 {
 	return data == other.data;
 }

@@ -1,11 +1,160 @@
 #include "stdafx.h"
 #include "BaiscBlockDAG.h"
 #include "TAC.h"
-#include "CNode.h"
+#include "CDataBase.h"
 
-BaiscBlockDAG::BaiscBlockDAG(Allocator& allocator_):
-allocator(allocator_)
+std::size_t CNodeHash::operator()(const CNode* node) const
 {
+	size_t hash = (size_t)node->kind;
+	switch (node->kind)
+	{
+	case CNodeKind::STAT_LIST:
+		for (auto n = node->list.head; n; n = n->next)
+			hash ^= (size_t)n;
+		break;
+	case CNodeKind::STAT_EXPR:
+		hash ^= (size_t)node->e.x;
+		break;
+	case CNodeKind::STAT_WHILE:
+	case CNodeKind::STAT_DO_WHILE:
+		hash ^= (size_t)node->s.then ^ (size_t)node->s.condition;
+		break;
+	case CNodeKind::STAT_IF:
+		hash ^= (size_t)node->s.then ^ (size_t)node->s.condition ^ (size_t)node->s._else;
+		break;
+	case CNodeKind::STAT_GOTO:
+		hash ^= (size_t)node->l.name;
+	case CNodeKind::STAT_LABEL:
+		hash ^= (size_t)node->l.name ^ (size_t)node->l.body;
+		break;
+	case CNodeKind::STAT_NONE:
+		break;
+	case CNodeKind::STAT_CALL:
+		hash ^= (size_t)node->f.name;
+		for (auto n = node->f.params; n; n = n->next)
+			hash ^= (size_t)n;
+		break;
+	case CNodeKind::STAT_RETURN:
+		hash ^= (size_t)node->e.x;
+		break;
+	case CNodeKind::EXPR_INTEGER:
+		hash ^= node->i.value;
+	case CNodeKind::EXPR_VARIABLE:
+		hash ^= (size_t)node->v.name;
+	case CNodeKind::EXPR_BOR:
+	case CNodeKind::EXPR_BAND:
+	case CNodeKind::EXPR_XOR:
+	case CNodeKind::EXPR_SHIFT_LEFT:
+	case CNodeKind::EXPR_SHIFT_RIGHT:
+	case CNodeKind::EXPR_ADD:
+	case CNodeKind::EXPR_SUB:
+	case CNodeKind::EXPR_AND:
+	case CNodeKind::EXPR_OR:
+	case CNodeKind::EXPR_ASSIGN:
+	case CNodeKind::EXPR_GREAT:
+	case CNodeKind::EXPR_GREAT_EQUAL:
+	case CNodeKind::EXPR_EQUAL:
+	case CNodeKind::EXPR_NOT_EQUAL:
+	case CNodeKind::EXPR_LESS:
+	case CNodeKind::EXPR_LESS_EQUAL:
+	case CNodeKind::EXPR_INDEX:
+		hash ^= (size_t)node->e.x ^ (size_t)node->e.y;
+		break;
+	
+	case CNodeKind::EXPR_NOT:
+	case CNodeKind::EXPR_REF:
+	case CNodeKind::EXPR_ADDR:
+		hash ^= (size_t)node->e.x;
+		break;
+
+	default:
+		throw Exception(_T("计算抽象语法树节点哈希值: 未实现的节点类型"));
+	}
+	return hash;
+}
+
+bool CNodeEqual::operator()(const CNode* node1, const CNode* node2) const
+{
+	if (node1->kind != node2->kind)
+		return false;
+	switch (node1->kind)
+	{
+	case CNodeKind::STAT_LIST:
+	{
+								 auto p = node1->list.head;
+								 auto q = node2->list.head;
+								 while (p++ == q++)
+									 ;
+								 return p == q;
+	}
+	case CNodeKind::STAT_EXPR:
+		return node1->e.x == node2->e.x;
+	case CNodeKind::STAT_WHILE:
+	case CNodeKind::STAT_DO_WHILE:
+		return node1->s.condition == node2->s.condition && node1->s.then == node2->s.then;
+	case CNodeKind::STAT_IF:
+		return node1->s.condition == node2->s.condition &&
+			node1->s.then == node2->s.then &&
+			node1->s._else == node2->s._else;
+	case CNodeKind::STAT_GOTO:
+		return node1->l.name == node2->l.name;
+	case CNodeKind::STAT_LABEL:
+		return node1->l.name == node2->l.name && node1->l.body == node2->l.body;
+	case CNodeKind::STAT_NONE:
+		return true;
+	case CNodeKind::STAT_CALL:
+		if (node1->f.name != node2->f.name)
+			return false;
+		{
+			auto p = node1->f.params;
+			auto q = node2->f.params;
+			while (p++ == q++)
+				;
+			return p == q;
+		}
+	case CNodeKind::EXPR_INTEGER:
+		return node1->i.value == node2->i.value;
+	case CNodeKind::EXPR_VARIABLE:
+		return node1->v.name == node2->v.name;
+	case CNodeKind::EXPR_BOR:
+	case CNodeKind::EXPR_BAND:
+	case CNodeKind::EXPR_XOR:
+	case CNodeKind::EXPR_SHIFT_LEFT:
+	case CNodeKind::EXPR_SHIFT_RIGHT:
+	case CNodeKind::EXPR_ADD:
+	case CNodeKind::EXPR_SUB:
+	case CNodeKind::EXPR_AND:
+	case CNodeKind::EXPR_OR:
+	case CNodeKind::EXPR_ASSIGN:
+	case CNodeKind::EXPR_GREAT:
+	case CNodeKind::EXPR_GREAT_EQUAL:
+	case CNodeKind::EXPR_EQUAL:
+	case CNodeKind::EXPR_NOT_EQUAL:
+	case CNodeKind::EXPR_LESS:
+	case CNodeKind::EXPR_LESS_EQUAL:
+	case CNodeKind::EXPR_INDEX:
+		return node1->e.x == node2->e.x && node1->e.y == node2->e.y;
+
+	case CNodeKind::STAT_RETURN:
+	case CNodeKind::EXPR_NOT:
+	case CNodeKind::EXPR_REF:
+	case CNodeKind::EXPR_ADDR:
+		return node1->e.x == node2->e.x;
+	default:
+		throw Exception(_T("比较抽象语法树节相等: 未实现的节点类型"));
+	}
+}
+
+
+BaiscBlockDAG::BaiscBlockDAG(Allocator& allocator_, CDataBase& cdb_):
+allocator(allocator_),
+cdb(cdb_)
+{
+	registers[Nes::NesRegisters::A] = CNode(cdb.AddString(_T("A")));
+	registers[Nes::NesRegisters::X] = CNode(cdb.AddString(_T("X")));
+	registers[Nes::NesRegisters::Y] = CNode(cdb.AddString(_T("Y")));
+	registers[Nes::NesRegisters::P] = CNode(cdb.AddString(_T("P")));
+	registers[Nes::NesRegisters::SP] = CNode(cdb.AddString(_T("SP")));
 
 }
 
@@ -13,46 +162,65 @@ BaiscBlockDAG::~BaiscBlockDAG()
 {
 }
 
-CStr BaiscBlockDAG::NewString(const CStr format, ...)
+String* BaiscBlockDAG::NewString(const CStr format, ...)
 {
 	TCHAR buffer[256];
 	va_list va;
 	va_start(va, format);
 	_vstprintf_s(buffer, 256, format, va);
 	va_end(va);
-	size_t count = ((_tcslen(buffer) + 1) * sizeof(TCHAR)+sizeof(void*)-1) & ~(sizeof(void*)-1);
-	CStr str = allocator.Alloc<TCHAR>(count);
-	_tcscpy_s(str, count, buffer);
-	return str;
+	return cdb.AddString(buffer);
 }
 
 
 CNode* BaiscBlockDAG::GetExpression(TACOperand& operand)
 {
+	// 首先查找最近的赋值语句
+	auto it = lastest.find(operand);
+	if (it != lastest.end())
+		return it->second;
+
+	CNode node = { 0 };
 	switch (operand.GetKind())
 	{
 	case TACOperand::INTEGER:
 		if (operand.IsTemp())
 		{
-			return allocator.New<CNode>(NewString(_T("temp%d"), operand.GetValue()), VAR_KIND_LOCAL);
+			node.kind = CNodeKind::EXPR_VARIABLE;
+			node.v.name = NewString(_T("temp%d"), operand.GetValue());
+			node.v.varKind = VAR_KIND_LOCAL;
 		}
 		else
-			return allocator.New<CNode>(operand.GetValue());
+		{
+			node.kind = CNodeKind::EXPR_INTEGER;
+			node.i.value = operand.GetValue();
+		}
+		return GetNode(&node);
 	case TACOperand::REGISTER:
-		return registers[operand.GetValue()];
+		return GetNode(&registers[operand.GetValue()]);
 	case TACOperand::MEMORY:
 	{
 							   if (operand.IsTemp())
 							   {
-								   auto var = allocator.New<CNode>(NewString(_T("temp%d"), operand.GetValue()), VAR_KIND_GLOBAL);
+								   node.kind = CNodeKind::EXPR_VARIABLE;
+								   node.v.name = NewString(_T("temp%d"), operand.GetValue());
+								   node.v.varKind = VAR_KIND_GLOBAL;
+								   auto v = GetNode(&node);
 								   // 需要解引用
-								   return allocator.New<CNode>(CNodeKind::EXPR_REF, var);
+								   node = CNode(CNodeKind::EXPR_REF, v);
+								   return GetNode(&node);
 							   }
-							   return allocator.New<CNode>(NewString(_T("g_%04X"), operand.GetValue()), VAR_KIND_GLOBAL);
+							   node.kind = CNodeKind::EXPR_VARIABLE;
+							   node.v.name = NewString(_T("g_%04X"), operand.GetValue());
+							   node.v.varKind = VAR_KIND_GLOBAL;
+							   return GetNode(&node);
 	}
 	case TACOperand::ADDRESS:
 	{
-								return allocator.New<CNode>(NewString(_T("g_%04X"), operand.GetValue()), VAR_KIND_GLOBAL);
+								node.kind = CNodeKind::EXPR_VARIABLE;
+								node.v.name = NewString(_T("g_%04X"), operand.GetValue());
+								node.v.varKind = VAR_KIND_GLOBAL;
+								return GetNode(&node);
 	}
 	default:
 	{
@@ -64,17 +232,62 @@ CNode* BaiscBlockDAG::GetExpression(TACOperand& operand)
 }
 
 
+CNode* BaiscBlockDAG::GetNode(CNode* node)
+{
+	auto it = nodeSet.find(node);
+	if (it != nodeSet.end())
+		return *it;
+	// 创建
+	CNode* n = allocator.New<CNode>();
+	*n = *node;
+	nodeSet.insert(n);
+	return n;
+}
+
+CNode* BaiscBlockDAG::ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac, uint32_t& jumpAddr)
+{
+	// 条件跳转指令必定是基本块结束指令
+	condition = allocator.New<CNode>(kind, GetExpression(tac->x), GetExpression(tac->y));
+	jumpAddr = tac->z.GetValue();
+	return condition;
+}
+
+CNode* BaiscBlockDAG::NewNoneStatement()
+{
+	return allocator.New<CNode>(CNodeKind::STAT_NONE);
+}
+
+
+CNode* BaiscBlockDAG::NewStatementList(CNode* head, CNode* tail)
+{
+	if (!head)
+		return NewNoneStatement();
+	if (head == tail)
+		return head;
+	return allocator.New<CNode>(CNodeKind::STAT_LIST, head, tail);
+}
+
+
 CNode* BaiscBlockDAG::Translate(TACBasicBlock* tacBlock)
 {
 	CNode* current = nullptr, *head = nullptr, *tail = nullptr;
 	CNode* expr = nullptr;
 	auto& codes = tacBlock->GetCodes();
+	CNode* x, *y;
+	CNode temp, *node;
+	CNode* pCondition;
+	uint32_t jumpAddr;
 	for (size_t i = 0; i < codes.size(); ++i)
 	{
 		auto tac = codes[i];
 		switch (tac->op)
 		{
 		case	TACOperator::BOR:
+			x = GetExpression(tac->x);
+			y = GetExpression(tac->y);
+			temp = CNode(CNodeKind::EXPR_BOR, x, y);
+			node = GetNode(&temp);
+
 			expr = allocator.New<CNode>(CNodeKind::EXPR_BOR, GetExpression(tac->x), GetExpression(tac->y));
 			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
@@ -89,14 +302,18 @@ CNode* BaiscBlockDAG::Translate(TACBasicBlock* tacBlock)
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
 		case	TACOperator::ADD:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			x = GetExpression(tac->x);
+			y = GetExpression(tac->y);
+			temp = CNode(CNodeKind::EXPR_ADD, x, y);
+			node = GetNode(&temp);
+			lastest[tac->z] = node;
 			break;
 		case	TACOperator::SUB:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_SUB, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			x = GetExpression(tac->x);
+			y = GetExpression(tac->y);
+			temp = CNode(CNodeKind::EXPR_SUB, x, y);
+			node = GetNode(&temp);
+			lastest[tac->z] = node;
 			break;
 		case	TACOperator::XOR:
 			expr = allocator.New<CNode>(CNodeKind::EXPR_XOR, GetExpression(tac->x), GetExpression(tac->y));
@@ -279,8 +496,20 @@ CNode* BaiscBlockDAG::Translate(TACBasicBlock* tacBlock)
 			tail = current;
 		}
 	}
-	Nes::Address firstAddr = codes.empty() ? tacBlock->GetStartAddress() : codes[0]->address;
-	auto ret = NewStatementList(head, tail);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
-	blockStatements[firstAddr] = ret;  // 记录下这个基本块对应的地址及语句
+	//Nes::Address firstAddr = codes.empty() ? tacBlock->GetStartAddress() : codes[0]->address;
+	//auto ret = NewStatementList(head, tail);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
+	// blockStatements[firstAddr] = ret;  // 记录下这个基本块对应的地址及语句
+
+	CNode* ret = nullptr;
+	// 遍历变量的赋值点
+	for (auto& it : lastest)
+	{
+		// 未实现
+	}
 	return ret;
+}
+
+std::size_t TACOperandHash::operator()(const TACOperand& operand) const
+{
+	return operand.GetHash();
 }

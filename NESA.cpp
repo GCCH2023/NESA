@@ -19,6 +19,52 @@ using namespace Nes;
 #include "Dump.h"
 #include "CDataBase.h"
 
+// 用DAG生成基本块的C语句测试
+// a = b + c
+// b = a - d
+// c = b + c
+// d = a - d
+#include "BaiscBlockDAG.h"
+void BaiscBlockDAGTest()
+{
+	Allocator allocator;
+	CDataBase cdb(allocator);
+	// 1. 构造三地址码
+	TACOperand a(TACOperand::TEMP | 0);
+	TACOperand b(TACOperand::TEMP | 1);
+	TACOperand c(TACOperand::TEMP | 2);
+	TACOperand d(TACOperand::TEMP | 3);
+
+	TACBasicBlock block;
+	TAC code0(TACOperator::ADD, a, b, c);
+	TAC code1(TACOperator::SUB, b, a, d);
+	TAC code2(TACOperator::ADD, c, b, c);
+	TAC code3(TACOperator::SUB, d, a, d);
+	block.AddTAC(&code0);
+	block.AddTAC(&code1);
+	block.AddTAC(&code2);
+	block.AddTAC(&code3);
+
+	BaiscBlockDAG bbDag(allocator, cdb);
+	auto statement = bbDag.Translate(&block);
+	COUT << statement;
+}
+
+// 全局变量测试
+void GlobalTest()
+{
+	Allocator allocator;
+	CDataBase cdb(allocator);
+
+	Sprintf<> s;
+	for (auto g : cdb.GetGlobals())
+	{
+		s.Format(_T("%08X\t%s\t%s\n"), g->address, ToString(g->type->GetKind()), g->name->str);
+		COUT << s.ToString();
+		s.Clear();
+	}
+}
+
 void ParseNes(const TCHAR* rom)
 {
 	COUT << sizeof(Type) << endl;
@@ -40,38 +86,42 @@ void ParseNes(const TCHAR* rom)
 		CTranslater translater(allocator, db, cdb);
 		CTreeOptimizer ctreeOptimizer;
 
-		NesAnalyzer nesa(db);
-		nesa.Analyze();
+		// 一. 从这里开始，到 return 之间的代码是从指定函数开始
+		// 分析它及它调用的所有函数
+		//NesAnalyzer nesa(db);
+		//nesa.Analyze();
 
-		for (auto sub : db.GetSubroutines())
-		{
-			// 生成三地址码
-			TACSubroutine* tacSub = ntt.Translate(sub);
-			/*COUT << _T("\n三地址码:\n");
-			tacSub->Dump();*/
+		//for (auto sub : db.GetSubroutines())
+		//{
+		//	// 生成三地址码
+		//	TACSubroutine* tacSub = ntt.Translate(sub);
+		//	/*COUT << _T("\n三地址码:\n");
+		//	tacSub->Dump();*/
 
-			// 1. 进行窥孔优化
-			tacPh.Optimize(tacSub);
+		//	// 1. 进行窥孔优化
+		//	tacPh.Optimize(tacSub);
 
-			// 2. 进行死代码消除
-			tacDce.Optimize(tacSub);
+		//	// 2. 进行死代码消除
+		//	tacDce.Optimize(tacSub);
 
-			// 3. 生成C代码
-			auto func = translater.TranslateSubroutine(tacSub);
+		//	// 3. 生成C代码
+		//	auto func = translater.TranslateSubroutine(tacSub);
 
-			// 4. 优化C代码
-			ctreeOptimizer.Optimize(func->GetBody());
+		//	// 4. 优化C代码
+		//	ctreeOptimizer.Optimize(func->GetBody());
 
-			// 5. 输出函数代码
-			COUT << endl;
-			DumpDefinition(func);
-		}
-		return;
+		//	// 5. 输出函数代码
+		//	COUT << endl;
+		//	DumpDefinition(func);
+		//}
+		//return;
 
+		// 二. 详细分析一个函数（不包括它调用的函数） 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = 0x90CC; // db.GetInterruptResetAddress();
+		Nes::Address addr = db.GetInterruptResetAddress();
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
+		// 输出 FC 指令
 		parser.Dump();
 
 		// 生成三地址码
@@ -133,9 +183,10 @@ void TypeTest()
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	// ParseNes(_T(R"(D:\FC\移动.nes)"));
-	ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
+	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
 	// TypeTest();
+	// BaiscBlockDAGTest();
+	GlobalTest();
 	system("pause");
 	return 0;
 }

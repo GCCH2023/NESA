@@ -144,6 +144,7 @@
   <ItemGroup>
     <ClInclude Include="Allocator.h" />
     <ClInclude Include="ASTManager.h" />
+    <ClInclude Include="BaiscBlockDAG.h" />
     <ClInclude Include="BitSet.h" />
     <ClInclude Include="Cartridge.h" />
     <ClInclude Include="CDataBase.h" />
@@ -181,9 +182,11 @@
     <ClInclude Include="CTreeOptimizer.h" />
     <ClInclude Include="Type.h" />
     <ClInclude Include="TypeManager.h" />
+    <ClInclude Include="Variable.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ASTManager.cpp" />
+    <ClCompile Include="BaiscBlockDAG.cpp" />
     <ClCompile Include="Cartridge.cpp" />
     <ClCompile Include="CDataBase.cpp" />
     <ClCompile Include="CNode.cpp" />
@@ -222,6 +225,7 @@
     <ClCompile Include="CTreeOptimizer.cpp" />
     <ClCompile Include="Type.cpp" />
     <ClCompile Include="TypeManager.cpp" />
+    <ClCompile Include="Variable.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

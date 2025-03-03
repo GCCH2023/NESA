@@ -43,9 +43,9 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 									 Indent(os, indent);
 									 os << _T("do {\n");
-									 DumpCNode(os, obj->e.y, indent + 1);
+									 DumpCNode(os, obj->s.then, indent + 1);
 									 Indent(os, indent);
-									 os << _T("} while(") << obj->e.x << _T(");\n");
+									 os << _T("} while(") << obj->s.condition << _T(");\n");
 									 return os;
 	}
 	case CNodeKind::STAT_IF:

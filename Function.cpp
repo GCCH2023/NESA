@@ -26,29 +26,6 @@ next(nullptr)
 
 }
 
-Variable::Variable() :
-name(nullptr),
-type(nullptr),
-next(nullptr)
-{
-
-}
-
-Variable::Variable(String* name_, Type* type_) :
-name(name_),
-type(type_),
-next(nullptr)
-{
-
-}
-
-Variable::Variable(const Variable* param) :
-name(param->name),
-type(param->type),
-next(nullptr)
-{
-
-}
 
 
 void Function::AddParameter(Parameter* param)

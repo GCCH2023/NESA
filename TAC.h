@@ -65,7 +65,7 @@ public:
 	};
 	TACOperand();
 	TACOperand(uint32_t value);
-	bool operator==(const TACOperand& other);
+	bool operator==(const TACOperand& other) const;
 	// 是否临时变量
 	inline bool IsTemp() const { return (data & TEMP) != 0; }
 	// 是否寄存器
@@ -86,6 +86,9 @@ public:
 	inline void SetKind(uint32_t kind) { data = (data & ~KIND_MASK) | kind; }
 	// 是否是零
 	inline bool IsZero() const { return data == 0; }
+
+	// 获取哈希值
+	inline uint32_t GetHash() const { return data; }
 private:
 	uint32_t data;
 };
