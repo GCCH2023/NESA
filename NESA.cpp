@@ -183,10 +183,10 @@ void TypeTest()
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
+	ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
 	// TypeTest();
 	// BaiscBlockDAGTest();
-	GlobalTest();
+	// GlobalTest();
 	system("pause");
 	return 0;
 }

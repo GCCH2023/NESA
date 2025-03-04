@@ -28,8 +28,10 @@ public:
 
 	void AddParameter(Parameter* param);
 
+	// 添加一个局部变量
 	void AddVariable(Variable* variable);
-
+	// 获取局部变量
+	const Variable* GetVariable(String* name) const;
 public:
 	Type* type;
 	Parameter* params;

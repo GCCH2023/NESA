@@ -108,10 +108,16 @@ protected:
 	void OnReduceIfElse(Node _if, Node then, Node _else);
 	void OnReduceIfOr(Node _if, Node then, Node _else);
 protected:
+	// 获取全局变量，不存在就添加
+	const Variable* GetGlobalVariable(CAddress address, Type* type);
+	// 获取局部变量，不存在就添加
+	const Variable* GetLocalVariable(String* name, Type* type);
 	// 将三地址码操作数转换为C表达式
 	CNode* GetExpression(TACOperand& operand);
 	// 条件跳转语句翻译
 	CNode* ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac, uint32_t& jumpAddr);
+	// 翻译三地址码的操作码为C语言的表达式类型
+	CNodeKind TranslateOperator(TACOperator op);
 	// 翻译区域代码为抽象语法树节点
 	CNode* TranslateRegion(CNode*& condition, TACBasicBlock* tacBlock, uint32_t& jumpAddr);
 	// 根据跳转地址获取对应的标签语句

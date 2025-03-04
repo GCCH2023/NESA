@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Dump.h"
 #include "String.h"
-
+#include "Variable.h"
 using namespace std;
 
 // Ëõ½ø
@@ -115,7 +115,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	}
 	case CNodeKind::EXPR_VARIABLE:
 	{
-									 return os << obj->v.name;
+									 return os << obj->variable->name;
 	}
 	case CNodeKind::EXPR_BOR:
 	{

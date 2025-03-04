@@ -1,4 +1,5 @@
 #pragma once
+#include "Variable.h"
 
 struct String;
 
@@ -51,13 +52,6 @@ enum class CNodeKind
 	EXPR_NOT,  // !
 };
 
-enum VariableKind
-{
-	VAR_KIND_GLOBAL,  // 全局变量
-	VAR_KIND_LOCAL,  // 局部变量
-	VAR_KIND_FUNCTION,  // 函数
-};
-
 
 // C语言语法节点
 struct CNode
@@ -72,11 +66,7 @@ struct CNode
 			String* name;
 			CNode* body;
 		}l;  // 标签语句
-		struct
-		{
-			String* name;  // 变量名
-			VariableKind varKind;
-		}v;
+		const Variable* variable;
 		struct
 		{
 			int value;
@@ -109,7 +99,7 @@ struct CNode
 	CNode();
 	CNode(CNodeKind kind, uint32_t address);
 	// 创建变量
-	CNode(String* name, VariableKind varKind = VAR_KIND_GLOBAL);
+	CNode(const Variable* variable);
 	// 创建函数调用或标签语句
 	CNode(String* name, CNode* params);
 	// 创建整数

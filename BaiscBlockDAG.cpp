@@ -2,6 +2,7 @@
 #include "BaiscBlockDAG.h"
 #include "TAC.h"
 #include "CDataBase.h"
+#include "Variable.h"
 
 std::size_t CNodeHash::operator()(const CNode* node) const
 {
@@ -40,7 +41,7 @@ std::size_t CNodeHash::operator()(const CNode* node) const
 	case CNodeKind::EXPR_INTEGER:
 		hash ^= node->i.value;
 	case CNodeKind::EXPR_VARIABLE:
-		hash ^= (size_t)node->v.name;
+		hash ^= (size_t)node->variable->name;
 	case CNodeKind::EXPR_BOR:
 	case CNodeKind::EXPR_BAND:
 	case CNodeKind::EXPR_XOR:
@@ -115,7 +116,7 @@ bool CNodeEqual::operator()(const CNode* node1, const CNode* node2) const
 	case CNodeKind::EXPR_INTEGER:
 		return node1->i.value == node2->i.value;
 	case CNodeKind::EXPR_VARIABLE:
-		return node1->v.name == node2->v.name;
+		return node1->variable->name == node2->variable->name;
 	case CNodeKind::EXPR_BOR:
 	case CNodeKind::EXPR_BAND:
 	case CNodeKind::EXPR_XOR:
@@ -150,11 +151,11 @@ BaiscBlockDAG::BaiscBlockDAG(Allocator& allocator_, CDataBase& cdb_):
 allocator(allocator_),
 cdb(cdb_)
 {
-	registers[Nes::NesRegisters::A] = CNode(cdb.AddString(_T("A")));
-	registers[Nes::NesRegisters::X] = CNode(cdb.AddString(_T("X")));
-	registers[Nes::NesRegisters::Y] = CNode(cdb.AddString(_T("Y")));
-	registers[Nes::NesRegisters::P] = CNode(cdb.AddString(_T("P")));
-	registers[Nes::NesRegisters::SP] = CNode(cdb.AddString(_T("SP")));
+	//registers[Nes::NesRegisters::A] = CNode(cdb.AddString(_T("A")));
+	//registers[Nes::NesRegisters::X] = CNode(cdb.AddString(_T("X")));
+	//registers[Nes::NesRegisters::Y] = CNode(cdb.AddString(_T("Y")));
+	//registers[Nes::NesRegisters::P] = CNode(cdb.AddString(_T("P")));
+	//registers[Nes::NesRegisters::SP] = CNode(cdb.AddString(_T("SP")));
 
 }
 
@@ -175,60 +176,61 @@ String* BaiscBlockDAG::NewString(const CStr format, ...)
 
 CNode* BaiscBlockDAG::GetExpression(TACOperand& operand)
 {
-	// 首先查找最近的赋值语句
-	auto it = lastest.find(operand);
-	if (it != lastest.end())
-		return it->second;
+	//// 首先查找最近的赋值语句
+	//auto it = lastest.find(operand);
+	//if (it != lastest.end())
+	//	return it->second;
 
-	CNode node = { 0 };
-	switch (operand.GetKind())
-	{
-	case TACOperand::INTEGER:
-		if (operand.IsTemp())
-		{
-			node.kind = CNodeKind::EXPR_VARIABLE;
-			node.v.name = NewString(_T("temp%d"), operand.GetValue());
-			node.v.varKind = VAR_KIND_LOCAL;
-		}
-		else
-		{
-			node.kind = CNodeKind::EXPR_INTEGER;
-			node.i.value = operand.GetValue();
-		}
-		return GetNode(&node);
-	case TACOperand::REGISTER:
-		return GetNode(&registers[operand.GetValue()]);
-	case TACOperand::MEMORY:
-	{
-							   if (operand.IsTemp())
-							   {
-								   node.kind = CNodeKind::EXPR_VARIABLE;
-								   node.v.name = NewString(_T("temp%d"), operand.GetValue());
-								   node.v.varKind = VAR_KIND_GLOBAL;
-								   auto v = GetNode(&node);
-								   // 需要解引用
-								   node = CNode(CNodeKind::EXPR_REF, v);
-								   return GetNode(&node);
-							   }
-							   node.kind = CNodeKind::EXPR_VARIABLE;
-							   node.v.name = NewString(_T("g_%04X"), operand.GetValue());
-							   node.v.varKind = VAR_KIND_GLOBAL;
-							   return GetNode(&node);
-	}
-	case TACOperand::ADDRESS:
-	{
-								node.kind = CNodeKind::EXPR_VARIABLE;
-								node.v.name = NewString(_T("g_%04X"), operand.GetValue());
-								node.v.varKind = VAR_KIND_GLOBAL;
-								return GetNode(&node);
-	}
-	default:
-	{
-			   TCHAR buffer[64];
-			   _stprintf_s(buffer, _T("三地址码转C语句：未实现的三地址码操作数转换"));
-			   throw Exception(buffer);
-	}
-	}
+	//CNode node = { 0 };
+	//switch (operand.GetKind())
+	//{
+	//case TACOperand::INTEGER:
+	//	if (operand.IsTemp())
+	//	{
+	//		node.kind = CNodeKind::EXPR_VARIABLE;
+	//		node.v.name = NewString(_T("temp%d"), operand.GetValue());
+	//		node.v.varKind = VAR_KIND_LOCAL;
+	//	}
+	//	else
+	//	{
+	//		node.kind = CNodeKind::EXPR_INTEGER;
+	//		node.i.value = operand.GetValue();
+	//	}
+	//	return GetNode(&node);
+	//case TACOperand::REGISTER:
+	//	return GetNode(&registers[operand.GetValue()]);
+	//case TACOperand::MEMORY:
+	//{
+	//						   if (operand.IsTemp())
+	//						   {
+	//							   node.kind = CNodeKind::EXPR_VARIABLE;
+	//							   node.v.name = NewString(_T("temp%d"), operand.GetValue());
+	//							   node.v.varKind = VAR_KIND_GLOBAL;
+	//							   auto v = GetNode(&node);
+	//							   // 需要解引用
+	//							   node = CNode(CNodeKind::EXPR_REF, v);
+	//							   return GetNode(&node);
+	//						   }
+	//						   node.kind = CNodeKind::EXPR_VARIABLE;
+	//						   node.v.name = NewString(_T("g_%04X"), operand.GetValue());
+	//						   node.v.varKind = VAR_KIND_GLOBAL;
+	//						   return GetNode(&node);
+	//}
+	//case TACOperand::ADDRESS:
+	//{
+	//							node.kind = CNodeKind::EXPR_VARIABLE;
+	//							node.v.name = NewString(_T("g_%04X"), operand.GetValue());
+	//							node.v.varKind = VAR_KIND_GLOBAL;
+	//							return GetNode(&node);
+	//}
+	//default:
+	//{
+	//		   TCHAR buffer[64];
+	//		   _stprintf_s(buffer, _T("三地址码转C语句：未实现的三地址码操作数转换"));
+	//		   throw Exception(buffer);
+	//}
+	//}
+	return nullptr;
 }
 
 

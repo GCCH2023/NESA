@@ -8,10 +8,10 @@ address(address_)
 
 }
 
-CNode::CNode(String* name, VariableKind varKind) :
-kind(CNodeKind::EXPR_VARIABLE)
+CNode::CNode(const Variable* variable_) :
+kind(CNodeKind::EXPR_VARIABLE),
+variable(variable_)
 {
-	v.name = name;
 }
 
 CNode::CNode(int value) :

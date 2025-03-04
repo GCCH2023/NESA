@@ -12,11 +12,16 @@ subroutine(nullptr),
 tempAllocator(1024 * 1024),
 cdb(cdb_)
 {
-	registers[Nes::NesRegisters::A] = allocator.New<CNode>(NewString(_T("A")));
-	registers[Nes::NesRegisters::X] = allocator.New<CNode>(NewString(_T("X")));
-	registers[Nes::NesRegisters::Y] = allocator.New<CNode>(NewString(_T("Y")));
-	registers[Nes::NesRegisters::P] = allocator.New<CNode>(NewString(_T("P")));
-	registers[Nes::NesRegisters::SP] = allocator.New<CNode>(NewString(_T("SP")));
+	auto a = cdb.AddGlobalVariable(NewString(_T("A")), TypeManager::UnsignedChar, -1);
+	auto x = cdb.AddGlobalVariable(NewString(_T("X")), TypeManager::UnsignedChar, -2);
+	auto y = cdb.AddGlobalVariable(NewString(_T("Y")), TypeManager::UnsignedChar, -3);
+	auto p = cdb.AddGlobalVariable(NewString(_T("P")), TypeManager::UnsignedChar, -4);
+	auto sp = cdb.AddGlobalVariable(NewString(_T("SP")), TypeManager::UnsignedChar, -5);
+	registers[Nes::NesRegisters::A] = allocator.New<CNode>(a);
+	registers[Nes::NesRegisters::X] = allocator.New<CNode>(x);
+	registers[Nes::NesRegisters::Y] = allocator.New<CNode>(y);
+	registers[Nes::NesRegisters::P] = allocator.New<CNode>(p);
+	registers[Nes::NesRegisters::SP] = allocator.New<CNode>(sp);
 }
 
 
@@ -48,16 +53,18 @@ Function* CTranslater::TranslateSubroutine(TACSubroutine* subroutine)
 			edges.push_back({ (int)block->tag, (int)succ->tag });
 		}
 	}
+
+	Function* func = allocator.New<Function>();
+	this->function = func;
+
 	auto root = Analyze(edges.data(), edges.size());
 
 	// 遍历控制树，生成C语句
 	// COUT << root->statement;
-	Function* func = allocator.New<Function>();
 	func->SetBody(root->statement);
 	TCHAR buffer[64];
 	_stprintf_s(buffer, _T("sub_%04X"), subroutine->GetStartAddress());
 	func->name = cdb.AddString(buffer);
-	this->function = func;
 
 	// 设置C函数的类型
 	SetFunctionType();
@@ -130,7 +137,8 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 	case TACOperand::INTEGER:
 		if (operand.IsTemp())
 		{
-			return allocator.New<CNode>(NewString(_T("temp%d"), operand.GetValue()), VAR_KIND_LOCAL);
+			auto var = GetLocalVariable(NewString(_T("temp%d"), operand.GetValue()), TypeManager::UnsignedChar);
+			return allocator.New<CNode>(var);
 		}
 		else
 			return allocator.New<CNode>(operand.GetValue());
@@ -140,15 +148,16 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 	{
 							   if (operand.IsTemp())
 							   {
-								   auto var = allocator.New<CNode>(NewString(_T("temp%d"), operand.GetValue()), VAR_KIND_GLOBAL);
+								   auto var = GetLocalVariable(NewString(_T("temp%d"), operand.GetValue()), TypeManager::UnsignedChar);
+								   auto varNode = allocator.New<CNode>(var);
 								   // 需要解引用
-								   return allocator.New<CNode>(CNodeKind::EXPR_REF, var);
+								   return allocator.New<CNode>(CNodeKind::EXPR_REF, varNode);
 							   }
-							   return allocator.New<CNode>(NewString(_T("g_%04X"), operand.GetValue()), VAR_KIND_GLOBAL);
+							   return allocator.New<CNode>(GetGlobalVariable(operand.GetValue(), TypeManager::UnsignedChar));
 	}
 	case TACOperand::ADDRESS:
 	{
-								return allocator.New<CNode>(NewString(_T("g_%04X"), operand.GetValue()), VAR_KIND_GLOBAL);
+								return allocator.New<CNode>(GetGlobalVariable(operand.GetValue(), TypeManager::UnsignedChar));
 	}
 	default:
 	{
@@ -169,6 +178,28 @@ CNode* CTranslater::ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac,
 }
 
 
+CNodeKind CTranslater::TranslateOperator(TACOperator op)
+{
+	switch (op)
+	{
+	case	TACOperator::BOR: return CNodeKind::EXPR_BOR;
+	case	TACOperator::BAND: return CNodeKind::EXPR_BAND;
+	case	TACOperator::ASSIGN: return CNodeKind::EXPR_ASSIGN;
+	case	TACOperator::ADD: return CNodeKind::EXPR_ADD;
+	case	TACOperator::SUB: return CNodeKind::EXPR_SUB;
+	case	TACOperator::XOR: return CNodeKind::EXPR_XOR;
+	case TACOperator::SHL: return CNodeKind::EXPR_SHIFT_LEFT;
+	case TACOperator::SHR: return CNodeKind::EXPR_SHIFT_RIGHT;
+	default:
+	{
+			   TCHAR buffer[64];
+			   _stprintf_s(buffer, _T("三地址码操作码转C表达式：未实现的三地址码操作码 %s"), ToString(op));
+			   throw Exception(buffer);
+	}
+	}
+}
+
+// 临时变量必定是两条三地址码连着，所以直接合并成一个表达式
 CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock, uint32_t& jumpAddr)
 {
 	CNode* current = nullptr, *head = nullptr, *tail = nullptr;
@@ -551,15 +582,15 @@ void CTranslater::SetFunctionType()
 	}
 	auto param = this->subroutine->GetParamFlag();
 	Parameter a;
-	a.name = registers[Nes::NesRegisters::A]->v.name;
+	a.name = registers[Nes::NesRegisters::A]->variable->name;
 	a.type = TypeManager::UnsignedChar;
 	TypeList aType = { TypeManager::UnsignedChar, nullptr };
 	Parameter x;
-	x.name = registers[Nes::NesRegisters::X]->v.name;
+	x.name = registers[Nes::NesRegisters::X]->variable->name;
 	x.type = TypeManager::UnsignedChar;
 	TypeList xType = { TypeManager::UnsignedChar, nullptr };
 	Parameter y;
-	y.name = registers[Nes::NesRegisters::Y]->v.name;
+	y.name = registers[Nes::NesRegisters::Y]->variable->name;
 	y.type = TypeManager::UnsignedChar;
 	TypeList yType = { TypeManager::UnsignedChar, nullptr };
 	if (param)
@@ -586,17 +617,17 @@ void CTranslater::SetFunctionType()
 Type* CTranslater::GetAXYType()
 {
 	Field* fieldA = allocator.New<Field>();
-	fieldA->name = registers[Nes::NesRegisters::A]->v.name;
+	fieldA->name = registers[Nes::NesRegisters::A]->variable->name;
 	fieldA->align = GetTypeAlign(TypeManager::UnsignedChar);
 	fieldA->type = TypeManager::UnsignedChar;
 
 	Field* fieldX = allocator.New<Field>();
-	fieldX->name = registers[Nes::NesRegisters::Y]->v.name;
+	fieldX->name = registers[Nes::NesRegisters::Y]->variable->name;
 	fieldX->align = GetTypeAlign(TypeManager::UnsignedChar);
 	fieldX->type = TypeManager::UnsignedChar;
 
 	Field* fieldY = allocator.New<Field>();
-	fieldY->name = registers[Nes::NesRegisters::Y]->v.name;
+	fieldY->name = registers[Nes::NesRegisters::Y]->variable->name;
 	fieldY->align = GetTypeAlign(TypeManager::UnsignedChar);
 	fieldY->type = TypeManager::UnsignedChar;
 
@@ -803,6 +834,29 @@ void CTranslater::OnReduceIfOr(Node _if, Node then, Node _else)
 
 	// 在 if 语句之前还有一段代码
 	node->statement = CombineListIf(a->statement, condition1, c->statement);
+}
+
+const Variable* CTranslater::GetGlobalVariable(CAddress address, Type* type)
+{
+	auto variable = cdb.GetGlobalVariable(address);
+	if (variable)
+		return variable;
+	auto name = NewString(_T("g_%04X"), address);
+	return cdb.AddGlobalVariable(name, type, address);
+}
+
+const Variable* CTranslater::GetLocalVariable(String* name, Type* type)
+{
+	auto v = this->function->GetVariable(name);
+	if (v)
+		return v;
+
+	// 添加
+	auto variable = allocator.New<Variable>();
+	variable->name = name;
+	variable->type = type;
+	this->function->AddVariable(variable);
+	return variable;
 }
 
 Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType type)

@@ -69,7 +69,7 @@ const Variable* CDataBase::AddGlobalVariable(String* name, Type* type, CAddress 
 	v->name = name;
 	v->type = type;
 	globals.insert(it, v);
-	return variable;
+	return v;
 }
 
 void CDataBase::RawAddGlobalVariable(String* name, Type* type, CAddress address)

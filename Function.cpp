@@ -53,3 +53,13 @@ void Function::AddVariable(Variable* variable)
 		;
 	tail->next = variable;
 }
+
+const Variable* Function::GetVariable(String* name) const
+{
+	for (const Variable* v = this->variables; v; v = v->next)
+	{
+		if (v->name == name)
+			return v;
+	}
+	return nullptr;
+}
