@@ -322,7 +322,7 @@ void DumpType(Type* type)
 	}
 }
 
-void DumpParameter(Parameter* param)
+void DumpParameter(Variable* param)
 {
 	DumpType(param->type);
 	COUT << _T(" ") << param->name;

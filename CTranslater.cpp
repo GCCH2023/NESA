@@ -12,16 +12,11 @@ subroutine(nullptr),
 tempAllocator(1024 * 1024),
 cdb(cdb_)
 {
-	auto a = cdb.AddGlobalVariable(NewString(_T("A")), TypeManager::UnsignedChar, -1);
-	auto x = cdb.AddGlobalVariable(NewString(_T("X")), TypeManager::UnsignedChar, -2);
-	auto y = cdb.AddGlobalVariable(NewString(_T("Y")), TypeManager::UnsignedChar, -3);
-	auto p = cdb.AddGlobalVariable(NewString(_T("P")), TypeManager::UnsignedChar, -4);
-	auto sp = cdb.AddGlobalVariable(NewString(_T("SP")), TypeManager::UnsignedChar, -5);
-	registers[Nes::NesRegisters::A] = allocator.New<CNode>(a);
-	registers[Nes::NesRegisters::X] = allocator.New<CNode>(x);
-	registers[Nes::NesRegisters::Y] = allocator.New<CNode>(y);
-	registers[Nes::NesRegisters::P] = allocator.New<CNode>(p);
-	registers[Nes::NesRegisters::SP] = allocator.New<CNode>(sp);
+	registers[Nes::NesRegisters::A] = NewString(_T("A"));
+	registers[Nes::NesRegisters::X] = NewString(_T("X"));
+	registers[Nes::NesRegisters::Y] = NewString(_T("Y"));
+	registers[Nes::NesRegisters::P] = NewString(_T("P"));
+	registers[Nes::NesRegisters::SP] = NewString(_T("SP"));
 }
 
 
@@ -57,6 +52,8 @@ Function* CTranslater::TranslateSubroutine(TACSubroutine* subroutine)
 
 	Function* func = allocator.New<Function>();
 	this->function = func;
+	// 设置C函数的类型和参数
+	SetFunctionType();
 
 	auto root = Analyze(edges.data(), edges.size());
 
@@ -67,8 +64,6 @@ Function* CTranslater::TranslateSubroutine(TACSubroutine* subroutine)
 	_stprintf_s(buffer, _T("sub_%04X"), subroutine->GetStartAddress());
 	func->name = cdb.AddString(buffer);
 
-	// 设置C函数的类型
-	SetFunctionType();
 
 	return func;
 }
@@ -146,7 +141,12 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 	case TACOperand::REGISTER:
 	{
 								 // 寄存器要么是参数，要么是局部变量，不能当作全局变量处理
-								 return registers[operand.GetValue()];
+								 auto name = registers[operand.GetValue()];
+								 auto variable = this->function->GetParameter(name);
+								 if (variable)
+									 return allocator.New<CNode>(variable);
+								 variable = GetLocalVariable(name, TypeManager::UnsignedChar);
+								 return allocator.New<CNode>(variable);
 	}
 	case TACOperand::MEMORY:
 	{
@@ -585,16 +585,16 @@ void CTranslater::SetFunctionType()
 		funcType.f.returnType = axyType;
 	}
 	auto param = this->subroutine->GetParamFlag();
-	Parameter a;
-	a.name = registers[Nes::NesRegisters::A]->variable->name;
+	Variable a;
+	a.name = registers[Nes::NesRegisters::A];
 	a.type = TypeManager::UnsignedChar;
 	TypeList aType = { TypeManager::UnsignedChar, nullptr };
-	Parameter x;
-	x.name = registers[Nes::NesRegisters::X]->variable->name;
+	Variable x;
+	x.name = registers[Nes::NesRegisters::X];
 	x.type = TypeManager::UnsignedChar;
 	TypeList xType = { TypeManager::UnsignedChar, nullptr };
-	Parameter y;
-	y.name = registers[Nes::NesRegisters::Y]->variable->name;
+	Variable y;
+	y.name = registers[Nes::NesRegisters::Y];
 	y.type = TypeManager::UnsignedChar;
 	TypeList yType = { TypeManager::UnsignedChar, nullptr };
 	if (param)
@@ -602,17 +602,17 @@ void CTranslater::SetFunctionType()
 		if (param & (1 << Nes::NesRegisters::A))
 		{
 			funcType.AddParameter(&aType);
-			this->function->AddParameter(allocator.New<Parameter>(&a));
+			this->function->AddParameter(allocator.New<Variable>(&a));
 		}
 		if (param & (1 << Nes::NesRegisters::X))
 		{
 			funcType.AddParameter(&xType);
-			this->function->AddParameter(allocator.New<Parameter>(&x));
+			this->function->AddParameter(allocator.New<Variable>(&x));
 		}
 		if (param & (1 << Nes::NesRegisters::Y))
 		{
 			funcType.AddParameter(&yType);
-			this->function->AddParameter(allocator.New<Parameter>(&y));
+			this->function->AddParameter(allocator.New<Variable>(&y));
 		}
 	}
 	this->function->SetType(cdb.GetTypeManager().NewFunction(&funcType));
@@ -621,17 +621,17 @@ void CTranslater::SetFunctionType()
 Type* CTranslater::GetAXYType()
 {
 	Field* fieldA = allocator.New<Field>();
-	fieldA->name = registers[Nes::NesRegisters::A]->variable->name;
+	fieldA->name = registers[Nes::NesRegisters::A];
 	fieldA->align = GetTypeAlign(TypeManager::UnsignedChar);
 	fieldA->type = TypeManager::UnsignedChar;
 
 	Field* fieldX = allocator.New<Field>();
-	fieldX->name = registers[Nes::NesRegisters::Y]->variable->name;
+	fieldX->name = registers[Nes::NesRegisters::Y];
 	fieldX->align = GetTypeAlign(TypeManager::UnsignedChar);
 	fieldX->type = TypeManager::UnsignedChar;
 
 	Field* fieldY = allocator.New<Field>();
-	fieldY->name = registers[Nes::NesRegisters::Y]->variable->name;
+	fieldY->name = registers[Nes::NesRegisters::Y];
 	fieldY->align = GetTypeAlign(TypeManager::UnsignedChar);
 	fieldY->type = TypeManager::UnsignedChar;
 

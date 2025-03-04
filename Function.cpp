@@ -2,43 +2,27 @@
 #include "Function.h"
 #include "Type.h"
 
-Parameter::Parameter() :
-name(nullptr),
-type(nullptr),
-next(nullptr)
-{
-
-}
-
-Parameter::Parameter(String* name_, Type* type_) :
-name(name_),
-type(type_),
-next(nullptr)
-{
-
-}
-
-Parameter::Parameter(const Parameter* param) :
-name(param->name),
-type(param->type),
-next(nullptr)
-{
-
-}
-
-
-
-void Function::AddParameter(Parameter* param)
+void Function::AddParameter(Variable* param)
 {
 	if (this->params == nullptr)
 	{
 		this->params = param;
 		return;
 	}
-	Parameter* tail;
+	Variable* tail;
 	for (tail = this->params; tail->next; tail = tail->next)
 		;
 	tail->next = param;
+}
+
+const Variable* Function::GetParameter(String* name) const
+{
+	for (auto p = params; p; p = p->next)
+	{
+		if (p->name == name)
+			return p;
+	}
+	return nullptr;
 }
 
 void Function::AddVariable(Variable* variable)

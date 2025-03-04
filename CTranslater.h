@@ -172,7 +172,7 @@ private:
 	ControlTreeNodeEx* ctrees[MAX_NODE];  // 控制树节点列表
 	int controlTreeNodeCount;
 
-	CNode* registers[5];  // AXYPSP 5个寄存器
+	String* registers[5];  // AXYPSP 5个寄存器
 	std::unordered_map<Nes::Address, String*> labels;  // 地址到标签语句的映射
 	//std::vector<Nes::Address> labels;
 	std::unordered_map<Nes::Address, CNode*> blockStatements;  // 地址到基本块对应的语句的映射
