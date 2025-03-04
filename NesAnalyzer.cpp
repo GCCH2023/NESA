@@ -147,7 +147,7 @@ void NesAnalyzer::AnalyzeTACSubroutine(TACSubroutine* subroutine)
 	auto lives = (BasicBlockLiveVariableSet*)entry->tag;
 	subroutine->flag = (uint32_t)lives->in.ToInteger();
 
-	// 进行到达定值分析，如果AXY能够到达返回基本块块，则可能是返回值
+	// 进行到达定值分析，如果AXY能够到达返回基本块，则可能是返回值
 	ReachingDefinition rd(db, allocator);
 	rd.Analyze(subroutine);
 

@@ -19,5 +19,7 @@ void DumpDefinition(Type* type);
 void DumpDefinition(Function* func);
 
 
+// 输出变量声明
+void DumpDeclaration(const Variable* variable);
 // 输出函数声明
 void DumpDeclaration(Function* func);

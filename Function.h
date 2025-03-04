@@ -32,6 +32,8 @@ public:
 	void AddVariable(Variable* variable);
 	// 获取局部变量
 	const Variable* GetVariable(String* name) const;
+	// 获取局部变量列表
+	const Variable* GetVariableList() const { return variables; }
 public:
 	Type* type;
 	Parameter* params;

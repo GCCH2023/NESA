@@ -328,6 +328,13 @@ void DumpParameter(Parameter* param)
 	COUT << _T(" ") << param->name;
 }
 
+void DumpDeclaration(const Variable* variable)
+{
+	DumpType(variable->type);
+	COUT << _T(" ") << variable->name << _T(";");
+}
+
+
 void DumpDeclaration(Function* func)
 {
 	auto type = func->type;
@@ -378,8 +385,14 @@ void DumpDefinition(Type* type)
 
 void DumpDefinition(Function* func)
 {
-	DumpDeclaration(func);
+	DumpDeclaration(func);  // º¯ÊýÉùÃ÷
 	COUT << _T("\n{\n");
+	for (auto v = func->GetVariableList(); v; v = v->next)
+	{
+		Indent(COUT, 1);
+		DumpDeclaration(v);
+		COUT << std::endl;
+	}
 	DumpCNode(COUT, func->GetBody(), 1);
 	COUT << _T("}\n");
 }

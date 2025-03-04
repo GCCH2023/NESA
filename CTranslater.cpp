@@ -27,6 +27,7 @@ cdb(cdb_)
 
 CTranslater::~CTranslater()
 {
+
 }
 
 Function* CTranslater::TranslateSubroutine(TACSubroutine* subroutine)
@@ -143,7 +144,10 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 		else
 			return allocator.New<CNode>(operand.GetValue());
 	case TACOperand::REGISTER:
-		return registers[operand.GetValue()];
+	{
+								 // 寄存器要么是参数，要么是局部变量，不能当作全局变量处理
+								 return registers[operand.GetValue()];
+	}
 	case TACOperand::MEMORY:
 	{
 							   if (operand.IsTemp())

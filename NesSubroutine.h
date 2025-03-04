@@ -29,7 +29,10 @@ enum SubroutineFlag
 	SUBF_RTURN_X = 0x10,  // 使用 X 寄存器作为返回值
 	SUBF_RTURN_Y = 0x20,  // 使用 Y 寄存器作为返回值
 	SUBF_RETURN = 0x38,  // 使用了 AXY 寄存器作为返回值
-
+	SUBF_LOCAL_A = 0x40,  // 使用 A 寄存器作为局部变量
+	SUBF_LOCAL_X = 0x80,  // 使用 X 寄存器作为局部变量
+	SUBF_LOCAL_Y = 0x100,  // 使用 Y 寄存器作为局部变量
+	SUBF_LOCAL = 0x1C0,  // 使用了 AXY 寄存器作为局部变量
 };
 
 class NesSubroutine : public NesRegion
