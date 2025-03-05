@@ -92,6 +92,7 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 	// 遍历指令构造三地址码
 	TAC* tac = nullptr;
 	Instruction* last = nullptr;
+	TAC temp;
 	for (size_t index = 0; index < instructions.size();++index)
 	{
 		auto& i = instructions[index];
@@ -263,13 +264,23 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 			tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterX, RegisterSP);
 			break;
 		case Nes::Opcode::Lda:
-			tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterA, GetOperand(i));
+			if (TranslateOperand(temp, i))
+				tac = allocator.New<TAC>(TACOperator::INDEX, RegisterA, temp.x, temp.y);
+			else
+				tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterA, temp.x);
 			break;
 		case Nes::Opcode::Ldx:
-			tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterX, GetOperand(i));
+			if (TranslateOperand(temp, i))
+				tac = allocator.New<TAC>(TACOperator::INDEX, RegisterX, temp.x, temp.y);
+			else
+				tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterX, temp.x);
 			break;
 		case Nes::Opcode::Ldy:
-			tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterY, GetOperand(i));
+			if (TranslateOperand(temp, i))
+				tac = allocator.New<TAC>(TACOperator::INDEX, RegisterY, temp.x, temp.y);
+			else
+				tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterY, temp.x);
+			break;
 			break;
 		case Nes::Opcode::Cmp:
 			tac = TranslateCmp(i, instructions[index + 1], RegisterA);
@@ -377,6 +388,66 @@ TACOperand TACTranslater::GetOperand(const Instruction& instruction)
 	}
 	}
 	return TACOperand();
+}
+
+bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
+{
+	const OpcodeEntry& entry = instruction.GetEntry();
+	switch (entry.addrMode)
+	{
+	case AddrMode::Accumulator:
+		tac.x = RegisterA;
+		return false;
+	case AddrMode::Immediate:
+		tac.x = TACOperand(instruction.GetByte());
+		return false;
+	case AddrMode::Absolute:
+		tac.x = TACOperand(TACOperand::MEMORY | instruction.GetOperandAddress());
+		return false;
+	case AddrMode::AbsoluteX:
+		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetOperandAddress());
+		tac.y = RegisterX;
+		return true;
+	case AddrMode::AbsoluteY:
+		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetOperandAddress());
+		tac.y = RegisterY;
+		return true;
+	case AddrMode::Relative:
+		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetConditionalJumpAddress());
+		return false;
+	case AddrMode::ZeroPage:
+		tac.x = TACOperand(TACOperand::MEMORY | instruction.GetByte());
+		return false;
+	case AddrMode::ZeroPageX:
+		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetByte());
+		tac.y = RegisterX;
+		return true;
+	case AddrMode::ZeroPageY:
+		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetByte());
+		tac.y = RegisterY;
+		return true;
+	//case AddrMode::IndirectY:
+	//{
+	//							// [Y + [zp]]
+	//							// 需要额外添加一条三地址码用于计算地址
+	//							//int temp = this->tacSub->NewTemp(2);
+	//							//TACOperand result(TACOperand::TEMP | temp);  // 创建一个临时变量保存计算结果地址
+	//							//TACOperand zeroPageAddr(TACOperand::MEMORY | instruction.GetByte());  // 从零页指定2字节单元取出地址
+	//							//TAC* tac = allocator.New<TAC>(TACOperator::ADD, result, RegisterY, zeroPageAddr);
+	//							//AddTAC(tac, instruction.GetAddress());
+	//							//// 然后返回临时变量作为地址
+	//							//result.SetKind(TACOperand::MEMORY);
+	//							//return true;
+	//}
+	default:
+	{
+			   TCHAR buffer[64];
+			   _stprintf_s(buffer, _T("%04X 获取指令的操作数未实现的寻址模式 %s"), instruction.GetAddress(),
+				   Nes::ToString(entry.addrMode));
+			   throw Exception(buffer);
+	}
+	}
+	return false;
 }
 
 TAC* TACTranslater::TranslateCmp(const Instruction& instruction, const Instruction& next, TACOperand reg)

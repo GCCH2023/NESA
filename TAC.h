@@ -108,7 +108,7 @@ extern TACOperand RegisterSP;
 class TAC
 {
 public:
-	TAC(TACOperator op);
+	TAC(TACOperator op = TACOperator::NOP);
 	TAC(TACOperator op, TACOperand z);
 	TAC(TACOperator op, TACOperand z, TACOperand x);
 	TAC(TACOperator op, TACOperand z, TACOperand x, TACOperand y);

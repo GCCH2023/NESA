@@ -253,6 +253,11 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
+		case TACOperator::INDEX:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
 		case	TACOperator::ARG:
 		{
 									// 若干个 ARG 后面跟着一个 CALL
