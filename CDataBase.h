@@ -6,6 +6,7 @@
 
 using GlobalList = std::vector<Variable*>;
 using FunctionList = std::vector<Function*>;
+using TagList = std::vector<Type*>;
 
 // 管理C代码相关数据
 class CDataBase
@@ -33,11 +34,18 @@ public:
 
 	// 获取函数列表
 	inline const FunctionList& GetFunctionList() const { return functions; }
-	// 添加一个函数，失败抛出异常
+	// 添加一个函数
 	void AddFunction(Function* function);
+
+	// 获取标签列表
+	inline const TagList& GetTagList() const { return tags; }
+	// 添加一个标签
+	void AddTag(Type* tag);
+	// 根据名称获取标签类型
+	Type* GetTag(String* name);
 protected:
 	// 不做任何验证地添加全局变量
-	void RawAddGlobalVariable(String* name, Type* type, CAddress address);
+	void RawAddGlobalVariable(String* name, Type* type, CAddress address, void* initializer = nullptr);
 protected:
 	Allocator& allocator;
 	StringTable stringTable;
@@ -45,5 +53,6 @@ protected:
 
 	GlobalList globals;  // 全局变量列表，按地址从小到大排列
 	FunctionList functions;  // 函数列表
+	TagList tags;  // 结构体，枚举，联合体列表
 };
 

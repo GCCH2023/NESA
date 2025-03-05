@@ -4,24 +4,21 @@
 
 Variable::Variable() :
 name(nullptr),
-type(nullptr),
-next(nullptr)
+type(nullptr)
 {
 
 }
 
 Variable::Variable(String* name_, Type* type_) :
 name(name_),
-type(type_),
-next(nullptr)
+type(type_)
 {
 
 }
 
 Variable::Variable(const Variable* other) :
 name(other->name),
-type(other->type),
-next(nullptr)
+type(other->type)
 {
 
 }

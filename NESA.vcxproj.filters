@@ -166,7 +166,7 @@
       <Filter>IR</Filter>
     </ClInclude>
     <ClInclude Include="Variable.h">
-      <Filter>头文件</Filter>
+      <Filter>C</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -276,7 +276,7 @@
       <Filter>IR</Filter>
     </ClCompile>
     <ClCompile Include="Variable.cpp">
-      <Filter>源文件</Filter>
+      <Filter>C</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

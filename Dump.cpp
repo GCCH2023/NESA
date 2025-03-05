@@ -399,6 +399,13 @@ void DumpDefinition(Function* func)
 
 void Dump(CDataBase& cdb)
 {
+	// 输出标签定义
+	for (auto t : cdb.GetTagList())
+	{
+		DumpDefinition(t);
+		COUT << std::endl;
+	}
+	COUT << std::endl;
 	// 输出全局变量
 	for (auto g : cdb.GetGlobalList())
 	{

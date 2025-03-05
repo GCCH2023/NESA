@@ -133,7 +133,7 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 	case TACOperand::INTEGER:
 		if (operand.IsTemp())
 		{
-			auto var = GetLocalVariable(NewString(_T("temp%d"), operand.GetValue()), TypeManager::UnsignedChar);
+			auto var = GetLocalVariable(NewString(_T("temp%d"), operand.GetValue()), TypeManager::Char);
 			return allocator.New<CNode>(var);
 		}
 		else
@@ -145,23 +145,23 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 								 auto variable = this->function->GetParameter(name);
 								 if (variable)
 									 return allocator.New<CNode>(variable);
-								 variable = GetLocalVariable(name, TypeManager::UnsignedChar);
+								 variable = GetLocalVariable(name, TypeManager::Char);
 								 return allocator.New<CNode>(variable);
 	}
 	case TACOperand::MEMORY:
 	{
 							   if (operand.IsTemp())
 							   {
-								   auto var = GetLocalVariable(NewString(_T("temp%d"), operand.GetValue()), TypeManager::UnsignedChar);
+								   auto var = GetLocalVariable(NewString(_T("temp%d"), operand.GetValue()), TypeManager::Char);
 								   auto varNode = allocator.New<CNode>(var);
 								   // 需要解引用
 								   return allocator.New<CNode>(CNodeKind::EXPR_REF, varNode);
 							   }
-							   return allocator.New<CNode>(GetGlobalVariable(operand.GetValue(), TypeManager::UnsignedChar));
+							   return allocator.New<CNode>(GetGlobalVariable(operand.GetValue(), TypeManager::Char));
 	}
 	case TACOperand::ADDRESS:
 	{
-								return allocator.New<CNode>(GetGlobalVariable(operand.GetValue(), TypeManager::UnsignedChar));
+								return allocator.New<CNode>(GetGlobalVariable(operand.GetValue(), TypeManager::Char));
 	}
 	default:
 	{
@@ -574,7 +574,12 @@ CNode* CTranslater::NewNoneStatement()
 void CTranslater::SetFunctionType()
 {
 	// 首先创建一个表示AXY寄存器的结构体
-	Type* axyType = GetAXYType();
+	Type* axyType = cdb.GetTag(NewString(_T("AXY")));
+	if (!axyType)
+	{
+		axyType = GetAXYType();
+		cdb.AddTag(axyType);
+	}
 
 	// 创建函数类型
 	Type funcType(TypeKind::Function);
@@ -587,16 +592,16 @@ void CTranslater::SetFunctionType()
 	auto param = this->subroutine->GetParamFlag();
 	Variable a;
 	a.name = registers[Nes::NesRegisters::A];
-	a.type = TypeManager::UnsignedChar;
-	TypeList aType = { TypeManager::UnsignedChar, nullptr };
+	a.type = TypeManager::Char;
+	TypeList aType = { TypeManager::Char, nullptr };
 	Variable x;
 	x.name = registers[Nes::NesRegisters::X];
-	x.type = TypeManager::UnsignedChar;
-	TypeList xType = { TypeManager::UnsignedChar, nullptr };
+	x.type = TypeManager::Char;
+	TypeList xType = { TypeManager::Char, nullptr };
 	Variable y;
 	y.name = registers[Nes::NesRegisters::Y];
-	y.type = TypeManager::UnsignedChar;
-	TypeList yType = { TypeManager::UnsignedChar, nullptr };
+	y.type = TypeManager::Char;
+	TypeList yType = { TypeManager::Char, nullptr };
 	if (param)
 	{
 		if (param & (1 << Nes::NesRegisters::A))
@@ -622,18 +627,18 @@ Type* CTranslater::GetAXYType()
 {
 	Field* fieldA = allocator.New<Field>();
 	fieldA->name = registers[Nes::NesRegisters::A];
-	fieldA->align = GetTypeAlign(TypeManager::UnsignedChar);
-	fieldA->type = TypeManager::UnsignedChar;
+	fieldA->align = GetTypeAlign(TypeManager::Char);
+	fieldA->type = TypeManager::Char;
 
 	Field* fieldX = allocator.New<Field>();
 	fieldX->name = registers[Nes::NesRegisters::Y];
-	fieldX->align = GetTypeAlign(TypeManager::UnsignedChar);
-	fieldX->type = TypeManager::UnsignedChar;
+	fieldX->align = GetTypeAlign(TypeManager::Char);
+	fieldX->type = TypeManager::Char;
 
 	Field* fieldY = allocator.New<Field>();
 	fieldY->name = registers[Nes::NesRegisters::Y];
-	fieldY->align = GetTypeAlign(TypeManager::UnsignedChar);
-	fieldY->type = TypeManager::UnsignedChar;
+	fieldY->align = GetTypeAlign(TypeManager::Char);
+	fieldY->type = TypeManager::Char;
 
 	fieldA->next = fieldX;
 	fieldX->next = fieldY;

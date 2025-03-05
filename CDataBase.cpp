@@ -75,12 +75,39 @@ const Variable* CDataBase::AddGlobalVariable(String* name, Type* type, CAddress 
 void CDataBase::AddFunction(Function* function)
 {
 	if (!function)
-		throw Exception(_T("要添加的函数为 nullptr"));
+		return;
 
 	functions.push_back(function);
 }
 
-void CDataBase::RawAddGlobalVariable(String* name, Type* type, CAddress address)
+void CDataBase::AddTag(Type* tag)
+{
+	if (!tag)
+		return;
+	tags.push_back(tag);
+}
+
+Type* CDataBase::GetTag(String* name)
+{
+	for (auto t : tags)
+	{
+		switch (t->GetKind())
+		{
+		case TypeKind::Struct:
+		case TypeKind::Union:
+			if (t->su.name == name)
+				return t;
+			break;
+		case TypeKind::Enum:
+			if (t->e.name == name)
+				return t;
+			break;
+		}
+	}
+	return nullptr;
+}
+
+void CDataBase::RawAddGlobalVariable(String* name, Type* type, CAddress address, void* initializer /*= nullptr*/)
 {
 	auto it = std::lower_bound(globals.begin(), globals.end(), address,
 		[](const Variable* variable, CAddress address) {
@@ -90,5 +117,6 @@ void CDataBase::RawAddGlobalVariable(String* name, Type* type, CAddress address)
 	v->address = address;
 	v->name = name;
 	v->type = type;
+	v->initializer = initializer;
 	globals.insert(it, v);
 }
