@@ -5,6 +5,7 @@
 #include "Function.h"
 
 using GlobalList = std::vector<Variable*>;
+using FunctionList = std::vector<Function*>;
 
 // 管理C代码相关数据
 class CDataBase
@@ -21,7 +22,7 @@ public:
 	TypeManager& GetTypeManager() { return typeManager; }
 
 	// 获取全局变量列表
-	inline const GlobalList& GetGlobals() const { return globals; }
+	inline const GlobalList& GetGlobalList() const { return globals; }
 	// 根据地址获取全局变量，不存在返回 nullptr
 	const Variable* GetGlobalVariable(CAddress address) const;
 	// 根据名称获取全局变量，如果不存在，返回 nullptr
@@ -29,6 +30,11 @@ public:
 	// 添加一个全局变量，失败抛出异常
 	const Variable* AddGlobalVariable(String* name, Type* type, CAddress address);
 
+
+	// 获取函数列表
+	inline const FunctionList& GetFunctionList() const { return functions; }
+	// 添加一个函数，失败抛出异常
+	void AddFunction(Function* function);
 protected:
 	// 不做任何验证地添加全局变量
 	void RawAddGlobalVariable(String* name, Type* type, CAddress address);
@@ -38,5 +44,6 @@ protected:
 	TypeManager typeManager;
 
 	GlobalList globals;  // 全局变量列表，按地址从小到大排列
+	FunctionList functions;  // 函数列表
 };
 

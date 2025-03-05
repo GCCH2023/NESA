@@ -72,6 +72,14 @@ const Variable* CDataBase::AddGlobalVariable(String* name, Type* type, CAddress 
 	return v;
 }
 
+void CDataBase::AddFunction(Function* function)
+{
+	if (!function)
+		throw Exception(_T("要添加的函数为 nullptr"));
+
+	functions.push_back(function);
+}
+
 void CDataBase::RawAddGlobalVariable(String* name, Type* type, CAddress address)
 {
 	auto it = std::lower_bound(globals.begin(), globals.end(), address,

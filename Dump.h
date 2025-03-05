@@ -4,6 +4,7 @@
 #include "Function.h"
 
 struct String;
+class CDataBase;
 
 // 指定缩进输出抽象语法树表示的C语句
 OStream& DumpCNode(OStream& os, const CNode* root, int indent);
@@ -23,3 +24,6 @@ void DumpDefinition(Function* func);
 void DumpDeclaration(const Variable* variable);
 // 输出函数声明
 void DumpDeclaration(Function* func);
+
+// 输出C代码
+void Dump(CDataBase& cdb);

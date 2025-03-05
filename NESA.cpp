@@ -57,7 +57,7 @@ void GlobalTest()
 	CDataBase cdb(allocator);
 
 	Sprintf<> s;
-	for (auto g : cdb.GetGlobals())
+	for (auto g : cdb.GetGlobalList())
 	{
 		s.Format(_T("%08X\t%s\t%s\n"), g->address, ToString(g->type->GetKind()), g->name->str);
 		COUT << s.ToString();
@@ -91,6 +91,7 @@ void ParseNes(const TCHAR* rom)
 		NesAnalyzer nesa(db);
 		nesa.Analyze();
 
+		// 生成C代码
 		for (auto sub : db.GetSubroutines())
 		{
 			// 生成三地址码
@@ -111,9 +112,11 @@ void ParseNes(const TCHAR* rom)
 			ctreeOptimizer.Optimize(func->GetBody());
 
 			// 5. 输出函数代码
-			COUT << endl;
-			DumpDefinition(func);
+			cdb.AddFunction(func);
 		}
+
+		// 输出C代码
+		Dump(cdb);
 		return;
 
 		// 二. 详细分析一个函数（不包括它调用的函数） 

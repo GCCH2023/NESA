@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Dump.h"
-#include "String.h"
 #include "Variable.h"
+#include "CDataBase.h"
 using namespace std;
 
 // 缩进
@@ -396,3 +396,20 @@ void DumpDefinition(Function* func)
 	DumpCNode(COUT, func->GetBody(), 1);
 	COUT << _T("}\n");
 }
+
+void Dump(CDataBase& cdb)
+{
+	// 输出全局变量
+	for (auto g : cdb.GetGlobalList())
+	{
+		DumpDeclaration(g);
+		COUT << std::endl;
+	}
+	COUT << std::endl;
+	// 输出函数
+	for (auto f : cdb.GetFunctionList())
+	{
+		DumpDefinition(f);
+	}
+}
+
