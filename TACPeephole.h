@@ -8,7 +8,7 @@ public:
 	TACPeephole(NesDataBase& db);
 	~TACPeephole();
 
-	virtual void Optimize(TACSubroutine* subroutine) override;
+	virtual void Optimize(TACFunction* subroutine) override;
 	// 重置算法用到的数据
 	void Reset();
 };

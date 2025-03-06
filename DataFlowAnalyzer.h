@@ -1,5 +1,5 @@
 #pragma once
-class TACSubroutine;
+class TACFunction;
 class NesDataBase;
 class TACBasicBlock;
 
@@ -13,7 +13,7 @@ public:
 	DataFlowAnalyzer(NesDataBase& db);
 	~DataFlowAnalyzer();
 	// 进行分析
-	virtual void Analyze(TACSubroutine* subroutine);
+	virtual void Analyze(TACFunction* subroutine);
 protected:
 	// 初始化
 	virtual void Initialize() = 0;
@@ -23,6 +23,6 @@ protected:
 	virtual void Uninitialize();
 
 	NesDataBase& db;
-	TACSubroutine* subroutine;
+	TACFunction* subroutine;
 };
 

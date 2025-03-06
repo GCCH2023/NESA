@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "BaiscBlockDAG.h"
-#include "TAC.h"
+#include "TACFunction.h"
 #include "CDataBase.h"
 #include "Variable.h"
 
@@ -63,7 +63,7 @@ std::size_t CNodeHash::operator()(const CNode* node) const
 		break;
 	
 	case CNodeKind::EXPR_NOT:
-	case CNodeKind::EXPR_REF:
+	case CNodeKind::EXPR_DEREF:
 	case CNodeKind::EXPR_ADDR:
 		hash ^= (size_t)node->e.x;
 		break;
@@ -138,7 +138,7 @@ bool CNodeEqual::operator()(const CNode* node1, const CNode* node2) const
 
 	case CNodeKind::STAT_RETURN:
 	case CNodeKind::EXPR_NOT:
-	case CNodeKind::EXPR_REF:
+	case CNodeKind::EXPR_DEREF:
 	case CNodeKind::EXPR_ADDR:
 		return node1->e.x == node2->e.x;
 	default:

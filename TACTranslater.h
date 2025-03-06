@@ -1,6 +1,8 @@
 #pragma once
-#include "TAC.h"
+#include "TACFunction.h"
 #include "NesDataBase.h"
+
+struct Type;
 
 // 将 NES 代码转换为 NES 三地址码
 // TAC 子程序，基本块，指令都在分配器上分配
@@ -10,7 +12,7 @@ public:
 	TACTranslater(NesDataBase& db, Allocator& allocator);
 	~TACTranslater();
 	// 将 NES 子程序转换为 三地址码表示的子程序
-	TACSubroutine* Translate(NesSubroutine* subroutine);
+	TACFunction* Translate(NesSubroutine* subroutine);
 	// 重置数据，可以复用对象
 	void Reset();
 
@@ -36,7 +38,7 @@ private:
 	NesDataBase& db;
 	Allocator& allocator;
 	NesSubroutine* nesSub;
-	TACSubroutine* tacSub;
+	TACFunction* tacSub;
 	TACBasicBlock* tacBlock;
 	// 在将一个基本块的NES指令翻译为三地址码的过程中，
 	// 记录下每条指令对应的三地址码的开始索引

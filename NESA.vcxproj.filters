@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+    <Text Include="说明.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -168,6 +169,9 @@
     <ClInclude Include="Variable.h">
       <Filter>C</Filter>
     </ClInclude>
+    <ClInclude Include="TACFunction.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -277,6 +281,9 @@
     </ClCompile>
     <ClCompile Include="Variable.cpp">
       <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="TACFunction.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

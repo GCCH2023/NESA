@@ -22,8 +22,6 @@ public:
 	// 获取指定字符串对象，不存在则返回空
 	inline String* GetString(const TCHAR* str) { return stringTable.GetString(str); }
 
-	TypeManager& GetTypeManager() { return typeManager; }
-
 	// 获取全局变量列表
 	inline const GlobalList& GetGlobalList() const { return globals; }
 	// 根据地址获取全局变量，不存在返回 nullptr
@@ -31,8 +29,11 @@ public:
 	// 根据名称获取全局变量，如果不存在，返回 nullptr
 	const Variable* GetGlobalVariable(String* name) const;
 	// 添加一个全局变量，失败抛出异常
-	const Variable* AddGlobalVariable(String* name, Type* type, CAddress address);
-
+	// 这是用来描述NES代码的，所以地址和类型必须要有
+	// 如果没有名称，则自动生成名称
+	const Variable* AddGlobalVariable(CAddress address, Type* type, String* name = nullptr);
+	// 根据地址生成全局变量的名称
+	String* MakeGlobalVariableName(CAddress address);
 
 	// 获取函数列表
 	inline const FunctionList& GetFunctionList() const { return functions; }
@@ -50,11 +51,10 @@ public:
 	inline Allocator& GetAllocator() { return allocator; }
 protected:
 	// 不做任何验证地添加全局变量
-	void RawAddGlobalVariable(String* name, Type* type, CAddress address, void* initializer = nullptr);
+	void RawAddGlobalVariable(CAddress address, Type* type, String* name = nullptr, void* initializer = nullptr);
 protected:
 	Allocator& allocator;
 	StringTable stringTable;
-	TypeManager typeManager;
 
 	GlobalList globals;  // 全局变量列表，按地址从小到大排列
 	FunctionList functions;  // 函数列表

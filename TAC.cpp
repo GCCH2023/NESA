@@ -58,8 +58,9 @@ const TCHAR* ToString(TACOperator op)
 		_T("IFLEQ"),
 		_T("IFNEQ"),
 		_T("IFEQ"),
-		_T("INDEX"),
-		_T("REF"),
+		_T("ARRAY_GET"),
+		_T("ARRAY_SET"),
+		_T("DEREF"),
 		_T("ARG"),
 		_T("CALL"),
 		_T("GOTO"),
@@ -192,17 +193,20 @@ OStream& operator<<(OStream& out, const TAC* tac)
 	case TACOperator::ASSIGN:
 		out << tac->z << _T(" = ") << tac->x;
 		break;
-	case TACOperator::INDEX:
+	case TACOperator::ARRAY_GET:
 		if (tac->y.IsZero())
 			out << tac->z << _T(" = [") << tac->x << _T("]");
 		else
 			out << tac->z << _T(" = ") << tac->x << _T("[") << tac->y << _T("]");
 		break;
-	case TACOperator::REF:
+	case TACOperator::ARRAY_SET:
 		if (tac->y.IsZero())
 			out << _T("[") << tac->x << _T("] = ") << tac->z;
 		else
 			out << tac->x << _T("[") << tac->y << _T("] = ") << tac->z;
+		break;
+	case TACOperator::DEREF:
+		out << tac->z << _T(" = *") << tac->x;
 		break;
 	case TACOperator::IFGREAT:
 		out << _T("if ") << tac->x << _T(" > ") << tac->y << _T(" goto ") << tac->z;
@@ -286,23 +290,6 @@ OStream& DumpAddressTAC(OStream& os, const TAC* tac)
 	return os;
 }
 
-void DumpTACSubroutineAXY(TACSubroutine* sub)
-{
-	static const TCHAR* axyStr[] =
-	{
-		_T("无"), _T("A"), _T("X"), _T("AX"), _T("Y"), _T("AY"), _T("XY"), _T("AXY")
-	};
-	static int count = 0;
-
-	int params = sub->flag & 7;
-	int returns = (sub->flag >> 3) & 7;
-	TCHAR buffer[128];
-
-	_stprintf_s(buffer, _T("%d 函数 %04X 的分析结果，参数: %s，返回值: %s\n"), count++, sub->GetStartAddress(),
-		axyStr[params], axyStr[returns]);
-	COUT << buffer;
-}
-
 TACOperand::TACOperand(uint32_t value) :
 data(value)
 {
@@ -320,44 +307,3 @@ bool TACOperand::operator==(const TACOperand& other) const
 	return data == other.data;
 }
 
-TACSubroutine::TACSubroutine() :
-tempCount(0)
-{
-
-}
-
-TACSubroutine::TACSubroutine(Nes::Address startAddress, Nes::Address endAddress):
-NesRegion(startAddress, endAddress)
-{
-
-}
-
-void TACSubroutine::Dump()
-{
-	for (auto tac : GetCodes())
-	{
-		DumpAddressTAC(COUT, tac) << std::endl;
-	}
-}
-
-TACList TACSubroutine::GetCodes()
-{
-	TACList tacs;
-	for (auto block : GetBasicBlocks())
-	{
-		auto& codes = block->GetCodes();
-		tacs.insert(tacs.end(), codes.begin(), codes.end());
-	}
-	return tacs;
-}
-
-TACBasicBlock::TACBasicBlock()
-{
-
-}
-
-TACBasicBlock::TACBasicBlock(Nes::Address startAddress, Nes::Address endAddress):
-NesRegion(startAddress, endAddress)
-{
-
-}

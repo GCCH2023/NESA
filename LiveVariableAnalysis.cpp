@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "LiveVariableAnalysis.h"
-#include "TAC.h"
+#include "TACFunction.h"
 #include "NesDataBase.h"
 using namespace std;
 #include "TACTranslater.h"

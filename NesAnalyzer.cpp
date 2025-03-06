@@ -136,7 +136,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 	}
 }
 
-void NesAnalyzer::AnalyzeTACSubroutine(TACSubroutine* subroutine)
+void NesAnalyzer::AnalyzeTACSubroutine(TACFunction* subroutine)
 {
 	auto& blocks = subroutine->GetBasicBlocks();
 	// 进行活跃变量分析，以确定是否使用AXY作为参数

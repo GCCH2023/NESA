@@ -2,7 +2,7 @@
 #include "DataFlowAnalyzer.h"
 #include "NodeSet.h"
 
-class TACSubroutine;
+class TACFunction;
 class TAC;
 
 struct AXYSet
@@ -44,7 +44,7 @@ struct TacAxyDefinition
 	void CheckDefinitionLimit();
 
 	// 获取所有定值点的三地址码
-	void GetDefinitionTACList(std::vector<TAC*>& result, AXYSet& set, TACSubroutine* tacSub);
+	void GetDefinitionTACList(std::vector<TAC*>& result, AXYSet& set, TACFunction* tacSub);
 };
 
 
@@ -61,7 +61,7 @@ private:
 	TacAxyDefinition axyDefs;
 protected:
 	virtual bool IteraterBasicBlock(TACBasicBlock* block) override;
-	void GetAXYDefinitions(TacAxyDefinition& axyDefs, TACSubroutine* tacSub);
+	void GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub);
 
 	virtual void Uninitialize() override;
 

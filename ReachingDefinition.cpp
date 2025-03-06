@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "ReachingDefinition.h"
-#include "TAC.h"
+#include "TACFunction.h"
 #include "NesDataBase.h"
 using namespace std;
 #include "TACTranslater.h"
@@ -8,7 +8,7 @@ using namespace std;
 
 
 
-void DumpBasicBlockDefinitions(TACBasicBlock* block, TacAxyDefinition& axyDefs, TACSubroutine* tacSub)
+void DumpBasicBlockDefinitions(TACBasicBlock* block, TacAxyDefinition& axyDefs, TACFunction* tacSub)
 {
 	vector<TAC*> codes(32);
 	TCHAR buffer[64];
@@ -25,7 +25,7 @@ void DumpBasicBlockDefinitions(TACBasicBlock* block, TacAxyDefinition& axyDefs, 
 }
 
 
-void DumpAllBasicBlockDefinitions(TacAxyDefinition& axyDefs, TACSubroutine* tacSub)
+void DumpAllBasicBlockDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub)
 {
 	for (auto block : tacSub->GetBasicBlocks())
 	{
@@ -46,7 +46,7 @@ ReachingDefinition::~ReachingDefinition()
 
 
 // 输出AXY的所有定值三地址码
-void DumpAXYDefinitions(TacAxyDefinition& axyDefs, TACSubroutine* tacSub)
+void DumpAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub)
 {
 	auto& codes = tacSub->GetCodes();
 	COUT << "获取AXY的所有定值点：\n";
@@ -68,7 +68,7 @@ void DumpAXYDefinitions(TacAxyDefinition& axyDefs, TACSubroutine* tacSub)
 }
 
 // 获取三地址码中的所有对A, X, Y 寄存器的定值点
-void ReachingDefinition::GetAXYDefinitions(TacAxyDefinition& axyDefs, TACSubroutine* tacSub)
+void ReachingDefinition::GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub)
 {
 	int i = 0;
 	for (auto code : tacSub->GetCodes())
@@ -131,7 +131,7 @@ TACBasicBlock* GetBasickBlockByAddress(const TACBasicBlockList& blocks, Nes::Add
 }
 
 // 计算各个基本块的生成杀死集
-void GetBasickBlockGenKillMap(TacAxyDefinition& axyDefs, TACSubroutine* tacSub,
+void GetBasickBlockGenKillMap(TacAxyDefinition& axyDefs, TACFunction* tacSub,
 	const TACBasicBlockList& blocks)
 {
 	auto codes = tacSub->GetCodes();
@@ -228,7 +228,7 @@ void TacAxyDefinition::CheckDefinitionLimit()
 	}
 }
 
-void TacAxyDefinition::GetDefinitionTACList(std::vector<TAC*>& result, AXYSet& set, TACSubroutine* tacSub)
+void TacAxyDefinition::GetDefinitionTACList(std::vector<TAC*>& result, AXYSet& set, TACFunction* tacSub)
 {
 	result.clear();
 	auto& codes = tacSub->GetCodes();

@@ -9,7 +9,7 @@ public:
 	TACDeadCodeElimination(NesDataBase& db);
 	~TACDeadCodeElimination();
 
-	virtual void Optimize(TACSubroutine* subroutine) override;
+	virtual void Optimize(TACFunction* subroutine) override;
 
 	void Reset();
 };

@@ -1,5 +1,5 @@
 #pragma once
-class TACSubroutine;
+class TACFunction;
 class NesDataBase;
 
 // 优化三地址码
@@ -9,7 +9,7 @@ public:
 	TACOptimizer(NesDataBase& db);
 	~TACOptimizer();
 
-	virtual void Optimize(TACSubroutine* subroutine);
+	virtual void Optimize(TACFunction* subroutine);
 
 protected:
 	NesDataBase& db;

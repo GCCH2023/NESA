@@ -1,6 +1,6 @@
 #pragma once
 #include "CNode.h"
-#include "TAC.h"
+#include "TACFunction.h"
 
 class Allocator;
 class TACBasicBlock;

@@ -32,11 +32,37 @@ Type* TypeManager::Float = &::Float;
 Type* TypeManager::Double = &::Double;
 Type* TypeManager::LongDouble = &::LongDouble;
 
+// FC 专用类型
+Type* TypeManager::Value = nullptr;  // 值的类型，一个字节
+Type* TypeManager::pValue = nullptr;  // 指向值的指针，占2个字节，用于变址寻址
+Type* TypeManager::ppValue = nullptr;  // 指向值的2重指针，占2个字节，用于间接变址寻址
+
 
 TypeManager::TypeManager(Allocator& allocator_) :
 allocator(allocator_)
 {
+	types.insert(Void);
+	types.insert(Char);
+	types.insert(Short);
+	types.insert(Int);
+	types.insert(Long);
+	types.insert(LongLong);
+	types.insert(UnsignedChar);
+	types.insert(UnsignedShort);
+	types.insert(UnsignedInt);
+	types.insert(UnsignedLong);
+	types.insert(UnsignedLongLong);
+	types.insert(Float);
+	types.insert(Double);
+	types.insert(LongDouble);
 
+	Value = Char;
+	Type pC(TypeKind::Pointer);
+	pC.pa.type = Value;
+	pValue = GetType(&pC);
+	Type ppC(TypeKind::Pointer);
+	ppC.pa.type = pValue;
+	ppValue = GetType(&ppC);
 }
 
 Type* TypeManager::NewArray(Type* elementType, size_t count)
@@ -147,4 +173,11 @@ bool TypeEqual::operator()(const Type* type1, const Type* type2) const
 	default:
 		return false;
 	}
+}
+
+TypeManager& GetTypeManager()
+{
+	static Allocator allocator;
+	static TypeManager typeManager(allocator);
+	return typeManager;
 }

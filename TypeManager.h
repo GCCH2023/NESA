@@ -20,6 +20,7 @@ struct TypeEqual
 class TypeManager
 {
 public:
+	// C 语言基本类型
 	static Type* Void;
 	static Type* Char;
 	static Type* Short;
@@ -35,7 +36,19 @@ public:
 	static Type* Double;
 	static Type* LongDouble;
 
+	// FC 专用类型
+	static Type* Value;  // 值的类型，一个字节
+	static Type* pValue;  // 指向值的指针，占2个字节，用于变址寻址
+	static Type* ppValue;  // 指向值的2重指针，占2个字节，用于间接变址寻址
+
+private:
+	friend TypeManager& GetTypeManager();
 	TypeManager(Allocator& allocator);
+
+public:
+	// 获取类型管理器使用的分配器
+	inline Allocator& GetAllocator() { return allocator; }
+
 	// 创建一个数组类型
 	Type* NewArray(Type* elementType, size_t count);
 	// 创建一个指针类型
@@ -56,3 +69,6 @@ protected:
 	Allocator& allocator;
 	std::unordered_set<Type*, TypeHash, TypeEqual> types;
 };
+
+// 获取类型管理器的全局实例
+TypeManager& GetTypeManager();

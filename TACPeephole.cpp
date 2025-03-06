@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "TACPeephole.h"
-#include "TAC.h"
+#include "TACFunction.h"
 
 enum class TACValueKind
 {
@@ -25,7 +25,7 @@ TACPeephole::~TACPeephole()
 {
 }
 
-void TACPeephole::Optimize(TACSubroutine* subroutine)
+void TACPeephole::Optimize(TACFunction* subroutine)
 {
 	Reset();
 

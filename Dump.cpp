@@ -161,7 +161,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 								   return os << obj->e.x << _T(" = ") << obj->e.y;
 	}
-	case CNodeKind::EXPR_REF:
+	case CNodeKind::EXPR_DEREF:
 	{
 								return os << _T("*") << obj->e.x;
 	}

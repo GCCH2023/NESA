@@ -19,8 +19,9 @@ enum class TACOperator
 	IFLEQ,  // if x <= y goto z
 	IFNEQ,  // if x != y goto z
 	IFEQ,  // if x == y goto z
-	INDEX,  // 索引 z = x[y]
-	REF,  // 解引用 x[y] = z
+	ARRAY_GET,  // 获取数组元素 z = x[y]
+	ARRAY_SET,  // 设置数组元素 x[y] = z
+	DEREF,  // 解引用，若 z 是T类型，则x 是T指针类型，z = *x
 	ARG,  // 传递一个函数参数，相当于 x86 中的 push x
 	CALL, // z = x(y)，x 是函数地址，y是参数数量
 	GOTO, // goto z
@@ -132,62 +133,5 @@ OStream& operator<<(OStream& os, const TAC* obj);
 OStream& DumpAddressTAC(OStream& os, const TAC* tac);
 
 
-using TACList = std::vector<TAC*>;
 
-// 三地址码的基本块
-class TACBasicBlock : public NesRegion
-{
-public:
-	TACBasicBlock();
-	TACBasicBlock(Nes::Address startAddress, Nes::Address endAddress);
-
-	// 添加一条三地址码
-	inline void AddTAC(TAC* code) { codes.push_back(code); }
-	inline TACList& GetCodes() { return codes; }
-	// 获取三地址码的数量
-	inline size_t GetCodesCount() const { return codes.size(); }
-private:
-	TACList codes;  // 三地址码列表
-public:
-	std::vector<TACBasicBlock*> prevs;
-	std::vector<TACBasicBlock*> nexts;
-	uint32_t flag;  // 一些标志
-};
-
-using TACBasicBlockList = std::vector<TACBasicBlock*>;
-
-// 三地址码子程序
-class TACSubroutine : public NesRegion
-{
-public:
-	TACSubroutine();
-	TACSubroutine(Nes::Address startAddress, Nes::Address endAddress);
-
-	// 输出内容
-	void Dump();
-
-	// 获取所有三地址码
-	TACList GetCodes();
-
-	// 添加一个基本块
-	inline void AddBasicBlock(TACBasicBlock* block) { blocks.push_back(block); }
-	inline TACBasicBlockList& GetBasicBlocks() { return blocks; }
-
-	// 添加一个新的临时变量，返回其编号
-	// bytes 是它占用的字节数 (目前没用到）
-	inline int NewTemp(int bytes) { return tempCount++; }
-
-	// 获取AXY参数标志
-	uint32_t GetParamFlag() const { return flag & 7; }
-	// 获取AXY返回值标志
-	uint32_t GetReturnFlag() const { return (flag >> 3) & 7; }
-
-	uint32_t flag;  // 低3位表示AXY作为参数，3 - 5位表示AXY作为返回值
-private:
-	TACBasicBlockList blocks;  // 基本块列表
-	int tempCount;  // 临时变量计数器
-};
-
-// 输出子程序对AXY的引用情况
-void DumpTACSubroutineAXY(TACSubroutine* sub);
 

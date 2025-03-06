@@ -1,9 +1,9 @@
 #pragma once
 #include "NodeSet.h"
 #include "CNode.h"
-#include "TAC.h"
+#include "TACFunction.h"
 
-class TACSubroutine;
+class TACFunction;
 class NesDataBase;
 class Function;
 struct Type;
@@ -49,7 +49,7 @@ public:
 	~CTranslater();
 
 	// 翻译子程序为C代码
-	Function* TranslateSubroutine(TACSubroutine* subroutine);
+	Function* TranslateSubroutine(TACFunction* subroutine);
 
 protected:
 	// 输入控制流图的边集，分析后获得控制树，返回其根节点
@@ -154,7 +154,7 @@ protected:
 	NesDataBase& db;
 	Allocator& allocator;  // 用于创建输出结果
 	Function* function;
-	TACSubroutine* subroutine;
+	TACFunction* subroutine;
 protected:
 	// 调试使用
 	// 输出所有基本块构成的控制流图

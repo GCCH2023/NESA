@@ -41,7 +41,7 @@ enum class CNodeKind
 	EXPR_LESS_EQUAL,  // 小于等于 <=
 
 	EXPR_INDEX,  // 索引 x[y]
-	EXPR_REF,  // 解引用 *p
+	EXPR_DEREF,  // 解引用 *p
 	EXPR_ADDR,  // 取地址 &a
 
 	EXPR_BOR_ASSIGN,  // |= 

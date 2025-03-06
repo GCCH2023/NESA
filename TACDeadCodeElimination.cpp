@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TACDeadCodeElimination.h"
 #include "LiveVariableAnalysis.h"
-#include "TAC.h"
+#include "TACFunction.h"
 
 TACDeadCodeElimination::TACDeadCodeElimination(NesDataBase& db) :
 TACOptimizer(db)
@@ -16,7 +16,7 @@ TACDeadCodeElimination::~TACDeadCodeElimination()
 // 如何一条三地址码是跳转地址，那么消除后，这个地址就没了
 // 应该改为跳转到下一条代码的地址，目前没有实现
 // 基本块的开始地址保留最初的地址好了
-void TACDeadCodeElimination::Optimize(TACSubroutine* subroutine)
+void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 {
 	Reset();
 

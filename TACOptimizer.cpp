@@ -11,7 +11,7 @@ TACOptimizer::~TACOptimizer()
 {
 }
 
-void TACOptimizer::Optimize(TACSubroutine* subroutine)
+void TACOptimizer::Optimize(TACFunction* subroutine)
 {
 
 }

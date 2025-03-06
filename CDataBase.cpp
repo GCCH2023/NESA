@@ -3,14 +3,12 @@
 
 CDataBase::CDataBase(Allocator& allocator_) :
 allocator(allocator_),
-stringTable(allocator_),
-typeManager(allocator_)
+stringTable(allocator_)
 {
 	// 添加PPU寄存器映射内存地址作为全局变量
 	for (CAddress i = Nes::PPU_CTRL; i <= Nes::PPU_DATA; ++i)
 	{
-		auto name = AddString(ToString((Nes::PPURegister)i));
-		RawAddGlobalVariable(name, TypeManager::UnsignedChar, i);
+		RawAddGlobalVariable(i, TypeManager::UnsignedChar);
 	}
 }
 
@@ -40,15 +38,22 @@ const Variable* CDataBase::GetGlobalVariable(String* name) const
 	return nullptr;
 }
 
-const Variable* CDataBase::AddGlobalVariable(String* name, Type* type, CAddress address)
+const Variable* CDataBase::AddGlobalVariable(CAddress address, Type* type, String* name /*= nullptr*/)
 {
 	// 应该保证地址和名称唯一
-	const Variable* variable = GetGlobalVariable(name);
-	if (variable)
+	if (name)
 	{
-		Sprintf<> s;
-		s.Format(_T("名称为 %s 的全局变量已经存在"), name);
-		throw Exception(s.ToString());
+		const Variable* variable = GetGlobalVariable(name);
+		if (variable)
+		{
+			Sprintf<> s;
+			s.Format(_T("名称为 %s 的全局变量已经存在"), name);
+			throw Exception(s.ToString());
+		}
+	}
+	else
+	{
+		name = MakeGlobalVariableName(address);
 	}
 
 	auto it = std::lower_bound(globals.begin(), globals.end(), address,
@@ -70,6 +75,14 @@ const Variable* CDataBase::AddGlobalVariable(String* name, Type* type, CAddress 
 	v->type = type;
 	globals.insert(it, v);
 	return v;
+}
+
+String* CDataBase::MakeGlobalVariableName(CAddress address)
+{
+	// 自动生成名称
+	Sprintf<> s;
+	s.Format(_T("g_%04X"), address);
+	return AddString(s.ToString());
 }
 
 void CDataBase::AddFunction(Function* function)
@@ -107,12 +120,14 @@ Type* CDataBase::GetTag(String* name)
 	return nullptr;
 }
 
-void CDataBase::RawAddGlobalVariable(String* name, Type* type, CAddress address, void* initializer /*= nullptr*/)
+void CDataBase::RawAddGlobalVariable(CAddress address, Type* type, String* name /*= nullptr*/, void* initializer /*= nullptr*/)
 {
 	auto it = std::lower_bound(globals.begin(), globals.end(), address,
 		[](const Variable* variable, CAddress address) {
 		return variable->address < address;
 	});
+	if (!name)
+		name = MakeGlobalVariableName(address);
 	Variable* v = allocator.New<Variable>();
 	v->address = address;
 	v->name = name;
@@ -123,7 +138,6 @@ void CDataBase::RawAddGlobalVariable(String* name, Type* type, CAddress address,
 
 CDataBase& GetCDB()
 {
-	static Allocator allocator;
-	static CDataBase cdb(allocator);
+	static CDataBase cdb(GetTypeManager().GetAllocator());
 	return cdb;
 }

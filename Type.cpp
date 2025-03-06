@@ -55,7 +55,7 @@ size_t GetTypeBytes(const Type* type)
 	case TypeKind::Double: return 8;
 	case TypeKind::LongDouble: return 8;
 	case TypeKind::Enum: return 4;
-	case TypeKind::Pointer: return 4;
+	case TypeKind::Pointer: return 2;  // 为了适配6502，改为2个字节
 	case TypeKind::Array: return GetTypeBytes(type->pa.type) * type->pa.count;
 	case TypeKind::Union:
 	case TypeKind::Struct:

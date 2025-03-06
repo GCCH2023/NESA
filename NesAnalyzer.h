@@ -2,7 +2,7 @@
 class NesDataBase;
 class NesSubroutine;
 class NesSubroutineParser;
-class TACSubroutine;
+class TACFunction;
 
 using SubroutineMap = std::unordered_map<Nes::Address, NesSubroutine*>;
 
@@ -28,7 +28,7 @@ protected:
 	void DumpAllCallRelation();
 	// 分析子程序是否使用了AXY作为参数，是否使用AXY返回值
 	void AnalyzeSubroutineRegisterAXY();
-	void AnalyzeTACSubroutine(TACSubroutine* subroutine);
+	void AnalyzeTACSubroutine(TACFunction* subroutine);
 protected:
 	NesDataBase& db;
 	Allocator allocator;

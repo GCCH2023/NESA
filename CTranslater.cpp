@@ -24,7 +24,7 @@ CTranslater::~CTranslater()
 
 }
 
-Function* CTranslater::TranslateSubroutine(TACSubroutine* subroutine)
+Function* CTranslater::TranslateSubroutine(TACFunction* subroutine)
 {
 	if (!subroutine)
 		return nullptr;
@@ -154,7 +154,7 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 								   auto var = GetLocalVariable(NewString(_T("temp%d"), operand.GetValue()), TypeManager::Char);
 								   auto varNode = allocator.New<CNode>(var);
 								   // 需要解引用
-								   return allocator.New<CNode>(CNodeKind::EXPR_REF, varNode);
+								   return allocator.New<CNode>(CNodeKind::EXPR_DEREF, varNode);
 							   }
 							   return allocator.New<CNode>(GetGlobalVariable(operand.GetValue(), TypeManager::Char));
 	}
@@ -252,8 +252,13 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
-		case TACOperator::INDEX:
+		case TACOperator::ARRAY_GET:
 			expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
+		case TACOperator::DEREF:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, GetExpression(tac->x));
 			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
@@ -624,7 +629,7 @@ void CTranslater::SetFunctionType()
 			this->function->AddParameter(allocator.New<Variable>(&y));
 		}
 	}
-	this->function->SetType(GetCDB().GetTypeManager().NewFunction(&funcType));
+	this->function->SetType(GetTypeManager().NewFunction(&funcType));
 }
 
 Type* CTranslater::GetAXYType()
@@ -647,7 +652,7 @@ Type* CTranslater::GetAXYType()
 	fieldA->next = fieldX;
 	fieldX->next = fieldY;
 
-	return GetCDB().GetTypeManager().NewStruct(GetCDB().AddString(_T("AXY")), fieldA);
+	return GetTypeManager().NewStruct(GetCDB().AddString(_T("AXY")), fieldA);
 }
 
 // 当要将控制流图中的一个自循环节点归约时
@@ -854,8 +859,7 @@ const Variable* CTranslater::GetGlobalVariable(CAddress address, Type* type)
 	auto variable = GetCDB().GetGlobalVariable(address);
 	if (variable)
 		return variable;
-	auto name = NewString(_T("g_%04X"), address);
-	return GetCDB().AddGlobalVariable(name, type, address);
+	return GetCDB().AddGlobalVariable(address, type);
 }
 
 const Variable* CTranslater::GetLocalVariable(String* name, Type* type)

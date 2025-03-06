@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "DataFlowAnalyzer.h"
-#include "TAC.h"
+#include "TACFunction.h"
 #include "NesBasicBlock.h"
 
 DataFlowAnalyzer::DataFlowAnalyzer(NesDataBase& db_):
@@ -13,7 +13,7 @@ DataFlowAnalyzer::~DataFlowAnalyzer()
 {
 }
 
-void DataFlowAnalyzer::Analyze(TACSubroutine* subroutine)
+void DataFlowAnalyzer::Analyze(TACFunction* subroutine)
 {
 	if (!subroutine)
 		return;

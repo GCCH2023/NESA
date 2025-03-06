@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+    <Text Include="说明.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h" />
@@ -175,6 +176,7 @@
     <ClInclude Include="String.h" />
     <ClInclude Include="TAC.h" />
     <ClInclude Include="TACDeadCodeElimination.h" />
+    <ClInclude Include="TACFunction.h" />
     <ClInclude Include="TACOptimizer.h" />
     <ClInclude Include="TACPeephole.h" />
     <ClInclude Include="TACTranslater.h" />
@@ -219,6 +221,7 @@
     <ClCompile Include="String.cpp" />
     <ClCompile Include="TAC.cpp" />
     <ClCompile Include="TACDeadCodeElimination.cpp" />
+    <ClCompile Include="TACFunction.cpp" />
     <ClCompile Include="TACOptimizer.cpp" />
     <ClCompile Include="TACPeephole.cpp" />
     <ClCompile Include="TACTranslater.cpp" />
