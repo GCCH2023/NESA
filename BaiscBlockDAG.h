@@ -28,7 +28,7 @@ struct TACOperandHash
 class BaiscBlockDAG
 {
 public:
-	BaiscBlockDAG(Allocator& allocator, CDataBase& cdb);
+	BaiscBlockDAG(Allocator& allocator);
 	~BaiscBlockDAG();
 	CNode* Translate(TACBasicBlock* block);
 
@@ -43,7 +43,6 @@ protected:
 
 protected:
 	Allocator& allocator;
-	CDataBase& cdb;
 
 	std::unordered_set<CNode*, CNodeHash, CNodeEqual> nodeSet;  // 节点哈希表，快速查找节点
 	std::unordered_map<TACOperand, CNode*, TACOperandHash> lastest;  // 变量最近的定值语句

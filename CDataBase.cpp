@@ -120,3 +120,10 @@ void CDataBase::RawAddGlobalVariable(String* name, Type* type, CAddress address,
 	v->initializer = initializer;
 	globals.insert(it, v);
 }
+
+CDataBase& GetCDB()
+{
+	static Allocator allocator;
+	static CDataBase cdb(allocator);
+	return cdb;
+}

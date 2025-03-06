@@ -147,9 +147,8 @@ bool CNodeEqual::operator()(const CNode* node1, const CNode* node2) const
 }
 
 
-BaiscBlockDAG::BaiscBlockDAG(Allocator& allocator_, CDataBase& cdb_):
-allocator(allocator_),
-cdb(cdb_)
+BaiscBlockDAG::BaiscBlockDAG(Allocator& allocator_):
+allocator(allocator_)
 {
 	//registers[Nes::NesRegisters::A] = CNode(cdb.AddString(_T("A")));
 	//registers[Nes::NesRegisters::X] = CNode(cdb.AddString(_T("X")));
@@ -170,7 +169,7 @@ String* BaiscBlockDAG::NewString(const CStr format, ...)
 	va_start(va, format);
 	_vstprintf_s(buffer, 256, format, va);
 	va_end(va);
-	return cdb.AddString(buffer);
+	return GetCDB().AddString(buffer);
 }
 
 

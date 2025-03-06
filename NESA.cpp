@@ -27,8 +27,6 @@ using namespace Nes;
 #include "BaiscBlockDAG.h"
 void BaiscBlockDAGTest()
 {
-	Allocator allocator;
-	CDataBase cdb(allocator);
 	// 1. 构造三地址码
 	TACOperand a(TACOperand::TEMP | 0);
 	TACOperand b(TACOperand::TEMP | 1);
@@ -45,7 +43,7 @@ void BaiscBlockDAGTest()
 	block.AddTAC(&code2);
 	block.AddTAC(&code3);
 
-	BaiscBlockDAG bbDag(allocator, cdb);
+	BaiscBlockDAG bbDag(GetCDB().GetAllocator());
 	auto statement = bbDag.Translate(&block);
 	COUT << statement;
 }
@@ -53,11 +51,8 @@ void BaiscBlockDAGTest()
 // 全局变量测试
 void GlobalTest()
 {
-	Allocator allocator;
-	CDataBase cdb(allocator);
-
 	Sprintf<> s;
-	for (auto g : cdb.GetGlobalList())
+	for (auto g : GetCDB().GetGlobalList())
 	{
 		s.Format(_T("%08X\t%s\t%s\n"), g->address, ToString(g->type->GetKind()), g->name->str);
 		COUT << s.ToString();
@@ -78,11 +73,10 @@ void ParseNes(const TCHAR* rom)
 		s.Append(_T("中断向量处理程序 IRQ : 0x%04X\n"), db.GetInterruptIrqAddress());
 		COUT << s.ToString();
 
-		CDataBase cdb(allocator);
 		TACTranslater ntt(db, allocator);
 		TACPeephole tacPh(db);
 		TACDeadCodeElimination tacDce(db);
-		CTranslater translater(allocator, db, cdb);
+		CTranslater translater(allocator, db);
 		CTreeOptimizer ctreeOptimizer;
 
 		// 一. 从这里开始，到 return 之间的代码是从指定函数开始
@@ -111,11 +105,11 @@ void ParseNes(const TCHAR* rom)
 			ctreeOptimizer.Optimize(func->GetBody());
 
 			// 5. 输出函数代码
-			cdb.AddFunction(func);
+			GetCDB().AddFunction(func);
 		}
 
 		// 输出C代码
-		Dump(cdb);
+		Dump(GetCDB());
 		return;
 
 		// 二. 详细分析一个函数（不包括它调用的函数） 

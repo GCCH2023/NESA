@@ -4,13 +4,12 @@ using namespace std;
 #include "Function.h"
 #include "CDataBase.h"
 
-CTranslater::CTranslater(Allocator& allocator_, NesDataBase& db_, CDataBase& cdb_) :
+CTranslater::CTranslater(Allocator& allocator_, NesDataBase& db_) :
 db(db_),
 allocator(allocator_),
 function(nullptr),
 subroutine(nullptr),
-tempAllocator(1024 * 1024),
-cdb(cdb_)
+tempAllocator(1024 * 1024)
 {
 	registers[Nes::NesRegisters::A] = NewString(_T("A"));
 	registers[Nes::NesRegisters::X] = NewString(_T("X"));
@@ -62,7 +61,7 @@ Function* CTranslater::TranslateSubroutine(TACSubroutine* subroutine)
 	func->SetBody(root->statement);
 	TCHAR buffer[64];
 	_stprintf_s(buffer, _T("sub_%04X"), subroutine->GetStartAddress());
-	func->name = cdb.AddString(buffer);
+	func->name = GetCDB().AddString(buffer);
 
 
 	return func;
@@ -517,7 +516,7 @@ String* CTranslater::NewString(const CStr format, ...)
 	va_start(va, format);
 	_vstprintf_s(buffer, 256, format, va);
 	va_end(va);
-	return cdb.AddString(buffer);
+	return GetCDB().AddString(buffer);
 }
 
 CNode* CTranslater::NewDoWhile(CNode* condition, CNode* body)
@@ -579,11 +578,11 @@ CNode* CTranslater::NewNoneStatement()
 void CTranslater::SetFunctionType()
 {
 	// 首先创建一个表示AXY寄存器的结构体
-	Type* axyType = cdb.GetTag(NewString(_T("AXY")));
+	Type* axyType = GetCDB().GetTag(NewString(_T("AXY")));
 	if (!axyType)
 	{
 		axyType = GetAXYType();
-		cdb.AddTag(axyType);
+		GetCDB().AddTag(axyType);
 	}
 
 	// 创建函数类型
@@ -625,7 +624,7 @@ void CTranslater::SetFunctionType()
 			this->function->AddParameter(allocator.New<Variable>(&y));
 		}
 	}
-	this->function->SetType(cdb.GetTypeManager().NewFunction(&funcType));
+	this->function->SetType(GetCDB().GetTypeManager().NewFunction(&funcType));
 }
 
 Type* CTranslater::GetAXYType()
@@ -648,7 +647,7 @@ Type* CTranslater::GetAXYType()
 	fieldA->next = fieldX;
 	fieldX->next = fieldY;
 
-	return cdb.GetTypeManager().NewStruct(cdb.AddString(_T("AXY")), fieldA);
+	return GetCDB().GetTypeManager().NewStruct(GetCDB().AddString(_T("AXY")), fieldA);
 }
 
 // 当要将控制流图中的一个自循环节点归约时
@@ -852,11 +851,11 @@ void CTranslater::OnReduceIfOr(Node _if, Node then, Node _else)
 
 const Variable* CTranslater::GetGlobalVariable(CAddress address, Type* type)
 {
-	auto variable = cdb.GetGlobalVariable(address);
+	auto variable = GetCDB().GetGlobalVariable(address);
 	if (variable)
 		return variable;
 	auto name = NewString(_T("g_%04X"), address);
-	return cdb.AddGlobalVariable(name, type, address);
+	return GetCDB().AddGlobalVariable(name, type, address);
 }
 
 const Variable* CTranslater::GetLocalVariable(String* name, Type* type)

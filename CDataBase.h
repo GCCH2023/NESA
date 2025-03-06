@@ -11,8 +11,10 @@ using TagList = std::vector<Type*>;
 // 管理C代码相关数据
 class CDataBase
 {
-public:
+	friend CDataBase& GetCDB();
+private:
 	CDataBase(Allocator& allocator);
+public:
 	~CDataBase();
 
 	// 添加指定字符串到字符串表中
@@ -43,6 +45,9 @@ public:
 	void AddTag(Type* tag);
 	// 根据名称获取标签类型
 	Type* GetTag(String* name);
+
+	// 获取分配器
+	inline Allocator& GetAllocator() { return allocator; }
 protected:
 	// 不做任何验证地添加全局变量
 	void RawAddGlobalVariable(String* name, Type* type, CAddress address, void* initializer = nullptr);
@@ -56,3 +61,5 @@ protected:
 	TagList tags;  // 结构体，枚举，联合体列表
 };
 
+// 获取C数据库单例
+CDataBase& GetCDB();

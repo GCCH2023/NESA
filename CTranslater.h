@@ -45,7 +45,7 @@ struct ControlTreeNodeEx : BasicBlock
 class CTranslater
 {
 public:
-	CTranslater(Allocator& allocator, NesDataBase& db, CDataBase& cdb);
+	CTranslater(Allocator& allocator, NesDataBase& db);
 	~CTranslater();
 
 	// 翻译子程序为C代码
@@ -155,7 +155,6 @@ protected:
 	Allocator& allocator;  // 用于创建输出结果
 	Function* function;
 	TACSubroutine* subroutine;
-	CDataBase& cdb;
 protected:
 	// 调试使用
 	// 输出所有基本块构成的控制流图
