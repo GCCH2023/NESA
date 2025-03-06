@@ -236,15 +236,6 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 		case Nes::Opcode::Ror:
 			tac = allocator.New<TAC>(TACOperator::ROR, GetOperand(i), GetOperand(i), TACOperand(1));
 			break;
-		case Nes::Opcode::Sta:
-			tac = allocator.New<TAC>(TACOperator::ASSIGN, GetOperand(i), RegisterA);
-			break;
-		case Nes::Opcode::Stx:
-			tac = allocator.New<TAC>(TACOperator::ASSIGN, GetOperand(i), RegisterX);
-			break;
-		case Nes::Opcode::Sty:
-			tac = allocator.New<TAC>(TACOperator::ASSIGN, GetOperand(i), RegisterY);
-			break;
 		case Nes::Opcode::Txa:
 			tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterA, RegisterX);
 			break;
@@ -281,6 +272,23 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 			else
 				tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterY, temp.x);
 			break;
+		case Nes::Opcode::Sta:
+			if (TranslateOperand(temp, i))
+				tac = allocator.New<TAC>(TACOperator::REF, RegisterA, temp.x, temp.y);
+			else
+				tac = allocator.New<TAC>(TACOperator::ASSIGN, temp.x, RegisterA);
+			break;
+		case Nes::Opcode::Stx:
+			if (TranslateOperand(temp, i))
+				tac = allocator.New<TAC>(TACOperator::REF, RegisterX, temp.x, temp.y);
+			else
+				tac = allocator.New<TAC>(TACOperator::ASSIGN, temp.x, RegisterX);
+			break;
+		case Nes::Opcode::Sty:
+			if (TranslateOperand(temp, i))
+				tac = allocator.New<TAC>(TACOperator::REF, RegisterY, temp.x, temp.y);
+			else
+				tac = allocator.New<TAC>(TACOperator::ASSIGN, temp.x, RegisterY);
 			break;
 		case Nes::Opcode::Cmp:
 			tac = TranslateCmp(i, instructions[index + 1], RegisterA);
@@ -426,19 +434,20 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetByte());
 		tac.y = RegisterY;
 		return true;
-	//case AddrMode::IndirectY:
-	//{
-	//							// [Y + [zp]]
-	//							// 需要额外添加一条三地址码用于计算地址
-	//							//int temp = this->tacSub->NewTemp(2);
-	//							//TACOperand result(TACOperand::TEMP | temp);  // 创建一个临时变量保存计算结果地址
-	//							//TACOperand zeroPageAddr(TACOperand::MEMORY | instruction.GetByte());  // 从零页指定2字节单元取出地址
-	//							//TAC* tac = allocator.New<TAC>(TACOperator::ADD, result, RegisterY, zeroPageAddr);
-	//							//AddTAC(tac, instruction.GetAddress());
-	//							//// 然后返回临时变量作为地址
-	//							//result.SetKind(TACOperand::MEMORY);
-	//							//return true;
-	//}
+	case AddrMode::IndirectY:
+	{
+								// [Y + [zp]]
+								// 需要额外添加一条三地址码用于计算地址
+								int temp = this->tacSub->NewTemp(2);
+								TACOperand result(TACOperand::TEMP | temp);  // 创建一个临时变量保存计算结果地址
+								TACOperand zeroPageAddr(TACOperand::MEMORY | instruction.GetByte());  // 从零页指定2字节单元取出地址
+								TAC* t = allocator.New<TAC>(TACOperator::ADD, result, RegisterY, zeroPageAddr);
+								AddTAC(t, instruction.GetAddress());
+								// 然后返回临时变量作为地址
+								result.SetKind(TACOperand::MEMORY);
+								tac.x = result;
+								return false;
+	}
 	default:
 	{
 			   TCHAR buffer[64];
