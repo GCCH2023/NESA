@@ -115,7 +115,7 @@ void ParseNes(const TCHAR* rom)
 
 		// 二. 详细分析一个函数（不包括它调用的函数） 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = 0x8EE6;// db.GetInterruptResetAddress();
+		Nes::Address addr = db.GetInterruptResetAddress();
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
 		// 输出 FC 指令

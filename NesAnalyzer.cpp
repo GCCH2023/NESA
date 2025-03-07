@@ -153,7 +153,7 @@ void NesAnalyzer::AnalyzeTACSubroutine(TACFunction* subroutine)
 
 	for (auto block : subroutine->GetBasicBlocks())
 	{
-		if ((block->flag & BBF_END_RETURN) != 0)
+		if ((block->flag & BBF_END_MASK) == BBF_END_RETURN)
 		{
 			auto blockSet = (BasicBlockReachingDefinitionSet*)block->tag;
 			if (blockSet->out.a.Any())

@@ -170,7 +170,7 @@
       <Filter>C</Filter>
     </ClInclude>
     <ClInclude Include="TACFunction.h">
-      <Filter>头文件</Filter>
+      <Filter>IR</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -283,7 +283,7 @@
       <Filter>C</Filter>
     </ClCompile>
     <ClCompile Include="TACFunction.cpp">
-      <Filter>源文件</Filter>
+      <Filter>IR</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

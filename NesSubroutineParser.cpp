@@ -367,6 +367,7 @@ void NesSubroutineParser::BindBlock(NesBasicBlock* prev, Nes::Address nextAddr)
 
 void NesSubroutineParser::SetBasickBlockJumpFlag(NesBasicBlock* block, bool isCond, Nes::Address jumpAddr)
 {
+	assert(block->flag == 0);
 	if (isCond)
 		block->flag |= BBF_END_COND;
 	else
