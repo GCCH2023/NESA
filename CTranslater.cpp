@@ -255,10 +255,30 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
 		case TACOperator::ARRAY_GET:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
-			break;
+		{
+									   // 可能是给结构体字段赋值
+									   auto x = GetExpression(tac->x);
+									   // x 必定是变量
+									   assert(x->kind == CNodeKind::EXPR_VARIABLE);
+									   auto type = x->variable->type;
+									   if (type->GetKind() == TypeKind::Struct)
+									   {
+										   // y 必定是整数
+										   assert(tac->y.GetKind() == TACOperand::INTEGER);
+										   // 根据偏移量查找字段
+										   auto field = type->GetField(tac->y.GetValue());
+										   auto fieldNode = allocator.New<CNode>(field);
+										   expr = allocator.New<CNode>(CNodeKind::EXPR_DOT, x, fieldNode);
+									   }
+									   else
+									   {
+										   expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
+									   }
+									   expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+									   current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+									   break;
+
+		}
 		case TACOperator::ARRAY_SET:
 		{
 									   // 可能是给结构体字段赋值
@@ -271,9 +291,14 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 										   // y 必定是整数
 										   assert(tac->y.GetKind() == TACOperand::INTEGER);
 										   // 根据偏移量查找字段
-										   type->GetFieldsCount();
+										   auto field = type->GetField(tac->y.GetValue());
+										   auto fieldNode = allocator.New<CNode>(field);
+										   expr = allocator.New<CNode>(CNodeKind::EXPR_DOT, x, fieldNode);
 									   }
-									   expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
+									   else
+									   {
+										   expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
+									   }
 									   expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, expr, GetExpression(tac->z));
 									   current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 									   break;

@@ -117,6 +117,10 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 									 return os << obj->variable->name;
 	}
+	case CNodeKind::EXPR_FIELD:
+	{
+									 return os << obj->field->name;
+	}
 	case CNodeKind::EXPR_BOR:
 	{
 								return os << obj->e.x << _T(" | ") << obj->e.y;
@@ -197,6 +201,14 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::EXPR_INDEX:
 	{
 								  return os << obj->e.x << _T("[") << obj->e.y << _T("]");
+	}
+	case CNodeKind::EXPR_ARROW:
+	{
+								  return os << obj->e.x << _T("->") << obj->e.y;
+	}
+	case CNodeKind::EXPR_DOT:
+	{
+								return os << obj->e.x << _T(".") << obj->e.y;
 	}
 	default:
 		throw Exception(_T("输出节点字符串: 未实现的节点类型"));

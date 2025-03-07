@@ -14,6 +14,14 @@ variable(variable_)
 {
 }
 
+
+CNode::CNode(const Field* field_):
+kind(CNodeKind::EXPR_FIELD),
+field(field_)
+{
+
+}
+
 CNode::CNode(int value) :
 kind(CNodeKind::EXPR_INTEGER)
 {
@@ -45,4 +53,3 @@ CNode::CNode()
 {
 
 }
-

@@ -2,6 +2,7 @@
 #include "Variable.h"
 
 struct String;
+struct Field;
 
 // !!!增加节点类型时，注意修改CNode中的判断类型函数
 enum class CNodeKind
@@ -22,6 +23,7 @@ enum class CNodeKind
 
 	// 表达式子类
 	EXPR_VARIABLE,  // 变量
+	EXPR_FIELD,  // 字段
 	EXPR_INTEGER,  // 整数常量
 
 	EXPR_ADD,  // 加法
@@ -41,6 +43,8 @@ enum class CNodeKind
 	EXPR_LESS_EQUAL,  // 小于等于 <=
 
 	EXPR_INDEX,  // 索引 x[y]
+	EXPR_ARROW,  // 取记录对象指针的字段 x->y
+	EXPR_DOT,  // 取记录对象的字段 x.y
 	EXPR_DEREF,  // 解引用 *p
 	EXPR_ADDR,  // 取地址 &a
 
@@ -66,7 +70,8 @@ struct CNode
 			String* name;
 			CNode* body;
 		}l;  // 标签语句
-		const Variable* variable;
+		const Variable* variable;  // 变量
+		const Field* field;  // 记录类型的字段
 		struct
 		{
 			int value;
@@ -100,6 +105,8 @@ struct CNode
 	CNode(CNodeKind kind, uint32_t address);
 	// 创建变量
 	CNode(const Variable* variable);
+	// 创建字段
+	CNode(const Field* field);
 	// 创建函数调用或标签语句
 	CNode(String* name, CNode* params);
 	// 创建整数

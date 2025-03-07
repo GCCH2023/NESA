@@ -151,8 +151,7 @@ pa({ 0 })
 
 size_t Type::GetFieldsCount() const
 {
-	if (GetKind() != TypeKind::Struct && GetKind() != TypeKind::Union)
-		return 0;
+	assert(GetKind() == TypeKind::Struct || GetKind() == TypeKind::Union);
 	size_t count = 0;
 	for (const Field* field = su.fields; field; field = field->next)
 		++count;
@@ -161,8 +160,7 @@ size_t Type::GetFieldsCount() const
 
 void Type::AddField(Field* field)
 {
-	if (GetKind() != TypeKind::Struct && GetKind() != TypeKind::Union)
-		return;
+	assert(GetKind() == TypeKind::Struct && GetKind() == TypeKind::Union);
 	if (field->align == 0)
 		field->align = GetTypeAlign(field->type);
 	if (!su.fields)
@@ -178,6 +176,18 @@ void Type::AddField(Field* field)
 
 const Field* Type::GetField(int offset)
 {
+	assert(GetKind() == TypeKind::Struct);
+	size_t size = 0;
+	for (const Field* field = su.fields; field; field = field->next)
+	{
+		size = (size + field->align - 1) & ~(field->align - 1);  // 向上取整到字段的对齐字节
+		if (size == offset)
+			return field;
+		if (size > offset)
+			return nullptr;
+
+		size += GetTypeBytes(field->type);
+	}
 	return nullptr;
 }
 
