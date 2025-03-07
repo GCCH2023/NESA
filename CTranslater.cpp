@@ -53,6 +53,8 @@ Function* CTranslater::TranslateSubroutine(TACFunction* subroutine)
 	this->function = func;
 	// 设置C函数的类型和参数
 	SetFunctionType();
+	// 创建临时变量
+	SetLocalVariables();
 
 	auto root = Analyze(edges.data(), edges.size());
 
@@ -132,7 +134,7 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 	case TACOperand::INTEGER:
 		if (operand.IsTemp())
 		{
-			auto var = GetLocalVariable(NewString(_T("temp%d"), operand.GetValue()), TypeManager::Char);
+			auto var = GetLocalVariable(operand.GetValue());
 			return allocator.New<CNode>(var);
 		}
 		else
@@ -151,7 +153,7 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 	{
 							   if (operand.IsTemp())
 							   {
-								   auto var = GetLocalVariable(NewString(_T("temp%d"), operand.GetValue()), TypeManager::Char);
+								   auto var = GetLocalVariable(operand.GetValue());
 								   auto varNode = allocator.New<CNode>(var);
 								   // 需要解引用
 								   return allocator.New<CNode>(CNodeKind::EXPR_DEREF, varNode);
@@ -257,6 +259,25 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
+		case TACOperator::ARRAY_SET:
+		{
+									   // 可能是给结构体字段赋值
+									   auto x = GetExpression(tac->x);
+									   // x 必定是变量
+									   assert(x->kind == CNodeKind::EXPR_VARIABLE);
+									   auto type = x->variable->type;
+									   if (type->GetKind() == TypeKind::Struct)
+									   {
+										   // y 必定是整数
+										   assert(tac->y.GetKind() == TACOperand::INTEGER);
+										   // 根据偏移量查找字段
+										   type->GetFieldsCount();
+									   }
+									   expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
+									   expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, expr, GetExpression(tac->z));
+									   current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+									   break;
+		}
 		case TACOperator::DEREF:
 			expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, GetExpression(tac->x));
 			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
@@ -583,12 +604,7 @@ CNode* CTranslater::NewNoneStatement()
 void CTranslater::SetFunctionType()
 {
 	// 首先创建一个表示AXY寄存器的结构体
-	Type* axyType = GetCDB().GetTag(NewString(_T("AXY")));
-	if (!axyType)
-	{
-		axyType = GetAXYType();
-		GetCDB().AddTag(axyType);
-	}
+	Type* axyType = GetCDB().GetAXYType();
 
 	// 创建函数类型
 	Type funcType(TypeKind::Function);
@@ -632,27 +648,23 @@ void CTranslater::SetFunctionType()
 	this->function->SetType(GetTypeManager().NewFunction(&funcType));
 }
 
-Type* CTranslater::GetAXYType()
+
+void CTranslater::SetLocalVariables()
 {
-	Field* fieldA = allocator.New<Field>();
-	fieldA->name = registers[Nes::NesRegisters::A];
-	fieldA->align = GetTypeAlign(TypeManager::Char);
-	fieldA->type = TypeManager::Char;
-
-	Field* fieldX = allocator.New<Field>();
-	fieldX->name = registers[Nes::NesRegisters::Y];
-	fieldX->align = GetTypeAlign(TypeManager::Char);
-	fieldX->type = TypeManager::Char;
-
-	Field* fieldY = allocator.New<Field>();
-	fieldY->name = registers[Nes::NesRegisters::Y];
-	fieldY->align = GetTypeAlign(TypeManager::Char);
-	fieldY->type = TypeManager::Char;
-
-	fieldA->next = fieldX;
-	fieldX->next = fieldY;
-
-	return GetTypeManager().NewStruct(GetCDB().AddString(_T("AXY")), fieldA);
+	auto& types = this->subroutine->GetTempVariableTypes();
+	int i = 0;
+	for (auto type : types)
+	{
+		// 添加
+		auto variable = allocator.New<Variable>();
+		if (type == GetCDB().GetAXYType())
+			variable->name = NewString(_T("axy"), i);
+		else
+			variable->name = NewString(_T("temp%d"), i);
+		variable->type = type;
+		this->function->AddVariable(variable);
+		++i;
+	}
 }
 
 // 当要将控制流图中的一个自循环节点归约时
@@ -874,6 +886,16 @@ const Variable* CTranslater::GetLocalVariable(String* name, Type* type)
 	variable->type = type;
 	this->function->AddVariable(variable);
 	return variable;
+}
+
+const Variable* CTranslater::GetLocalVariable(int index)
+{
+	for (auto v = this->function->GetVariableList(); v; v = v->next)
+	{
+		if (index-- == 0)
+			return v;
+	}
+	return nullptr;
 }
 
 Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType type)

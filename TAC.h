@@ -19,8 +19,8 @@ enum class TACOperator
 	IFLEQ,  // if x <= y goto z
 	IFNEQ,  // if x != y goto z
 	IFEQ,  // if x == y goto z
-	ARRAY_GET,  // 获取数组元素 z = x[y]
-	ARRAY_SET,  // 设置数组元素 x[y] = z
+	ARRAY_GET,  // 获取数组元素 z = x[y]，x 是数组基地址，y 是元素的偏移量字节数
+	ARRAY_SET,  // 设置数组元素 x[y] = z，x 是数组基地址，y 是元素的偏移量字节数
 	DEREF,  // 解引用，若 z 是T类型，则x 是T指针类型，z = *x
 	ARG,  // 传递一个函数参数，相当于 x86 中的 push x
 	CALL, // z = x(y)，x 是函数地址，y是参数数量

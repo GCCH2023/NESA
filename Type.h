@@ -26,6 +26,7 @@ enum class TypeKind
 const TCHAR* ToString(TypeKind typeKind);
 
 struct Type;
+// !!! 不要直接设置next字段，这样会导致align不被计算
 struct Field
 {
 	String* name;  // 名称
@@ -89,6 +90,8 @@ struct Type
 	size_t GetFieldsCount() const;
 	// 添加一个字段到记录类型的末尾
 	void AddField(Field* field);
+	// 根据偏移量获取字段，找不到返回 nullptr
+	const Field* GetField(int offset);
 
 	// 添加一个枚举值
 	void AddEnumerator(Enumerator* enumerator);

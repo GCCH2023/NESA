@@ -36,6 +36,20 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 		for (auto it = codes.rbegin(); it != codes.rend();)
 		{
 			auto tac = *it;
+			// 数组需要特殊处理
+			switch (tac->op)
+			{
+			case TACOperator::ARRAY_GET:
+				break;  // 获取数组元素，不需要特殊处理
+			case TACOperator::ARRAY_SET:
+				// x[y] = z, z是寄存器，标记被使用
+				if (tac->z.IsRegister() && tac->z.GetValue() <= Nes::NesRegisters::Y)
+				{
+					axyUses += tac->z.GetValue();
+				}
+				++it;
+				continue;
+			}
 			if (tac->z.IsRegister() && tac->z.GetValue() <= Nes::NesRegisters::Y)
 			{
 				// 判断它是否被后面的基本块引用，也就是在这个基本块的出口处，这个变量是活跃的

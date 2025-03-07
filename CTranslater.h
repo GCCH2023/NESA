@@ -112,6 +112,8 @@ protected:
 	const Variable* GetGlobalVariable(CAddress address, Type* type);
 	// 获取局部变量，不存在就添加
 	const Variable* GetLocalVariable(String* name, Type* type);
+	// 按索引获取局部变量
+	const Variable* GetLocalVariable(int index);
 	// 将三地址码操作数转换为C表达式
 	CNode* GetExpression(TACOperand& operand);
 	// 条件跳转语句翻译
@@ -148,8 +150,8 @@ protected:
 protected:  // C函数处理
 	// 创建C函数的类型
 	void SetFunctionType();
-	// 创建一个表示AXY寄存器的结构体类型
-	Type* GetAXYType();
+	// 添加所有临时变量
+	void SetLocalVariables();
 protected:
 	NesDataBase& db;
 	Allocator& allocator;  // 用于创建输出结果

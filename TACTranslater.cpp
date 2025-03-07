@@ -7,7 +7,8 @@ TACTranslater::TACTranslater(NesDataBase& db_, Allocator& allocator_) :
 db(db_),
 allocator(allocator_),
 tacSub(nullptr),
-tacStarts(32)
+tacStarts(32),
+axy(0)
 {
 }
 
@@ -26,6 +27,12 @@ TACFunction* TACTranslater::Translate(NesSubroutine* subroutine)
 	std::unordered_map<NesBasicBlock*, TACBasicBlock*> blockMap;
 	this->tacSub = allocator.New<TACFunction>(subroutine->GetStartAddress(), subroutine->GetEndAddress());
 	this->tacSub->flag = subroutine->flag;
+	// 如果有返回值，则添加返回值临时变量
+	if (this->tacSub->flag & SUBF_RETURN)
+	{
+		axy = this->tacSub->NewTemp(GetCDB().GetAXYType());
+	}
+
 	for (auto block : subroutine->GetBasicBlocks())
 	{
 		auto tacBlock = TranslateBasickBlock(block);
@@ -77,6 +84,65 @@ TAC* TACTranslater::TranslateConditionalJump(std::vector<Instruction>& instructi
 	TCHAR buffer[256];
 	_stprintf_s(buffer, _T("地址 %04X 分析失败：跳转指令所在的基本块没有指令写入需要的标志位"), instructions[index].address);
 	throw Exception(buffer);
+}
+
+TAC* TACTranslater::TranslateCall(Nes::Address callAddr, Nes::Address addr)
+{
+	// 
+	int argCount = 0;
+	TACOperand x(TACOperand::ADDRESS | callAddr);
+	auto tac = allocator.New<TAC>(TACOperator::CALL, 0, x, 0);
+	auto sub = db.FindSubroutine(tac->x.GetValue());
+	if (sub && sub->flag & SUBF_PARAM)
+	{
+		if (sub->flag & SUBF_PARAM_A)
+		{
+			AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterA), addr);
+			++argCount;
+		}
+		if (sub->flag & SUBF_PARAM_X)
+		{
+			AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterX), addr);
+			++argCount;
+		}
+		if (sub->flag & SUBF_PARAM_Y)
+		{
+			AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterY), addr);
+			++argCount;
+		}
+		tac->y.SetValue(argCount);
+	}
+	return tac;
+}
+
+TAC* TACTranslater::TranslateReturn(const Instruction& instruction)
+{
+	// 没有返回值的话，直接返回
+	if ((this->tacSub->flag & SUBF_RETURN) == 0)
+		return allocator.New<TAC>(TACOperator::RETURN);
+
+	// 给返回值字段赋值，需要用数组的方式来赋值
+	auto returns = this->tacSub->GetReturnFlag();
+
+	if (returns & Nes::NesRegisters::A)
+	{
+		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterA,
+			TACOperand(TACOperand::TEMP | axy), 0);
+		AddTAC(tac, instruction.GetAddress());
+	}
+	if (returns & Nes::NesRegisters::X)
+	{
+		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterX,
+			TACOperand(TACOperand::TEMP | axy), 1);
+		AddTAC(tac, instruction.GetAddress());
+	}
+	if (returns & Nes::NesRegisters::Y)
+	{
+		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterY,
+			TACOperand(TACOperand::TEMP | axy), 2);
+		AddTAC(tac, instruction.GetAddress());
+	}
+	return allocator.New<TAC>(TACOperator::RETURN, 0, TACOperand(TACOperand::TEMP | axy));
 }
 
 TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
@@ -157,33 +223,8 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 			tac = allocator.New<TAC>(TACOperator::SED);
 			break;
 		case Nes::Opcode::Jsr:
-		{
-								 // 
-								 int argCount = 0;
-								 tac = allocator.New<TAC>(TACOperator::CALL, 0, GetOperand(i), 0);
-								 tac->x.SetKind(TACOperand::ADDRESS);
-								 auto sub = db.FindSubroutine(tac->x.GetValue());
-								 if (sub && sub->flag & SUBF_PARAM)
-								 {
-									 if (sub->flag & SUBF_PARAM_A)
-									 {
-										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterA), i.GetAddress());
-										 ++argCount;
-									 }
-									 if (sub->flag & SUBF_PARAM_X)
-									 {
-										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterX), i.GetAddress());
-										 ++argCount;
-									 }
-									 if (sub->flag & SUBF_PARAM_Y)
-									 {
-										 AddTAC(allocator.New<TAC>(TACOperator::ARG, 0, RegisterY), i.GetAddress());
-										 ++argCount;
-									 }
-									 tac->y.SetValue(argCount);
-								 }
-								 break;
-		}
+			tac = TranslateCall(i.GetOperandAddress(), i.GetAddress());
+			break;
 		case Nes::Opcode::And:
 			tac = allocator.New<TAC>(TACOperator::BAND, RegisterA, RegisterA, GetOperand(i));
 			break;
@@ -217,8 +258,9 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 										 jumpAddr >= this->nesSub->GetEndAddress())
 									 {
 										 // 认为是尾调用
-										 tac = allocator.New<TAC>(TACOperator::CALL, 0, GetOperand(i), 0);
-										 tac->x.SetKind(TACOperand::ADDRESS);
+										 tac = TranslateCall(i.GetOperandAddress(), i.GetAddress());
+										 AddTAC(tac, i.GetAddress());
+										 tac = allocator.New<TAC>(TACOperator::RETURN);
 										 break;
 									 }
 								 }
@@ -228,7 +270,7 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 		}
 		case Nes::Opcode::Rts:
 		case Nes::Opcode::Rti:
-			tac = allocator.New<TAC>(TACOperator::RETURN);
+			tac = TranslateReturn(i);
 			break;
 		case Nes::Opcode::Rol:
 			tac = allocator.New<TAC>(TACOperator::ROL, GetOperand(i), GetOperand(i), TACOperand(1));
@@ -413,13 +455,41 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 		tac.x = TACOperand(TACOperand::MEMORY | instruction.GetOperandAddress());
 		return false;
 	case AddrMode::AbsoluteX:
-		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetOperandAddress());
-		tac.y = RegisterX;
-		return true;
+	{
+								// 标记为指针类型
+								int addr = instruction.GetOperandAddress();
+								try
+								{
+									GetCDB().AddGlobalVariable(addr, TypeManager::pValue);
+								}
+								catch (Exception)
+								{
+									// 添加失败，说明已经添加过了，忽略
+								}
+
+
+								tac.x = TACOperand(TACOperand::ADDRESS | addr);
+								tac.y = RegisterX;
+								return true;
+	}
 	case AddrMode::AbsoluteY:
-		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetOperandAddress());
-		tac.y = RegisterY;
-		return true;
+	{
+								// 标记为指针类型
+								int addr = instruction.GetOperandAddress();
+								try
+								{
+									GetCDB().AddGlobalVariable(addr, TypeManager::pValue);
+								}
+								catch (Exception)
+								{
+									// 添加失败，说明已经添加过了，忽略
+								}
+
+
+								tac.x = TACOperand(TACOperand::ADDRESS | addr);
+								tac.y = RegisterY;
+								return true;
+	}
 	case AddrMode::Relative:
 		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetConditionalJumpAddress());
 		return false;

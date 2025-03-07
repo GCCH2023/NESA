@@ -47,6 +47,8 @@ public:
 	// 添加一个新的临时变量，返回其编号
 	// bytes 是它占用的字节数 (目前没用到）
 	int NewTemp(Type* type);
+	// 获取临时变量的类型列表
+	inline const std::vector<Type*>& GetTempVariableTypes() const { return tempTypes; }
 
 	// 获取AXY参数标志
 	uint32_t GetParamFlag() const { return flag & 7; }

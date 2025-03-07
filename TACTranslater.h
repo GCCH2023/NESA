@@ -34,6 +34,10 @@ protected:
 	TAC* GetBlockTAC(int index);
 	// 翻译条件跳转指令
 	TAC* TranslateConditionalJump(std::vector<Instruction>& instructions, size_t index, uint32_t need, TACOperator op);
+	// 翻译函数调用指令
+	TAC* TranslateCall(Nes::Address callAddr, Nes::Address addr);
+	// 翻译函数返回指令
+	TAC* TranslateReturn(const Instruction& instruction);
 private:
 	NesDataBase& db;
 	Allocator& allocator;
@@ -43,5 +47,6 @@ private:
 	// 在将一个基本块的NES指令翻译为三地址码的过程中，
 	// 记录下每条指令对应的三地址码的开始索引
 	std::vector<int> tacStarts;
+	int axy;  // 返回值临时变量编号
 };
 

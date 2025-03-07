@@ -49,6 +49,9 @@ public:
 
 	// 获取分配器
 	inline Allocator& GetAllocator() { return allocator; }
+
+	// NES 专用返回值类型
+	Type* GetAXYType();
 protected:
 	// 不做任何验证地添加全局变量
 	void RawAddGlobalVariable(CAddress address, Type* type, String* name = nullptr, void* initializer = nullptr);
@@ -59,6 +62,8 @@ protected:
 	GlobalList globals;  // 全局变量列表，按地址从小到大排列
 	FunctionList functions;  // 函数列表
 	TagList tags;  // 结构体，枚举，联合体列表
+
+	Type* axyType;
 };
 
 // 获取C数据库单例

@@ -40,7 +40,6 @@ public:
 	static Type* Value;  // 值的类型，一个字节
 	static Type* pValue;  // 指向值的指针，占2个字节，用于变址寻址
 	static Type* ppValue;  // 指向值的2重指针，占2个字节，用于间接变址寻址
-
 private:
 	friend TypeManager& GetTypeManager();
 	TypeManager(Allocator& allocator);
@@ -61,7 +60,6 @@ public:
 	Type* NewEnum(String* name = nullptr, Enumerator* members = nullptr);
 	// 创建一个函数，函数类型是可以复用的
 	Type* NewFunction(Type* functionType);
-
 protected:
 	// 如果存在指定类型，则返回已有的，否则创建新的返回
 	Type* GetType(Type* type);

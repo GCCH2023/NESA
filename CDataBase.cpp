@@ -3,12 +3,14 @@
 
 CDataBase::CDataBase(Allocator& allocator_) :
 allocator(allocator_),
-stringTable(allocator_)
+stringTable(allocator_),
+axyType(nullptr)
 {
 	// 添加PPU寄存器映射内存地址作为全局变量
 	for (CAddress i = Nes::PPU_CTRL; i <= Nes::PPU_DATA; ++i)
 	{
-		RawAddGlobalVariable(i, TypeManager::UnsignedChar);
+		auto name = AddString(ToString((Nes::PPURegister)i));
+		RawAddGlobalVariable(i, TypeManager::UnsignedChar, name);
 	}
 }
 
@@ -135,6 +137,38 @@ void CDataBase::RawAddGlobalVariable(CAddress address, Type* type, String* name 
 	v->initializer = initializer;
 	globals.insert(it, v);
 }
+
+
+
+
+Type* CDataBase::GetAXYType()
+{
+	if (axyType)
+		return axyType;
+
+	Field* fieldA = allocator.New<Field>();
+	fieldA->name = AddString(_T("A"));
+	fieldA->align = GetTypeAlign(TypeManager::Char);
+	fieldA->type = TypeManager::Char;
+
+	Field* fieldX = allocator.New<Field>();
+	fieldX->name = AddString(_T("X"));
+	fieldX->align = GetTypeAlign(TypeManager::Char);
+	fieldX->type = TypeManager::Char;
+
+	Field* fieldY = allocator.New<Field>();
+	fieldY->name = AddString(_T("Y"));
+	fieldY->align = GetTypeAlign(TypeManager::Char);
+	fieldY->type = TypeManager::Char;
+
+	fieldA->next = fieldX;
+	fieldX->next = fieldY;
+
+	axyType = GetTypeManager().NewStruct(GetCDB().AddString(_T("AXY")), fieldA);
+	AddTag(axyType);
+	return axyType;
+}
+
 
 CDataBase& GetCDB()
 {

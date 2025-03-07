@@ -58,10 +58,32 @@ size_t GetTypeBytes(const Type* type)
 	case TypeKind::Pointer: return 2;  // 为了适配6502，改为2个字节
 	case TypeKind::Array: return GetTypeBytes(type->pa.type) * type->pa.count;
 	case TypeKind::Union:
+	{
+							size_t size = 0;
+							for (auto field = type->su.fields; field; field = field->next)
+							{
+								size_t bytes = GetTypeBytes(field->type);
+								if (bytes > size)
+									size = bytes;
+							}
+							return size ? size : 1;  // 最少要有1个字节
+	}
 	case TypeKind::Struct:
-		throw Exception(_T("获取struct 或 union 的占用字节大小未实现"));
+	{
+							 size_t size = 0;
+							 size_t align = 0;  // 整个结构体的对齐字节数
+							 for (auto field = type->su.fields; field; field = field->next)
+							 {
+								 size = (size + field->align - 1) & ~(field->align - 1);  // 向上取整到字段的对齐字节
+								 size += GetTypeBytes(field->type);
+								 if (field->align > align)
+									 align = field->align;
+							 }
+							 size = (size + align - 1) & ~(align - 1);  // 向上取整到字段的对齐字节
+							 return size ? size : 1;  // 最少要有1个字节
+	}
 	case TypeKind::Function:
-		return 0;
+		return 0;  // 函数不能计算大小
 	}
 	return 0;
 }
@@ -89,9 +111,18 @@ size_t GetTypeAlign(const Type* type)
 	case TypeKind::Array: return GetTypeAlign(type->pa.type);
 	case TypeKind::Union:
 	case TypeKind::Struct:
-		throw Exception(_T("获取struct 或 union 的对齐字节大小未实现"));
+	{
+							 size_t size = 0;
+							 for (auto field = type->su.fields; field; field = field->next)
+							 {
+								 size_t align = field->align;
+								 if (align > size)
+									 size = align;
+							 }
+							 return size;
+	}
 	case TypeKind::Function:
-		return 0;
+		return 0;  // 函数没有对齐
 	}
 	return 0;
 }
@@ -132,6 +163,8 @@ void Type::AddField(Field* field)
 {
 	if (GetKind() != TypeKind::Struct && GetKind() != TypeKind::Union)
 		return;
+	if (field->align == 0)
+		field->align = GetTypeAlign(field->type);
 	if (!su.fields)
 	{
 		su.fields = field;
@@ -141,6 +174,11 @@ void Type::AddField(Field* field)
 	for (tail = su.fields; tail->next; tail = tail->next)
 		;
 	tail->next = field;
+}
+
+const Field* Type::GetField(int offset)
+{
+	return nullptr;
 }
 
 void Type::AddEnumerator(Enumerator* enumerator)

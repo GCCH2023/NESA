@@ -119,6 +119,10 @@ Type* TypeManager::GetType(Type* type)
 	auto t = allocator.New<Type>(type->GetKind());
 	switch (t->GetKind())
 	{
+	case TypeKind::Array:
+	case TypeKind::Pointer:
+		t->pa = type->pa;
+		break;
 	case TypeKind::Function:
 	{
 							   t->f.returnType = type->f.returnType;
@@ -131,7 +135,8 @@ Type* TypeManager::GetType(Type* type)
 							   }
 							   break;
 	}
-
+	default:
+		throw Exception(_T("获取类型失败：未实现的操作"));
 	}
 	types.insert(t);
 	return t;
@@ -174,6 +179,7 @@ bool TypeEqual::operator()(const Type* type1, const Type* type2) const
 		return false;
 	}
 }
+
 
 TypeManager& GetTypeManager()
 {
