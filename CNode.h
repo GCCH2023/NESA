@@ -12,7 +12,6 @@ enum class CNodeKind
 	// 语句子类
 	STAT_LIST,  // 语句列表
 	STAT_EXPR,  // 表达式语句
-	STAT_CALL,  // 函数调用
 	STAT_WHILE,  // while 语句
 	STAT_NONE,  // 空语句
 	STAT_DO_WHILE,  // do while 语句
@@ -47,6 +46,7 @@ enum class CNodeKind
 	EXPR_DOT,  // 取记录对象的字段 x.y
 	EXPR_DEREF,  // 解引用 *p
 	EXPR_ADDR,  // 取地址 &a
+	EXPR_CALL,  // 函数调用
 
 	EXPR_BOR_ASSIGN,  // |= 
 	EXPR_BAND_ASSIGN,  // &=

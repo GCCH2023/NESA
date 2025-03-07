@@ -157,11 +157,11 @@ void NesAnalyzer::AnalyzeTACSubroutine(TACFunction* subroutine)
 		{
 			auto blockSet = (BasicBlockReachingDefinitionSet*)block->tag;
 			if (blockSet->out.a.Any())
-				subroutine->flag |= SUBF_RTURN_A;
+				subroutine->flag |= SUBF_RETURN_A;
 			if (blockSet->out.x.Any())
-				subroutine->flag |= SUBF_RTURN_X;
+				subroutine->flag |= SUBF_RETURN_X;
 			if (blockSet->out.y.Any())
-				subroutine->flag |= SUBF_RTURN_Y;
+				subroutine->flag |= SUBF_RETURN_Y;
 		}
 	}
 

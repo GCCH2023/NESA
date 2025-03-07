@@ -7,8 +7,7 @@ TACTranslater::TACTranslater(NesDataBase& db_, Allocator& allocator_) :
 db(db_),
 allocator(allocator_),
 tacSub(nullptr),
-tacStarts(32),
-axy(0)
+tacStarts(32)
 {
 }
 
@@ -27,11 +26,6 @@ TACFunction* TACTranslater::Translate(NesSubroutine* subroutine)
 	std::unordered_map<NesBasicBlock*, TACBasicBlock*> blockMap;
 	this->tacSub = allocator.New<TACFunction>(subroutine->GetStartAddress(), subroutine->GetEndAddress());
 	this->tacSub->flag = subroutine->flag;
-	// 如果有返回值，则添加返回值临时变量
-	if (this->tacSub->flag & SUBF_RETURN)
-	{
-		axy = this->tacSub->NewTemp(GetCDB().GetAXYType());
-	}
 
 	for (auto block : subroutine->GetBasicBlocks())
 	{
@@ -64,6 +58,7 @@ void TACTranslater::Reset()
 	tacSub = nullptr;;
 	tacBlock = nullptr;
 	tacStarts.clear();
+	axy = -1;
 }
 
 // index : 条件跳转指令的索引
@@ -88,10 +83,10 @@ TAC* TACTranslater::TranslateConditionalJump(std::vector<Instruction>& instructi
 
 TAC* TACTranslater::TranslateCall(Nes::Address callAddr, Nes::Address addr)
 {
-	// 
 	int argCount = 0;
 	TACOperand x(TACOperand::ADDRESS | callAddr);
 	auto tac = allocator.New<TAC>(TACOperator::CALL, 0, x, 0);
+	// 1. 如果要调用的函数有参数，那么先传递参数
 	auto sub = db.FindSubroutine(tac->x.GetValue());
 	if (sub && sub->flag & SUBF_PARAM)
 	{
@@ -112,6 +107,31 @@ TAC* TACTranslater::TranslateCall(Nes::Address callAddr, Nes::Address addr)
 		}
 		tac->y.SetValue(argCount);
 	}
+	// 2. 如果调用的函数有返回值，那么使用返回值给AXY寄存器赋值
+	if (sub && (sub->flag & SUBF_RETURN))
+	{
+		// (1) 首先用 axy 接收返回值
+		tac->z = TACOperand(TACOperand::TEMP | GetAxy());
+		// (2) 将 axy 的字段赋值给 AXY 寄存器
+		if (sub->flag & SUBF_RETURN_A)
+		{
+			AddTAC(tac, addr);
+			tac = allocator.New<TAC>(TACOperator::ARRAY_GET, RegisterA,
+				TACOperand(TACOperand::TEMP | GetAxy()), 0);
+		}
+		if (sub->flag & SUBF_RETURN_X)
+		{
+			AddTAC(tac, addr);
+			tac = allocator.New<TAC>(TACOperator::ARRAY_GET, RegisterX,
+				TACOperand(TACOperand::TEMP | GetAxy()), 1);
+		}
+		if (sub->flag & SUBF_RETURN_Y)
+		{
+			AddTAC(tac, addr);
+			tac = allocator.New<TAC>(TACOperator::ARRAY_GET, RegisterY,
+				TACOperand(TACOperand::TEMP | GetAxy()), 2);
+		}
+	}
 	return tac;
 }
 
@@ -127,22 +147,29 @@ TAC* TACTranslater::TranslateReturn(const Instruction& instruction)
 	if (returns & Nes::NesRegisters::A)
 	{
 		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterA,
-			TACOperand(TACOperand::TEMP | axy), 0);
+			TACOperand(TACOperand::TEMP | GetAxy()), 0);
 		AddTAC(tac, instruction.GetAddress());
 	}
 	if (returns & Nes::NesRegisters::X)
 	{
 		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterX,
-			TACOperand(TACOperand::TEMP | axy), 1);
+			TACOperand(TACOperand::TEMP | GetAxy()), 1);
 		AddTAC(tac, instruction.GetAddress());
 	}
 	if (returns & Nes::NesRegisters::Y)
 	{
 		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterY,
-			TACOperand(TACOperand::TEMP | axy), 2);
+			TACOperand(TACOperand::TEMP | GetAxy()), 2);
 		AddTAC(tac, instruction.GetAddress());
 	}
-	return allocator.New<TAC>(TACOperator::RETURN, 0, TACOperand(TACOperand::TEMP | axy));
+	return allocator.New<TAC>(TACOperator::RETURN, 0, TACOperand(TACOperand::TEMP | GetAxy()));
+}
+
+int TACTranslater::GetAxy()
+{
+	if (axy < 0)
+		axy = this->tacSub->NewTemp(GetCDB().GetAXYType());
+	return axy;
 }
 
 TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)

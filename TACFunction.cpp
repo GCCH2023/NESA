@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "TACFunction.h"
-
+#include "Type.h"
 
 TACBasicBlock::TACBasicBlock()
 {

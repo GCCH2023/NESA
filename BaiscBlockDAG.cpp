@@ -30,7 +30,7 @@ std::size_t CNodeHash::operator()(const CNode* node) const
 		break;
 	case CNodeKind::STAT_NONE:
 		break;
-	case CNodeKind::STAT_CALL:
+	case CNodeKind::EXPR_CALL:
 		hash ^= (size_t)node->f.name;
 		for (auto n = node->f.params; n; n = n->next)
 			hash ^= (size_t)n;
@@ -103,7 +103,7 @@ bool CNodeEqual::operator()(const CNode* node1, const CNode* node2) const
 		return node1->l.name == node2->l.name && node1->l.body == node2->l.body;
 	case CNodeKind::STAT_NONE:
 		return true;
-	case CNodeKind::STAT_CALL:
+	case CNodeKind::EXPR_CALL:
 		if (node1->f.name != node2->f.name)
 			return false;
 		{

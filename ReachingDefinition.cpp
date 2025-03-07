@@ -77,11 +77,11 @@ void ReachingDefinition::GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunctio
 		if (code->op == TACOperator::CALL)
 		{
 			auto sub = db.FindSubroutine(code->z.GetValue());
-			if (sub->flag & SUBF_RTURN_A)
+			if (sub->flag & SUBF_RETURN_A)
 				axyDefs.adefs.push_back(i);
-			if (sub->flag & SUBF_RTURN_X)
+			if (sub->flag & SUBF_RETURN_X)
 				axyDefs.xdefs.push_back(i);
-			if (sub->flag & SUBF_RTURN_Y)
+			if (sub->flag & SUBF_RETURN_Y)
 				axyDefs.ydefs.push_back(i);
 			continue;
 		}

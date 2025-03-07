@@ -37,7 +37,7 @@ kind(kind_)
 }
 
 CNode::CNode(String* name, CNode* params /*= nullptr*/) :
-kind(CNodeKind::STAT_CALL)
+kind(CNodeKind::EXPR_CALL)
 {
 	f.name = name;
 	f.params = params;

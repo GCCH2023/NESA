@@ -264,7 +264,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 									   if (type->GetKind() == TypeKind::Struct)
 									   {
 										   // y 必定是整数
-										   assert(tac->y.GetKind() == TACOperand::INTEGER);
+										   assert(tac->y.IsInterger());
 										   // 根据偏移量查找字段
 										   auto field = type->GetField(tac->y.GetValue());
 										   auto fieldNode = allocator.New<CNode>(field);
@@ -289,7 +289,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 									   if (type->GetKind() == TypeKind::Struct)
 									   {
 										   // y 必定是整数
-										   assert(tac->y.GetKind() == TACOperand::INTEGER);
+										   assert(tac->y.IsInterger());
 										   // 根据偏移量查找字段
 										   auto field = type->GetField(tac->y.GetValue());
 										   auto fieldNode = allocator.New<CNode>(field);
@@ -330,15 +330,29 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 									if (codes[i]->op != TACOperator::CALL)
 										throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
 									// 最后是 CALL 指令
-									auto call = allocator.New<CNode>(NewString(_T("sub_%04X"), codes[i]->x.GetValue()), params);
-									current = call;
+									tac = codes[i];
+									uint32_t callAddr = tac->x.GetValue();
+									expr = allocator.New<CNode>(NewString(_T("sub_%04X"), callAddr), params);
+									// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
+									if (tac->z.IsTemp())
+									{
+										expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+									}
+									current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 									break;
 		}
 		case	TACOperator::CALL:
 		{
-									 // 如果有参数，则鄙视 若干个 ARG 后面跟着一个 CALL
+									 // 如果有参数，则必是 若干个 ARG 后面跟着一个 CALL
 									 // 直接出现 CALL，说明没有参数
-									 current = allocator.New<CNode>(NewString(_T("sub_%04X"), tac->x.GetValue()), (CNode*)nullptr);
+									 uint32_t callAddr = codes[i]->x.GetValue();
+									 expr = allocator.New<CNode>(NewString(_T("sub_%04X"), callAddr), (CNode*)nullptr);
+									 // 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
+									 if (tac->z.IsTemp())
+									 {
+										 expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+									 }
+									 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 									 break;
 		}
 
@@ -391,8 +405,13 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 		}
 		case TACOperator::RETURN:
 		{
-									// 返回值以后再考虑吧
-									current = allocator.New<CNode>(CNodeKind::STAT_RETURN);
+									if (tac->x.IsZero())  // 目前只能返回 AXY 对象，所以可以这么判断有没有返回值
+									{
+										current = allocator.New<CNode>(CNodeKind::STAT_RETURN);
+										break;
+									}
+									// 有返回值的情况
+									current = allocator.New<CNode>(CNodeKind::STAT_RETURN, GetExpression(tac->x));
 									break;
 		}
 		case TACOperator::ROR:
@@ -431,25 +450,29 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 		case TACOperator::CLI:
 		{
 								 // 翻译为函数调用
-								 current = allocator.New<CNode>(NewString(_T("Cli")), (CNode*)nullptr);
+								 expr = allocator.New<CNode>(NewString(_T("Cli")), (CNode*)nullptr);
+								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
 		case TACOperator::SEI:
 		{
 								 // 翻译为函数调用
-								 current = allocator.New<CNode>(NewString(_T("Sei")), (CNode*)nullptr);
+								 expr = allocator.New<CNode>(NewString(_T("Sei")), (CNode*)nullptr);
+								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
 		case TACOperator::CLD:
 		{
 								 // 翻译为函数调用
-								 current = allocator.New<CNode>(NewString(_T("Cld")), (CNode*)nullptr);
+								 expr = allocator.New<CNode>(NewString(_T("Cld")), (CNode*)nullptr);
+								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
 		case TACOperator::SED:
 		{
 								 // 翻译为函数调用
-								 current = allocator.New<CNode>(NewString(_T("Sed")), (CNode*)nullptr);
+								 expr = allocator.New<CNode>(NewString(_T("Sed")), (CNode*)nullptr);
+								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
 		//case TACOperator::CLC:

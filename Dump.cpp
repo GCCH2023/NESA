@@ -87,20 +87,6 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 								 Indent(os, indent);
 								 return os << _T(";\n");
 	}
-	case CNodeKind::STAT_CALL:
-	{
-								 Indent(os, indent);
-								 os << obj->f.name << _T("(");
-								 if (obj->f.params == nullptr)
-									 return os << _T(");\n");
-								 for (CNode* param = obj->f.params; param; param = param->next)
-								 {
-									 if (param != obj->f.params)
-										 os << _T(", ");
-									 os << param;
-								 }
-								 return os << _T(");\n");
-	}
 	case CNodeKind::STAT_RETURN:
 	{
 								   Indent(os, indent);
@@ -168,6 +154,20 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::EXPR_DEREF:
 	{
 								return os << _T("*") << obj->e.x;
+	}
+	case CNodeKind::EXPR_CALL:
+	{
+								 Indent(os, indent);
+								 os << obj->f.name << _T("(");
+								 if (obj->f.params == nullptr)
+									 return os << _T(")");
+								 for (CNode* param = obj->f.params; param; param = param->next)
+								 {
+									 if (param != obj->f.params)
+										 os << _T(", ");
+									 os << param;
+								 }
+								 return os << _T(")");
 	}
 	case CNodeKind::EXPR_ADDR:
 	{
@@ -291,11 +291,6 @@ OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)
 	{
 								 Indent(os, indent);
 								 return os << _T("null\n");
-	}
-	case CNodeKind::STAT_CALL:
-	{
-								 Indent(os, indent);
-								 return os << _T("call\n");
 	}
 	case CNodeKind::STAT_RETURN:
 	{

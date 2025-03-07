@@ -41,7 +41,7 @@ void CTreeVisitor::VisitChildren(CNode* node)
 	case CNodeKind::STAT_EXPR:
 		OnVisit(node->e.x);
 		break;
-	case CNodeKind::STAT_CALL:
+	case CNodeKind::EXPR_CALL:
 		for (CNode* param = node->f.params; param; param = param->next)
 			OnVisit(param);
 		break;

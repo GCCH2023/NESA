@@ -25,9 +25,9 @@ enum SubroutineFlag
 	SUBF_PARAM_X = 2,  // 使用 X 寄存器作为参数
 	SUBF_PARAM_Y = 4,  // 使用 Y 寄存器作为参数
 	SUBF_PARAM = 7,  // 使用了 AXY 寄存器作为参数
-	SUBF_RTURN_A = 8,  // 使用 A 寄存器作为返回值
-	SUBF_RTURN_X = 0x10,  // 使用 X 寄存器作为返回值
-	SUBF_RTURN_Y = 0x20,  // 使用 Y 寄存器作为返回值
+	SUBF_RETURN_A = 8,  // 使用 A 寄存器作为返回值
+	SUBF_RETURN_X = 0x10,  // 使用 X 寄存器作为返回值
+	SUBF_RETURN_Y = 0x20,  // 使用 Y 寄存器作为返回值
 	SUBF_RETURN = 0x38,  // 使用了 AXY 寄存器作为返回值
 	SUBF_LOCAL_A = 0x40,  // 使用 A 寄存器作为局部变量
 	SUBF_LOCAL_X = 0x80,  // 使用 X 寄存器作为局部变量
@@ -54,6 +54,11 @@ public:
 
 	// 输出子程序的信息
 	void Dump();
+
+	// 获取AXY参数标志
+	uint32_t GetParamFlag() const { return flag & 7; }
+	// 获取AXY返回值标志
+	uint32_t GetReturnFlag() const { return (flag >> 3) & 7; }
 
 	uint32_t flag;  // 低3
 protected:

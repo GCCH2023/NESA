@@ -38,6 +38,8 @@ protected:
 	TAC* TranslateCall(Nes::Address callAddr, Nes::Address addr);
 	// 翻译函数返回指令
 	TAC* TranslateReturn(const Instruction& instruction);
+	// 获取AXY结构体变量的索引
+	int GetAxy();
 private:
 	NesDataBase& db;
 	Allocator& allocator;
