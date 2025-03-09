@@ -27,6 +27,13 @@ const Variable* CDataBase::GetGlobalVariable(CAddress address) const
 	// 找到就返回该对象
 	if (it != globals.end() && (*it)->address == address)
 		return *it;
+	// 看地址是否包含在上一个变量中
+	if (it != globals.begin())
+	{
+		auto v = *(it - 1);
+		if (address < v->address + GetTypeBytes(v->type))
+			return v;
+	}
 	return nullptr;
 }
 
@@ -39,7 +46,7 @@ const Variable* CDataBase::GetGlobalVariable(String* name) const
 	}
 	return nullptr;
 }
-
+#include "Dump.h"
 const Variable* CDataBase::AddGlobalVariable(CAddress address, Type* type, String* name /*= nullptr*/)
 {
 	// 应该保证地址和名称唯一
@@ -68,6 +75,16 @@ const Variable* CDataBase::AddGlobalVariable(CAddress address, Type* type, Strin
 		s.Format(_T("地址为 %X 的全局变量已经存在"), address);
 		throw Exception(s.ToString());
 	}
+	if (it != globals.begin())
+	{
+		auto v = *(it - 1);
+		if (address < v->address + GetTypeBytes(v->type))
+		{
+			Sprintf<> s;
+			s.Format(_T("地址 %X 属于全局变量 %s"), address, v->name->str);
+			throw Exception(s.ToString());
+		}
+	}
 
 	// 创建一个全局变量
 	// 找不到就创建并添加到列表中
@@ -76,7 +93,33 @@ const Variable* CDataBase::AddGlobalVariable(CAddress address, Type* type, Strin
 	v->name = name;
 	v->type = type;
 	globals.insert(it, v);
+	//_tprintf(_T("add global %s %s = %04X\n"), ToString(type).c_str(), name, address);
+	//DumpDeclaration(v);
+	//COUT << _T("\n");
 	return v;
+}
+
+void CDataBase::SetGlobalVariableType(CAddress address, Type* type)
+{
+	assert(type);
+	auto global = GetGlobalVariable(address);
+	if (global)
+		((Variable*)global)->type = type;
+}
+
+void CDataBase::DeleteGlobalVariables(CAddress start, CAddress end)
+{
+	// 查找第一个大于等于start的
+	auto it1 = std::lower_bound(globals.begin(), globals.end(), start,
+		[](const Variable* variable, CAddress address) {
+		return variable->address < address;
+	});
+	// 查找第一个大于等于end的
+	auto it2 = std::lower_bound(globals.begin(), globals.end(), end,
+		[](const Variable* variable, CAddress address) {
+		return variable->address < address;
+	});
+	globals.erase(it1, it2);
 }
 
 String* CDataBase::MakeGlobalVariableName(CAddress address)

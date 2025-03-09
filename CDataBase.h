@@ -25,13 +25,20 @@ public:
 	// 获取全局变量列表
 	inline const GlobalList& GetGlobalList() const { return globals; }
 	// 根据地址获取全局变量，不存在返回 nullptr
+	// 如果一个地址属于一个变量的范围内，则返回这个变量
 	const Variable* GetGlobalVariable(CAddress address) const;
 	// 根据名称获取全局变量，如果不存在，返回 nullptr
 	const Variable* GetGlobalVariable(String* name) const;
 	// 添加一个全局变量，失败抛出异常
-	// 这是用来描述NES代码的，所以地址和类型必须要有
+	// 1. 这是用来描述NES代码的，所以地址和类型必须要有
 	// 如果没有名称，则自动生成名称
 	const Variable* AddGlobalVariable(CAddress address, Type* type, String* name = nullptr);
+	// 修改包含指定地址的全局变量的类型
+	// 如果新类型涵盖了其他全局变量，不会删除那些变量
+	void SetGlobalVariableType(CAddress address, Type* type);
+	// 删除指定地址范围 [start, end) 的全局变量
+	void DeleteGlobalVariables(CAddress start, CAddress end);
+
 	// 根据地址生成全局变量的名称
 	String* MakeGlobalVariableName(CAddress address);
 

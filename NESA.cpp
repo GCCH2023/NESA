@@ -52,11 +52,42 @@ void BaiscBlockDAGTest()
 void GlobalTest()
 {
 	Sprintf<> s;
+	// 输出全局变量列表
 	for (auto g : GetCDB().GetGlobalList())
 	{
 		s.Format(_T("%08X\t%s\t%s\n"), g->address, ToString(g->type->GetKind()), g->name->str);
 		COUT << s.ToString();
 		s.Clear();
+	}
+	// 查找全局变量
+	auto v = GetCDB().GetGlobalVariable(0x2000);
+	if (v)
+	{
+		COUT << _T("找到全局变量 ") << v->name->str << endl;
+	}
+	else
+	{
+		COUT << _T("找不到全局变量 ") << endl;
+	}
+	v = GetCDB().GetGlobalVariable(0x2001);
+	if (v)
+	{
+		COUT << _T("找到全局变量 ") << v->name->str << endl;
+	}
+	else
+	{
+		COUT << _T("找不到全局变量 ") << endl;
+	}
+
+	GetCDB().AddGlobalVariable(10, GetCDB().GetAXYType());
+	v = GetCDB().GetGlobalVariable(12);
+	if (v)
+	{
+		COUT << _T("找到全局变量 ") << v->name->str << endl;
+	}
+	else
+	{
+		COUT << _T("找不到全局变量 ") << endl;
 	}
 }
 

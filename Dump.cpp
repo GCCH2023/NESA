@@ -335,10 +335,45 @@ void DumpParameter(Variable* param)
 	COUT << _T(" ") << param->name;
 }
 
+void DumpTypeQualifier(const Type* type)
+{
+	static const TCHAR* names[] =
+	{
+		_T(""), _T("const "), _T("volatile "), _T("const volatile ")
+	};
+	COUT << names[(int)type->GetQualifier()];
+}
+
 void DumpDeclaration(const Variable* variable)
 {
-	DumpType(variable->type);
-	COUT << _T(" ") << variable->name << _T(";");
+	auto type = variable->type;
+	DumpTypeQualifier(type);
+	switch (type->GetKind())
+	{
+	case TypeKind::Pointer:
+		DumpType(type->pa.type);
+		COUT << _T("* ") << variable->name << _T(";");
+		break;
+	case TypeKind::Array:
+		DumpType(type->pa.type);
+		COUT << _T(" ") << variable->name << _T("[");
+		if (type->pa.count > 0)
+			COUT << type->pa.count;
+		COUT << _T("];");
+		break;
+	//case TypeKind::Struct:
+	//case TypeKind::Union:
+	//case TypeKind::Enum:
+	//	DumpType(type);
+	//	COUT << _T(" ") << variable->name << _T(";");
+	//	break;
+	case TypeKind::Function:
+		throw Exception("输出变量声明的函数无法输出函数声明");
+	default:
+		DumpType(type);
+		COUT << _T(" ") << variable->name << _T(";");
+		break;
+	}
 }
 
 
@@ -413,6 +448,13 @@ void Dump(CDataBase& cdb)
 		COUT << std::endl;
 	}
 	COUT << std::endl;
+	// 输出函数声明
+	for (auto f : cdb.GetFunctionList())
+	{
+		DumpDeclaration(f);
+		COUT << _T(";\n");
+	}
+	COUT << std::endl;
 	// 输出全局变量
 	for (auto g : cdb.GetGlobalList())
 	{
@@ -420,7 +462,7 @@ void Dump(CDataBase& cdb)
 		COUT << std::endl;
 	}
 	COUT << std::endl;
-	// 输出函数
+	// 输出函数定义
 	for (auto f : cdb.GetFunctionList())
 	{
 		DumpDefinition(f);

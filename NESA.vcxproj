@@ -157,6 +157,7 @@
     <ClInclude Include="Dump.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="Function.h" />
+    <ClInclude Include="GlobalParser.h" />
     <ClInclude Include="Instruction.h" />
     <ClInclude Include="LiveVariableAnalysis.h" />
     <ClInclude Include="Mapper.h" />
@@ -198,6 +199,7 @@
     <ClCompile Include="Dump.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Function.cpp" />
+    <ClCompile Include="GlobalParser.cpp" />
     <ClCompile Include="Instruction.cpp" />
     <ClCompile Include="LiveVariableAnalysis.cpp" />
     <ClCompile Include="Mapper.cpp" />

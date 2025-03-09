@@ -172,6 +172,9 @@
     <ClInclude Include="TACFunction.h">
       <Filter>IR</Filter>
     </ClInclude>
+    <ClInclude Include="GlobalParser.h">
+      <Filter>Parser</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -284,6 +287,9 @@
     </ClCompile>
     <ClCompile Include="TACFunction.cpp">
       <Filter>IR</Filter>
+    </ClCompile>
+    <ClCompile Include="GlobalParser.cpp">
+      <Filter>Parser</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

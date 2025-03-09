@@ -33,9 +33,11 @@ Type* TypeManager::Double = &::Double;
 Type* TypeManager::LongDouble = &::LongDouble;
 
 // FC 专用类型
-Type* TypeManager::Value = nullptr;  // 值的类型，一个字节
-Type* TypeManager::pValue = nullptr;  // 指向值的指针，占2个字节，用于变址寻址
-Type* TypeManager::ppValue = nullptr;  // 指向值的2重指针，占2个字节，用于间接变址寻址
+Type* TypeManager::Value = nullptr;
+Type* TypeManager::pValue = nullptr;
+Type* TypeManager::ppValue = nullptr;
+Type* TypeManager::ValueArray = nullptr;
+Type* TypeManager::pValueArray = nullptr;
 
 
 TypeManager::TypeManager(Allocator& allocator_) :
@@ -63,6 +65,13 @@ allocator(allocator_)
 	Type ppC(TypeKind::Pointer);
 	ppC.pa.type = pValue;
 	ppValue = GetType(&ppC);
+	Type vArray(TypeKind::Array);
+	vArray.pa.type = Value;
+	vArray.pa.count = 1;
+	ValueArray = GetType(&vArray);
+	Type pvArray = vArray;
+	pvArray.pa.type = pValue;
+	pValueArray = GetType(&pvArray);
 }
 
 Type* TypeManager::NewArray(Type* elementType, size_t count)

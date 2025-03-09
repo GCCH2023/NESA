@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Type.h"
+#include "String.h"
 
 const TCHAR* ToString(TypeQualifier qulifier)
 {
@@ -24,17 +25,32 @@ const TCHAR* ToString(TypeKind typeKind)
 	return names[(int)typeKind];
 }
 
-//const TCHAR* ToString(Type* type)
-//{
-//	if (type->kind < TypeKind::ENUM)
-//		return ToString((TypeKind)type->kind);
-//
-//	switch (type->kind)
-//	{
-//	case TypeKind::ENUM:
-//
-//	}
-//}
+StdString ToString(Type* type)
+{
+	if (type->GetKind() < TypeKind::Enum)
+		return ToString(type->GetKind());
+
+	Sprintf<> s;
+	switch (type->GetKind())
+	{
+	case TypeKind::Enum:
+		s.Format(_T("enum %s"), type->e.name->str);
+		break;
+	case TypeKind::Struct:
+		s.Format(_T("struct %s"), type->su.name->str);
+		break;
+	case TypeKind::Union:
+		s.Format(_T("union %s"), type->su.name->str);
+		break;
+	case TypeKind::Array:
+		s.Format(_T("%s[%d]"), ToString(type->pa.type).c_str(), type->pa.count);
+		break;
+	case TypeKind::Pointer:
+		s.Format(_T("%s*"), ToString(type->pa.type).c_str());
+		break;
+	}
+	return s.ToString();
+}
 
 size_t GetTypeBytes(const Type* type)
 {

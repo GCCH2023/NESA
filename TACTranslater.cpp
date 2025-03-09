@@ -178,7 +178,7 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 	std::vector<Instruction> instructions(256);
 	instructions.clear();
 	db.GetInstructions(instructions, block->GetStartAddress(), block->GetEndAddress());
-	
+
 	this->tacBlock = allocator.New<TACBasicBlock>(block->GetStartAddress(), block->GetEndAddress());
 	this->tacStarts.clear();
 
@@ -186,7 +186,7 @@ TACBasicBlock* TACTranslater::TranslateBasickBlock(NesBasicBlock* block)
 	TAC* tac = nullptr;
 	Instruction* last = nullptr;
 	TAC temp;
-	for (size_t index = 0; index < instructions.size();++index)
+	for (size_t index = 0; index < instructions.size(); ++index)
 	{
 		auto& i = instructions[index];
 		const OpcodeEntry& entry = GetOpcodeEntry(i.GetOperatorByte());
@@ -482,41 +482,13 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 		tac.x = TACOperand(TACOperand::MEMORY | instruction.GetOperandAddress());
 		return false;
 	case AddrMode::AbsoluteX:
-	{
-								// 标记为指针类型
-								int addr = instruction.GetOperandAddress();
-								try
-								{
-									GetCDB().AddGlobalVariable(addr, TypeManager::pValue);
-								}
-								catch (Exception)
-								{
-									// 添加失败，说明已经添加过了，忽略
-								}
-
-
-								tac.x = TACOperand(TACOperand::ADDRESS | addr);
-								tac.y = RegisterX;
-								return true;
-	}
+		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetOperandAddress());
+		tac.y = RegisterX;
+		return true;
 	case AddrMode::AbsoluteY:
-	{
-								// 标记为指针类型
-								int addr = instruction.GetOperandAddress();
-								try
-								{
-									GetCDB().AddGlobalVariable(addr, TypeManager::pValue);
-								}
-								catch (Exception)
-								{
-									// 添加失败，说明已经添加过了，忽略
-								}
-
-
-								tac.x = TACOperand(TACOperand::ADDRESS | addr);
-								tac.y = RegisterY;
-								return true;
-	}
+		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetOperandAddress());
+		tac.y = RegisterY;
+		return true;
 	case AddrMode::Relative:
 		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetConditionalJumpAddress());
 		return false;
@@ -538,21 +510,12 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 								// 接着用 Y 索引数组得到元素值
 
 								// 1. 首先生成一条解引用零页地址的三地址码
-								// (1) 标记该零页地址为地址指针
 								int zeroPageAddr = instruction.GetByte();
-								try
-								{
-									GetCDB().AddGlobalVariable(zeroPageAddr, TypeManager::ppValue);
-								}
-								catch (Exception)
-								{
-									// 添加失败，说明已经添加过了，忽略
-								}
 								TACOperand addrPointer(TACOperand::MEMORY | zeroPageAddr);
-								// (2) 添加一个临时变量，用于保存从零页取出的地址值
+								// (1) 添加一个临时变量，用于保存从零页取出的地址值
 								int temp = this->tacSub->NewTemp(TypeManager::pValue);
 								TACOperand result(TACOperand::TEMP | temp);
-								// (3) 生成解引用的三地址码
+								// (2) 生成解引用的三地址码
 								TAC* t = allocator.New<TAC>(TACOperator::DEREF, result, addrPointer);
 								AddTAC(t, instruction.GetAddress());
 
@@ -597,8 +560,8 @@ TAC* TACTranslater::TranslateCmp(const Instruction& instruction, const Instructi
 	case Opcode::Bcc:
 		tac->op = TACOperator::IFLESS;
 		break;
-	//case Opcode::Bvc:
-	//case Opcode::Bvs:
+		//case Opcode::Bvc:
+		//case Opcode::Bvs:
 	default:
 		throw "未实现";
 	}

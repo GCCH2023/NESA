@@ -158,11 +158,27 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 								   // 需要解引用
 								   return allocator.New<CNode>(CNodeKind::EXPR_DEREF, varNode);
 							   }
-							   return allocator.New<CNode>(GetGlobalVariable(operand.GetValue(), TypeManager::Char));
+							   uint32_t addr = operand.GetValue();
+							   auto global = GetCDB().GetGlobalVariable(addr);
+							   if (!global)
+							   {
+								   Sprintf<> s;
+								   s.Format(_T("获取全局变量 %X 失败"), addr);
+								   throw Exception(s.ToString());
+							   }
+							   return allocator.New<CNode>(global);
 	}
 	case TACOperand::ADDRESS:
 	{
-								return allocator.New<CNode>(GetGlobalVariable(operand.GetValue(), TypeManager::Char));
+								uint32_t addr = operand.GetValue();
+								auto global = GetCDB().GetGlobalVariable(addr);
+								if (!global)
+								{
+									Sprintf<> s;
+									s.Format(_T("获取全局变量 %X 失败"), addr);
+									throw Exception(s.ToString());
+								}
+								return allocator.New<CNode>(global);
 	}
 	default:
 	{
@@ -912,14 +928,6 @@ void CTranslater::OnReduceIfOr(Node _if, Node then, Node _else)
 
 	// 在 if 语句之前还有一段代码
 	node->statement = CombineListIf(a->statement, condition1, c->statement);
-}
-
-const Variable* CTranslater::GetGlobalVariable(CAddress address, Type* type)
-{
-	auto variable = GetCDB().GetGlobalVariable(address);
-	if (variable)
-		return variable;
-	return GetCDB().AddGlobalVariable(address, type);
 }
 
 const Variable* CTranslater::GetLocalVariable(String* name, Type* type)

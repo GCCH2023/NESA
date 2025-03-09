@@ -85,6 +85,8 @@ struct Type
 	inline TypeKind GetKind() const { return (TypeKind)(base & 0xFF); }
 	// 获取修饰符
 	inline TypeQualifier GetQualifier() const { return (TypeQualifier)((base >> 8) & 0xFF); }
+	inline bool IsConst() const { return ((base >> 8) & (int)TypeQualifier::Const) != 0; }
+	inline bool IsVolatile() const { return ((base >> 8) & (int)TypeQualifier::Volatile) != 0; }
 
 	// 获取字段数量
 	size_t GetFieldsCount() const;
@@ -105,6 +107,6 @@ size_t GetTypeBytes(const Type* type);
 // 获取类型的对齐字节数
 size_t GetTypeAlign(const Type* type);
 // 获取类型的字符串表示
-//String* ToString(Type* type);
+StdString ToString(Type* type);
 
 

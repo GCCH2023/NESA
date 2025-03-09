@@ -6,6 +6,7 @@
 #include "LiveVariableAnalysis.h"
 #include "TACTranslater.h"
 #include "LiveVariableAnalysis.h"
+#include "GlobalParser.h"
 
 struct SubroutineData
 {
@@ -31,6 +32,11 @@ NesSubroutine* NesAnalyzer::AnalyzeSubroutine(NesSubroutineParser& parser, Nes::
 	NesSubroutine* subroutine = parser.Parse(addr);
 
 	AddSubroutine(subroutine);
+
+	// 分析子程序使用的全局变量
+	GlobalParser globalParser(db);
+	globalParser.Parse(subroutine);
+
 	// 分析完一个子程序后，接下来要分析它调用的子程序
 	//printf("子程序 %04X 调用：", addr);
 	for (auto addr : subroutine->GetCalls())

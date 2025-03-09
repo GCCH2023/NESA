@@ -108,8 +108,6 @@ protected:
 	void OnReduceIfElse(Node _if, Node then, Node _else);
 	void OnReduceIfOr(Node _if, Node then, Node _else);
 protected:
-	// 获取全局变量，不存在就添加
-	const Variable* GetGlobalVariable(CAddress address, Type* type);
 	// 获取局部变量，不存在就添加
 	const Variable* GetLocalVariable(String* name, Type* type);
 	// 按索引获取局部变量

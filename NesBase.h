@@ -90,6 +90,8 @@ namespace Nes
 		// 这种寻址模式允许定位任何位置并且可以用变址修改多个地方，用以减少代码和指令时间。
 		AbsoluteX,
 		AbsoluteY,
+		// 对给定地址寻址一次得到一个地址，再寻址一次得到值
+		// v = [[A]]
 		Indirect,
 		// 0页面变址间接寻址 [(0页面,X)] Zero Page Indexed Indirect Addressing [(Zero Page,X)
 		// 
