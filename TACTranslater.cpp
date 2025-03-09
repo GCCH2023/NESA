@@ -470,6 +470,7 @@ TACOperand TACTranslater::GetOperand(const Instruction& instruction)
 bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 {
 	const OpcodeEntry& entry = instruction.GetEntry();
+	uint32_t addr;
 	switch (entry.addrMode)
 	{
 	case AddrMode::Accumulator:
@@ -479,8 +480,8 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 		tac.x = TACOperand(instruction.GetByte());
 		return false;
 	case AddrMode::Absolute:
-		tac.x = TACOperand(TACOperand::MEMORY | instruction.GetOperandAddress());
-		return false;
+		addr = instruction.GetOperandAddress();
+		break;
 	case AddrMode::AbsoluteX:
 		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetOperandAddress());
 		tac.y = RegisterX;
@@ -493,8 +494,8 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetConditionalJumpAddress());
 		return false;
 	case AddrMode::ZeroPage:
-		tac.x = TACOperand(TACOperand::MEMORY | instruction.GetByte());
-		return false;
+		addr = instruction.GetByte();
+		break;
 	case AddrMode::ZeroPageX:
 		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetByte());
 		tac.y = RegisterX;
@@ -532,6 +533,19 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 			   throw Exception(buffer);
 	}
 	}
+	// 查找全局变量
+	auto v = GetCDB().GetGlobalVariable(addr);
+	if (v)
+	{
+		if (v->address != addr)
+		{
+			// 使用偏移量来访问
+			tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetByte());
+			tac.y = TACOperand(addr - v->address);
+			return true;
+		}
+	}
+	tac.x = TACOperand(TACOperand::MEMORY | addr);
 	return false;
 }
 
