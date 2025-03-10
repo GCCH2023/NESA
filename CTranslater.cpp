@@ -132,13 +132,12 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 	switch (operand.GetKind())
 	{
 	case TACOperand::INTEGER:
-		if (operand.IsTemp())
-		{
-			auto var = GetLocalVariable(operand.GetValue());
-			return allocator.New<CNode>(var);
-		}
-		else
-			return allocator.New<CNode>(operand.GetValue());
+		return allocator.New<CNode>(operand.GetValue());
+	case TACOperand::TEMP:
+	{
+							 auto var = GetLocalVariable(operand.GetValue());
+							 return allocator.New<CNode>(var);
+	}
 	case TACOperand::REGISTER:
 	{
 								 // 寄存器要么是参数，要么是局部变量，不能当作全局变量处理
@@ -149,15 +148,8 @@ CNode* CTranslater::GetExpression(TACOperand& operand)
 								 variable = GetLocalVariable(name, TypeManager::Char);
 								 return allocator.New<CNode>(variable);
 	}
-	case TACOperand::MEMORY:
+	case TACOperand::GLOBAL:
 	{
-							   if (operand.IsTemp())
-							   {
-								   auto var = GetLocalVariable(operand.GetValue());
-								   auto varNode = allocator.New<CNode>(var);
-								   // 需要解引用
-								   return allocator.New<CNode>(CNodeKind::EXPR_DEREF, varNode);
-							   }
 							   uint32_t addr = operand.GetValue();
 							   auto global = GetCDB().GetGlobalVariable(addr);
 							   if (!global)
@@ -286,6 +278,24 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 										   auto fieldNode = allocator.New<CNode>(field);
 										   expr = allocator.New<CNode>(CNodeKind::EXPR_DOT, x, fieldNode);
 									   }
+									   else if (type->GetKind() == TypeKind::Pointer)
+									   {
+										   // y 必定是整数，此时是用指针的高字节赋值 z = *((char*)&x + y)，因为指针占2个字节
+										   assert(tac->y.IsInterger());
+										   int offset = tac->y.GetValue();
+										   // (1) 取指针的地址 &x
+										   expr = allocator.New<CNode>(CNodeKind::EXPR_ADDR, x);
+										   // (2) 强制类型转换为 (char*)&x
+										   expr = allocator.New<CNode>(TypeManager::pValue, expr);
+										   // (3) 可选的偏移字节 (char*)&x + offset
+										   if (offset > 0)
+										   {
+											   CNode* offsetNode = allocator.New<CNode>(offset);
+											   expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, expr, offsetNode);
+										   }
+										   // 解引用
+										   expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, expr);
+									   }
 									   else
 									   {
 										   expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
@@ -310,6 +320,25 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 										   auto field = type->GetField(tac->y.GetValue());
 										   auto fieldNode = allocator.New<CNode>(field);
 										   expr = allocator.New<CNode>(CNodeKind::EXPR_DOT, x, fieldNode);
+									   }
+									   else if (type->GetKind() == TypeKind::Pointer)
+									   {
+										   COUT << tac;
+										   // y 必定是整数，此时是用指针的高字节赋值 z = *((char*)&x + y)，因为指针占2个字节
+										   assert(tac->y.IsInterger());
+										   int offset = tac->y.GetValue();
+										   // (1) 取指针的地址 &x
+										   expr = allocator.New<CNode>(CNodeKind::EXPR_ADDR, x);
+										   // (2) 强制类型转换为 (char*)&x
+										   expr = allocator.New<CNode>(TypeManager::pValue, expr);
+										   // (3) 可选的偏移字节 (char*)&x + offset
+										   if (offset > 0)
+										   {
+											   CNode* offsetNode = allocator.New<CNode>(offset);
+											   expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, expr, offsetNode);
+										   }
+										   // 解引用
+										   expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, expr);
 									   }
 									   else
 									   {
@@ -401,12 +430,12 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 								  // 还不知道该怎么处理
 								  //if (tac->z.GetValue() == tac->address)
 								  //{
-									 // // 跳转到自己的语句翻译为 while (1);
-									 // //expr = allocator.New<CInteger>(1);
-									 // //current = allocator.New<CWhileStatement>(expr, noneStatement);
-									 // current = noneStatement;
-									 // pCondition = allocator.New<CNode>(1);
-									 // break;
+								  // // 跳转到自己的语句翻译为 while (1);
+								  // //expr = allocator.New<CInteger>(1);
+								  // //current = allocator.New<CWhileStatement>(expr, noneStatement);
+								  // current = noneStatement;
+								  // pCondition = allocator.New<CNode>(1);
+								  // break;
 								  //}
 								  //auto label = GetLabelName(tac->z.GetValue());
 								  //current = allocator.New<CNode>(CNodeKind::STAT_GOTO, label);
@@ -491,9 +520,9 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
-		//case TACOperator::CLC:
-		//case TACOperator::SEC:
-		//case TACOperator::CLV:
+			//case TACOperator::CLC:
+			//case TACOperator::SEC:
+			//case TACOperator::CLV:
 			// 进位和溢出标志都是和其他指令配合使用的，抽象语法树中不应该出现
 		default:
 		{

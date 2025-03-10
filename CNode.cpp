@@ -22,6 +22,15 @@ field(field_)
 
 }
 
+
+CNode::CNode(const Type* type_, CNode* expr_) :
+kind(CNodeKind::EXPR_CAST)
+{
+	cast.type = type_;
+	cast.expr = expr_;
+}
+
+
 CNode::CNode(int value) :
 kind(CNodeKind::EXPR_INTEGER)
 {

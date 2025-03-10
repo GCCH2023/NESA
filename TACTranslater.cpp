@@ -416,7 +416,7 @@ TACOperand TACTranslater::GetOperand(const Instruction& instruction)
 	case AddrMode::Immediate:
 		return TACOperand(instruction.GetByte());
 	case AddrMode::Absolute:
-		return TACOperand(TACOperand::MEMORY | instruction.GetOperandAddress());
+		return TACOperand(TACOperand::GLOBAL | instruction.GetOperandAddress());
 	case AddrMode::AbsoluteX:
 	{
 								// 需要额外添加一条三地址码用于计算地址
@@ -424,8 +424,6 @@ TACOperand TACTranslater::GetOperand(const Instruction& instruction)
 								TACOperand result(TACOperand::TEMP | temp);  // 创建一个临时变量保存计算结果地址
 								TAC* tac = allocator.New<TAC>(TACOperator::ADD, result, RegisterX, instruction.GetOperandAddress());
 								AddTAC(tac, instruction.GetAddress());
-								// 然后返回临时变量作为地址
-								result.SetKind(TACOperand::MEMORY);
 								return result;
 	}
 	case AddrMode::AbsoluteY:
@@ -435,25 +433,21 @@ TACOperand TACTranslater::GetOperand(const Instruction& instruction)
 								TACOperand result(TACOperand::TEMP | temp);  // 创建一个临时变量保存计算结果地址
 								TAC* tac = allocator.New<TAC>(TACOperator::ADD, result, RegisterX, instruction.GetOperandAddress());
 								AddTAC(tac, instruction.GetAddress());
-								// 然后返回临时变量
-								result.SetKind(TACOperand::MEMORY);
 								return result;
 	}
 	case AddrMode::Relative:
 		return TACOperand(TACOperand::ADDRESS | instruction.GetConditionalJumpAddress());
 	case AddrMode::ZeroPage:
-		return TACOperand(TACOperand::MEMORY | instruction.GetByte());
+		return TACOperand(TACOperand::GLOBAL | instruction.GetByte());
 	case AddrMode::IndirectY:
 	{
 								// [Y + [zp]]
 								// 需要额外添加一条三地址码用于计算地址
 								int temp = this->tacSub->NewTemp(TypeManager::pValue);
 								TACOperand result(TACOperand::TEMP | temp);  // 创建一个临时变量保存计算结果地址
-								TACOperand zeroPageAddr(TACOperand::MEMORY | instruction.GetByte());  // 从零页指定2字节单元取出地址
+								TACOperand zeroPageAddr(TACOperand::GLOBAL | instruction.GetByte());  // 从零页指定2字节单元取出地址
 								TAC* tac = allocator.New<TAC>(TACOperator::ADD, result, RegisterY, zeroPageAddr);
 								AddTAC(tac, instruction.GetAddress());
-								// 然后返回临时变量作为地址
-								result.SetKind(TACOperand::MEMORY);
 								return result;
 	}
 	default:
@@ -483,11 +477,11 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 		addr = instruction.GetOperandAddress();
 		break;
 	case AddrMode::AbsoluteX:
-		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetOperandAddress());
+		tac.x = TACOperand(TACOperand::GLOBAL | instruction.GetOperandAddress());
 		tac.y = RegisterX;
 		return true;
 	case AddrMode::AbsoluteY:
-		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetOperandAddress());
+		tac.x = TACOperand(TACOperand::GLOBAL | instruction.GetOperandAddress());
 		tac.y = RegisterY;
 		return true;
 	case AddrMode::Relative:
@@ -497,11 +491,11 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 		addr = instruction.GetByte();
 		break;
 	case AddrMode::ZeroPageX:
-		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetByte());
+		tac.x = TACOperand(TACOperand::GLOBAL | instruction.GetByte());
 		tac.y = RegisterX;
 		return true;
 	case AddrMode::ZeroPageY:
-		tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetByte());
+		tac.x = TACOperand(TACOperand::GLOBAL | instruction.GetByte());
 		tac.y = RegisterY;
 		return true;
 	case AddrMode::IndirectY:
@@ -512,7 +506,7 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 
 								// 1. 首先生成一条解引用零页地址的三地址码
 								int zeroPageAddr = instruction.GetByte();
-								TACOperand addrPointer(TACOperand::MEMORY | zeroPageAddr);
+								TACOperand addrPointer(TACOperand::GLOBAL | zeroPageAddr);
 								// (1) 添加一个临时变量，用于保存从零页取出的地址值
 								int temp = this->tacSub->NewTemp(TypeManager::pValue);
 								TACOperand result(TACOperand::TEMP | temp);
@@ -540,12 +534,12 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 		if (v->address != addr)
 		{
 			// 使用偏移量来访问
-			tac.x = TACOperand(TACOperand::ADDRESS | instruction.GetByte());
+			tac.x = TACOperand(TACOperand::GLOBAL | v->address);
 			tac.y = TACOperand(addr - v->address);
 			return true;
 		}
 	}
-	tac.x = TACOperand(TACOperand::MEMORY | addr);
+	tac.x = TACOperand(TACOperand::GLOBAL | addr);
 	return false;
 }
 

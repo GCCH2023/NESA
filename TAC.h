@@ -21,6 +21,7 @@ enum class TACOperator
 	IFEQ,  // if x == y goto z
 	ARRAY_GET,  // 获取数组元素 z = x[y]，x 是数组基地址，y 是元素的偏移量字节数
 	ARRAY_SET,  // 设置数组元素 x[y] = z，x 是数组基地址，y 是元素的偏移量字节数
+	ADDR,  // 取地址，z = &x
 	DEREF,  // 解引用，若 z 是T类型，则x 是T指针类型，z = *x
 	ARG,  // 传递一个函数参数，相当于 x86 中的 push x
 	CALL, // z = x(y)，x 是函数地址，y是参数数量
@@ -52,31 +53,34 @@ const TCHAR* ToString(TACOperator op);
 class TACOperand
 {
 public:
-	enum
+	// 操作数枚举
+	enum OperandKind
 	{
 		INTEGER = 0,  // 整数常量, 值是8位整数值
 		ADDRESS = 0x01000000,  // 内存地址，值是16位地址
-		MEMORY = 0x10000000,  // 内存单元，值是16位地址
-		REGISTER = 0x11000000,  // 寄存器，值是寄存器编号
+		// 变量类别
+		TEMP = 0x03000000,  // 临时变量，值是它的编号
+		GLOBAL = 0x04000000,  // 全局变量，值是它的16位地址
+		REGISTER = 0x05000000,  // 寄存器，值是寄存器编号
 
-		TEMP = 0x00100000,  // 临时变量，值是它的编号
-
-		VALUE_MASK = 0xFFFF,
 		KIND_MASK = 0xFF000000,
+		VALUE_MASK = 0x0000FFFF,
 	};
+
+public:
 	TACOperand();
 	TACOperand(uint32_t value);
 	bool operator==(const TACOperand& other) const;
 	// 是否临时变量
-	inline bool IsTemp() const { return (data & TEMP) != 0; }
+	inline bool IsTemp() const { return GetKind() == TEMP; }
 	// 是否寄存器
 	inline bool IsRegister() const { return GetKind() == REGISTER; }
 	// 是否内存地址
 	inline bool IsAddress() const { return GetKind() == ADDRESS; }
 	// 是否整数
 	inline bool IsInterger() const { return GetKind() == INTEGER; }
-	// 是否内存单元
-	inline bool IsMemory() const { return GetKind() == MEMORY; }
+	// 是否是变量
+	inline bool IsVariable() const { return GetKind() >= TEMP && GetKind() <= REGISTER; }
 	// 获取值
 	inline uint32_t GetValue() const { return data & VALUE_MASK; }
 	// 设置值

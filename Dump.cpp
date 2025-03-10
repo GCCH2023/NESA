@@ -12,6 +12,35 @@ OStream& Indent(OStream& os, int indent)
 	return os;
 }
 
+void DumpType(const Type* type)
+{
+	switch (type->GetKind())
+	{
+	case TypeKind::Enum: COUT << _T("enum ") << type->e.name; break;
+	case TypeKind::Struct: COUT << _T("struct ") << type->su.name; break;
+	case TypeKind::Union: COUT << _T("union ") << type->su.name; break;
+	case TypeKind::Pointer:
+	{
+							  Type* base = type->pa.type;
+							  if (base->GetKind() == TypeKind::Function)
+								  throw Exception(_T("函数指针的声明未实现"));
+							  DumpType(base);
+							  COUT << _T("*");
+							  break;
+	}
+	case TypeKind::Array:
+	{
+							Type* base = type->pa.type;
+							DumpType(base);
+							COUT << _T("[") << type->pa.count << _T("]");
+							break;
+	}
+	default:
+		COUT << ToString(type->GetKind());
+	}
+}
+
+
 OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 {
 	switch (obj->kind)
@@ -173,6 +202,12 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 								 return os << _T("&") << obj->e.x;
 	}
+	case CNodeKind::EXPR_CAST:
+	{
+								 os << _T("(");
+								 DumpType(obj->cast.type);
+								 return os << _T(")") << obj->cast.expr;
+	}
 
 	case CNodeKind::EXPR_GREAT:
 	{
@@ -301,33 +336,6 @@ OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)
 	return os;
 }
 
-void DumpType(Type* type)
-{
-	switch (type->GetKind())
-	{
-	case TypeKind::Enum: COUT << _T("enum ") << type->e.name; break;
-	case TypeKind::Struct: COUT << _T("struct ") << type->su.name; break;
-	case TypeKind::Union: COUT << _T("union ") << type->su.name; break;
-	case TypeKind::Pointer:
-	{
-							  Type* base = type->pa.type;
-							  if (base->GetKind() == TypeKind::Function)
-								  throw Exception(_T("函数指针的声明未实现"));
-							  DumpType(base);
-							  COUT << _T("*");
-							  break;
-	}
-	case TypeKind::Array:
-	{
-							Type* base = type->pa.type;
-							DumpType(base);
-							COUT << _T("[") << type->pa.count << _T("]");
-							break;
-	}
-	default:
-		COUT << ToString(type->GetKind());
-	}
-}
 
 void DumpParameter(Variable* param)
 {

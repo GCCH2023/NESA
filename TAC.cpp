@@ -33,7 +33,7 @@ op(op_)
 
 }
 
-TAC::TAC(TACOperator op_, TACOperand z_):
+TAC::TAC(TACOperator op_, TACOperand z_) :
 op(op_),
 z(z_)
 {
@@ -60,6 +60,7 @@ const TCHAR* ToString(TACOperator op)
 		_T("IFEQ"),
 		_T("ARRAY_GET"),
 		_T("ARRAY_SET"),
+		_T("ADDR"),
 		_T("DEREF"),
 		_T("ARG"),
 		_T("CALL"),
@@ -133,35 +134,36 @@ OStream& operator<<(OStream& os, const TACOperand& obj)
 	{
 	case TACOperand::INTEGER:
 	{
-								  char buffer[16];
-								  if (obj.IsTemp())
-									  sprintf_s(buffer, "temp%d", obj.GetValue());
-								  else
-									  sprintf_s(buffer, "0x%02X", obj.GetValue());
-								  os << buffer;
-								  break;
+								char buffer[16];
+								sprintf_s(buffer, "0x%02X", obj.GetValue());
+								os << buffer;
+								break;
 	}
-	case TACOperand::MEMORY:
+	case TACOperand::GLOBAL:
 	{
-								 char buffer[16];
-								 if (obj.IsTemp())
-									 sprintf_s(buffer, "[temp%d]", obj.GetValue());
-								 else
-									 sprintf_s(buffer, "[%04X]", obj.GetValue());
-								 os << buffer;
-								 break;
+							   char buffer[16];
+								   sprintf_s(buffer, "g_%04X", obj.GetValue());
+							   os << buffer;
+							   break;
+	}
+	case TACOperand::TEMP:
+	{
+							 char buffer[16];
+							 sprintf_s(buffer, "[temp%d]", obj.GetValue());
+							 os << buffer;
+							 break;
 	}
 	case TACOperand::ADDRESS:
 	{
-								  char buffer[16];
-								  sprintf_s(buffer, "%04X", obj.GetValue());
-								  os << buffer;
-								  break;
+								char buffer[16];
+								sprintf_s(buffer, "%04X", obj.GetValue());
+								os << buffer;
+								break;
 	}
 	case TACOperand::REGISTER:
 	{
-								   os << Nes::ToString((NesRegisters)obj.GetValue());
-								   break;
+								 os << Nes::ToString((NesRegisters)obj.GetValue());
+								 break;
 	}
 	}
 	return os;

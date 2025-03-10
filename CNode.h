@@ -46,6 +46,7 @@ enum class CNodeKind
 	EXPR_DOT,  // 取记录对象的字段 x.y
 	EXPR_DEREF,  // 解引用 *p
 	EXPR_ADDR,  // 取地址 &a
+	EXPR_CAST,  // 类型转换 (T)a
 	EXPR_CALL,  // 函数调用
 
 	EXPR_BOR_ASSIGN,  // |= 
@@ -72,6 +73,11 @@ struct CNode
 		}l;  // 标签语句
 		const Variable* variable;  // 变量
 		const Field* field;  // 记录类型的字段
+		struct
+		{
+			const Type* type;  // 类型转换表达式的目标类型
+			CNode* expr;
+		}cast;  // 类型转换表达式
 		struct
 		{
 			int value;
@@ -107,6 +113,8 @@ struct CNode
 	CNode(const Variable* variable);
 	// 创建字段
 	CNode(const Field* field);
+	// 创建类型转换表达式
+	CNode(const Type* type, CNode* expr);
 	// 创建函数调用或标签语句
 	CNode(String* name, CNode* params);
 	// 创建整数
