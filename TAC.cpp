@@ -62,6 +62,7 @@ const TCHAR* ToString(TACOperator op)
 		_T("ARRAY_SET"),
 		_T("ADDR"),
 		_T("DEREF"),
+		_T("CAST"),
 		_T("ARG"),
 		_T("CALL"),
 		_T("GOTO"),
@@ -142,14 +143,14 @@ OStream& operator<<(OStream& os, const TACOperand& obj)
 	case TACOperand::GLOBAL:
 	{
 							   char buffer[16];
-								   sprintf_s(buffer, "g_%04X", obj.GetValue());
+							   sprintf_s(buffer, "g_%04X", obj.GetValue());
 							   os << buffer;
 							   break;
 	}
 	case TACOperand::TEMP:
 	{
 							 char buffer[16];
-							 sprintf_s(buffer, "[temp%d]", obj.GetValue());
+							 sprintf_s(buffer, "temp%d", obj.GetValue());
 							 os << buffer;
 							 break;
 	}
@@ -207,8 +208,14 @@ OStream& operator<<(OStream& out, const TAC* tac)
 		else
 			out << tac->x << _T("[") << tac->y << _T("] = ") << tac->z;
 		break;
+	case TACOperator::ADDR:
+		out << tac->z << _T(" = &") << tac->x;
+		break;
 	case TACOperator::DEREF:
 		out << tac->z << _T(" = *") << tac->x;
+		break;
+	case TACOperator::CAST:
+		out << tac->z << _T(" = (T)") << tac->x;
 		break;
 	case TACOperator::IFGREAT:
 		out << _T("if ") << tac->x << _T(" > ") << tac->y << _T(" goto ") << tac->z;

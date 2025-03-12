@@ -114,41 +114,41 @@ void ParseNes(const TCHAR* rom)
 
 		// 一. 从这里开始，到 return 之间的代码是从指定函数开始
 		// 分析它及它调用的所有函数
-		//NesAnalyzer nesa(db);
-		//nesa.Analyze();
+		NesAnalyzer nesa(db);
+		nesa.Analyze();
 
-		//// 生成C代码
-		//for (auto sub : db.GetSubroutines())
-		//{
-		//	// 生成三地址码
-		//	TACFunction* tacSub = ntt.Translate(sub);
-		//	if (sub->GetStartAddress() == 0x8220)
-		//		/*COUT << _T("\n三地址码:\n");
-		//	tacSub->Dump();*/
+		// 生成C代码
+		for (auto sub : db.GetSubroutines())
+		{
+			// 生成三地址码
+			TACFunction* tacSub = ntt.Translate(sub);
+			if (sub->GetStartAddress() == 0x8220)
+				/*COUT << _T("\n三地址码:\n");
+			tacSub->Dump();*/
 
-		//	// 1. 进行窥孔优化
-		//	tacPh.Optimize(tacSub);
+			// 1. 进行窥孔优化
+			tacPh.Optimize(tacSub);
 
-		//	// 2. 进行死代码消除
-		//	tacDce.Optimize(tacSub);
+			// 2. 进行死代码消除
+			tacDce.Optimize(tacSub);
 
-		//	// 3. 生成C代码
-		//	auto func = translater.TranslateSubroutine(tacSub);
+			// 3. 生成C代码
+			auto func = translater.TranslateSubroutine(tacSub);
 
-		//	// 4. 优化C代码
-		//	ctreeOptimizer.Optimize(func->GetBody());
+			// 4. 优化C代码
+			ctreeOptimizer.Optimize(func->GetBody());
 
-		//	// 5. 添加到数据库
-		//	GetCDB().AddFunction(func);
-		//}
+			// 5. 添加到数据库
+			GetCDB().AddFunction(func);
+		}
 
-		//// 输出C代码
-		//Dump(GetCDB());
-		//return;
+		// 输出C代码
+		Dump(GetCDB());
+		return;
 
 		// 二. 详细分析一个函数（不包括它调用的函数） 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = db.GetInterruptResetAddress();
+		Nes::Address addr = 0x90CC; // db.GetInterruptResetAddress();
 
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");

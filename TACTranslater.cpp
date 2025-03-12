@@ -461,6 +461,12 @@ TACOperand TACTranslater::GetOperand(const Instruction& instruction)
 	return TACOperand();
 }
 
+TACOperand TACTranslater::NewTemp(Type* type)
+{
+	int temp = this->tacSub->NewTemp(type);
+	return TACOperand(TACOperand::TEMP | temp);
+}
+
 bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 {
 	const OpcodeEntry& entry = instruction.GetEntry();
@@ -500,22 +506,10 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 		return true;
 	case AddrMode::IndirectY:
 	{
-								// [Y + [zp]]
-								// zp 是数组地址指针，解引用后得到数组地址
-								// 接着用 Y 索引数组得到元素值
-
-								// 1. 首先生成一条解引用零页地址的三地址码
-								int zeroPageAddr = instruction.GetByte();
-								TACOperand addrPointer(TACOperand::GLOBAL | zeroPageAddr);
-								// (1) 添加一个临时变量，用于保存从零页取出的地址值
-								int temp = this->tacSub->NewTemp(TypeManager::pValue);
-								TACOperand result(TACOperand::TEMP | temp);
-								// (2) 生成解引用的三地址码
-								TAC* t = allocator.New<TAC>(TACOperator::DEREF, result, addrPointer);
-								AddTAC(t, instruction.GetAddress());
-
-								// 2. 添加一条取数组元素的三地址码
-								tac.x = result;
+								// [Y + [zp]] 对应的C代码为
+								// char* g_zp;  // zp = &g_zp
+								// 翻译为 g_zp[Y]
+								tac.x = TACOperand(TACOperand::GLOBAL | instruction.GetByte());
 								tac.y = RegisterY;
 								return true;
 	}
@@ -529,15 +523,24 @@ bool TACTranslater::TranslateOperand(TAC& tac, const Instruction& instruction)
 	}
 	// 查找全局变量
 	auto v = GetCDB().GetGlobalVariable(addr);
-	if (v)
+	if (v && GetTypeBytes(v->type) != 1)
 	{
-		if (v->address != addr)
-		{
-			// 使用偏移量来访问
-			tac.x = TACOperand(TACOperand::GLOBAL | v->address);
+		//if (v->address != addr)
+		//{
+			// 对于NES，这种情况必是2字节的指针，使用偏移量来访问
+			// p = &a
+			TACOperand global = TACOperand(TACOperand::GLOBAL | v->address);
+			Type* type = GetTypeManager().NewPointer(v->type);
+			TAC* code = allocator.New<TAC>(TACOperator::ADDR, NewTemp(type), global);
+			AddTAC(code, instruction.GetAddress());
+			// t = (char*)p, t 的类型必然是 char，因为 6502 一次只能操作8位
+			code = allocator.New<TAC>(TACOperator::CAST, NewTemp(TypeManager::pValue), code->z);
+			AddTAC(code, instruction.GetAddress());
+			// 返回 t[n]，n 是偏移量，对于 6502，总是0, 或 1
+			tac.x = code->z;
 			tac.y = TACOperand(addr - v->address);
 			return true;
-		}
+		//}
 	}
 	tac.x = TACOperand(TACOperand::GLOBAL | addr);
 	return false;

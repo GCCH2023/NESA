@@ -21,6 +21,8 @@ protected:
 	// 获取指令的操作数
 	// 对于复杂的寻址模式，可能会设置多个操作数
 	TACOperand GetOperand(const Instruction& instruction);
+	// 创建一个新的临时变量
+	TACOperand NewTemp(Type* type);
 	// 解析操作数，返回是否多个操作数
 	bool TranslateOperand(TAC& tac, const Instruction& instruction);
 	// 翻译 CMP, CPX, CPY 指令

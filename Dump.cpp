@@ -437,12 +437,14 @@ void DumpDefinition(Function* func)
 {
 	DumpDeclaration(func);  // 函数声明
 	COUT << _T("\n{\n");
+	// 局部变量声明
 	for (auto v = func->GetVariableList(); v; v = v->next)
 	{
 		Indent(COUT, 1);
 		DumpDeclaration(v);
 		COUT << std::endl;
 	}
+	COUT << endl;
 	DumpCNode(COUT, func->GetBody(), 1);
 	COUT << _T("}\n");
 }
@@ -474,6 +476,7 @@ void Dump(CDataBase& cdb)
 	for (auto f : cdb.GetFunctionList())
 	{
 		DumpDefinition(f);
+		COUT << std::endl;
 	}
 }
 

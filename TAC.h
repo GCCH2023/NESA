@@ -23,6 +23,7 @@ enum class TACOperator
 	ARRAY_SET,  // 设置数组元素 x[y] = z，x 是数组基地址，y 是元素的偏移量字节数
 	ADDR,  // 取地址，z = &x
 	DEREF,  // 解引用，若 z 是T类型，则x 是T指针类型，z = *x
+	CAST,  // 类型转换, z = (T)x，T由符号表中的z类型给出
 	ARG,  // 传递一个函数参数，相当于 x86 中的 push x
 	CALL, // z = x(y)，x 是函数地址，y是参数数量
 	GOTO, // goto z
