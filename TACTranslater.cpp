@@ -143,20 +143,19 @@ TAC* TACTranslater::TranslateReturn(const Instruction& instruction)
 
 	// 给返回值字段赋值，需要用数组的方式来赋值
 	auto returns = this->tacSub->GetReturnFlag();
-
-	if (returns & Nes::NesRegisters::A)
+	if (returns & (1 << Nes::NesRegisters::A))
 	{
 		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterA,
 			TACOperand(TACOperand::TEMP | GetAxy()), 0);
 		AddTAC(tac, instruction.GetAddress());
 	}
-	if (returns & Nes::NesRegisters::X)
+	if (returns & (1 << Nes::NesRegisters::X))
 	{
 		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterX,
 			TACOperand(TACOperand::TEMP | GetAxy()), 1);
 		AddTAC(tac, instruction.GetAddress());
 	}
-	if (returns & Nes::NesRegisters::Y)
+	if (returns & (1 << Nes::NesRegisters::Y))
 	{
 		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterY,
 			TACOperand(TACOperand::TEMP | GetAxy()), 2);

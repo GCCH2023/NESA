@@ -122,9 +122,9 @@ void ParseNes(const TCHAR* rom)
 		{
 			// 生成三地址码
 			TACFunction* tacSub = ntt.Translate(sub);
-			if (sub->GetStartAddress() == 0x8220)
-				/*COUT << _T("\n三地址码:\n");
-			tacSub->Dump();*/
+			/*if (sub->GetStartAddress() == 0x8220)
+				COUT << _T("\n三地址码:\n");*/
+			// tacSub->Dump();
 
 			// 1. 进行窥孔优化
 			tacPh.Optimize(tacSub);
@@ -148,7 +148,7 @@ void ParseNes(const TCHAR* rom)
 
 		// 二. 详细分析一个函数（不包括它调用的函数） 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = 0x90CC; // db.GetInterruptResetAddress();
+		Nes::Address addr = 0x90CC; // db.GetInterruptNmiAddress(); // db.GetInterruptResetAddress();
 
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");

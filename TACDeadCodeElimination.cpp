@@ -12,6 +12,7 @@ TACOptimizer(db)
 TACDeadCodeElimination::~TACDeadCodeElimination()
 {
 }
+void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks);
 
 // 如何一条三地址码是跳转地址，那么消除后，这个地址就没了
 // 应该改为跳转到下一条代码的地址，目前没有实现

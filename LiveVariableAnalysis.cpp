@@ -80,6 +80,7 @@ void LiveVariableAnalysis::Initialize()
 		NodeSet defs = 0;  // 前3位表示 AXY 是否定义
 		NodeSet uses = 0;  // 前3位表示 AXY 是否被使用
 		auto blockSet = allocator.New<BasicBlockLiveVariableSet>();
+		block->tag = blockSet;
 		for (auto tac : block->GetCodes())
 		{
 			// 函数调用也可能给AXY定值
@@ -108,12 +109,19 @@ void LiveVariableAnalysis::Initialize()
 					continue;
 				}
 			}
+			else if (tac->op == TACOperator::ARRAY_SET)
+			{
+				// 数组元素赋值：x[y] = z，使用 y，z，x比不可能是AXY寄存器，不管
+				AnalyzeAXYOperandReference(tac->y, defs, uses, blockSet->uses);
+				AnalyzeAXYOperandReference(tac->z, defs, uses, blockSet->uses);
+				continue;
+			}
+			// 通常情况：z = x op y，定义 z，使用 x，y
 			AnalyzeAXYOperandReference(tac->x, defs, uses, blockSet->uses);
 			AnalyzeAXYOperandReference(tac->y, defs, uses, blockSet->uses);
 			AnalyzeAXYOperandReference(tac->z, uses, defs, blockSet->defs);
-			block->tag = blockSet;
 		}
-		/*Sprintf<> s;
+	/*	Sprintf<> s;
 		s.Append(_T("基本块%04X，使用: "), block->GetStartAddress());
 		if (blockSet->uses.Contains(Nes::NesRegisters::A))
 			s.Append(_T("A, "));
@@ -145,5 +153,7 @@ bool LiveVariableAnalysis::IteraterBasicBlock(TACBasicBlock* block)
 	}
 	auto value = blockSet->in;
 	blockSet->in = (blockSet->out & ~blockSet->defs) | blockSet->uses;
+	//DumpAllBasicBlockLiveVariables(subroutine->GetBasicBlocks());
+	//COUT << std::endl;
 	return blockSet->in == value;
 }
