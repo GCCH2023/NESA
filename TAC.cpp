@@ -2,11 +2,15 @@
 #include "TAC.h"
 using namespace Nes;
 
-TACOperand RegisterP(TACOperand::REGISTER | NesRegisters::P);
-TACOperand RegisterA(TACOperand::REGISTER | NesRegisters::A);
-TACOperand RegisterX(TACOperand::REGISTER | NesRegisters::X);
-TACOperand RegisterY(TACOperand::REGISTER | NesRegisters::Y);
-TACOperand RegisterSP(TACOperand::REGISTER | NesRegisters::SP);
+TACOperand RegisterP(TACOperand::REGISTER | TAC_REG_P);
+TACOperand RegisterA(TACOperand::REGISTER | TAC_REG_A);
+TACOperand RegisterX(TACOperand::REGISTER | TAC_REG_X);
+TACOperand RegisterY(TACOperand::REGISTER | TAC_REG_Y);
+TACOperand RegisterSP(TACOperand::REGISTER | TAC_REG_SP);
+TACOperand RegisterN(TACOperand::REGISTER | TAC_REG_N);
+TACOperand RegisterV(TACOperand::REGISTER | TAC_REG_V);
+TACOperand RegisterZ(TACOperand::REGISTER | TAC_REG_Z);
+TACOperand RegisterC(TACOperand::REGISTER | TAC_REG_C);
 
 
 TAC::TAC(TACOperator op_, TACOperand z_, TACOperand x_, TACOperand y_) :
@@ -87,6 +91,23 @@ const TCHAR* ToString(TACOperator op)
 	return names[(int)op];
 }
 
+const TCHAR* ToString(TACRegister reg)
+{
+	switch (reg)
+	{
+	case TAC_REG_A: return _T("A");
+	case TAC_REG_X: return _T("X");
+	case TAC_REG_Y: return _T("Y");
+	case TAC_REG_N: return _T("N");
+	case TAC_REG_V: return _T("V");
+	case TAC_REG_Z: return _T("Z");
+	case TAC_REG_C: return _T("C");
+	case TAC_REG_P: return _T("P");
+	case TAC_REG_SP: return _T("SP");
+	}
+	return nullptr;
+}
+
 template <typename T>
 T RotateLeft(T value, int shift)
 {
@@ -163,7 +184,7 @@ OStream& operator<<(OStream& os, const TACOperand& obj)
 	}
 	case TACOperand::REGISTER:
 	{
-								 os << Nes::ToString((NesRegisters)obj.GetValue());
+								 os << ToString((TACRegister)obj.GetValue());
 								 break;
 	}
 	}

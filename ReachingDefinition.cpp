@@ -89,13 +89,13 @@ void ReachingDefinition::GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunctio
 		{
 			switch (code->z.GetValue())
 			{
-			case  Nes::NesRegisters::A:
+			case  TAC_REG_A:
 				axyDefs.adefs.push_back(i);
 				break;
-			case  Nes::NesRegisters::X:
+			case  TAC_REG_X:
 				axyDefs.xdefs.push_back(i);
 				break;
-			case  Nes::NesRegisters::Y:
+			case  TAC_REG_Y:
 				axyDefs.ydefs.push_back(i);
 				break;
 			}

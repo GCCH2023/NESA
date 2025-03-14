@@ -28,11 +28,11 @@ void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks)
 		}
 		else
 		{
-			if (blockSet->in.Contains(Nes::NesRegisters::A))
+			if (blockSet->in.Contains(TAC_REG_A))
 				s.Append(_T("A, "));
-			if (blockSet->in.Contains(Nes::NesRegisters::X))
+			if (blockSet->in.Contains(TAC_REG_X))
 				s.Append(_T("X, "));
-			if (blockSet->in.Contains(Nes::NesRegisters::Y))
+			if (blockSet->in.Contains(TAC_REG_Y))
 				s.Append(_T("Y, "));
 		}
 		s.Append(_T(" OUT: "));
@@ -42,11 +42,11 @@ void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks)
 		}
 		else
 		{
-			if (blockSet->out.Contains(Nes::NesRegisters::A))
+			if (blockSet->out.Contains(TAC_REG_A))
 				s.Append(_T("A, "));
-			if (blockSet->out.Contains(Nes::NesRegisters::X))
+			if (blockSet->out.Contains(TAC_REG_X))
 				s.Append(_T("X, "));
-			if (blockSet->out.Contains(Nes::NesRegisters::Y))
+			if (blockSet->out.Contains(TAC_REG_Y))
 				s.Append(_T("Y, "));
 		}
 		s.Append(_T("\n"));
@@ -60,7 +60,7 @@ void AnalyzeAXYOperandReference(TACOperand& operand, NodeSet& defs, NodeSet& use
 	if (operand.IsRegister())
 	{
 		int index = operand.GetValue();
-		if (index <= Nes::NesRegisters::Y)
+		if (index <= TAC_REG_Y)
 		{
 			if (!defs.Contains(index))  // 使用前没有定值
 			{
@@ -123,18 +123,18 @@ void LiveVariableAnalysis::Initialize()
 		}
 	/*	Sprintf<> s;
 		s.Append(_T("基本块%04X，使用: "), block->GetStartAddress());
-		if (blockSet->uses.Contains(Nes::NesRegisters::A))
+		if (blockSet->uses.Contains(TAC_REG_A))
 			s.Append(_T("A, "));
-		if (blockSet->uses.Contains(Nes::NesRegisters::X))
+		if (blockSet->uses.Contains(TAC_REG_X))
 			s.Append(_T("X, "));
-		if (blockSet->uses.Contains(Nes::NesRegisters::Y))
+		if (blockSet->uses.Contains(TAC_REG_Y))
 			s.Append(_T("Y, "));
 		s.Append(_T(", 定义: "));
-		if (blockSet->defs.Contains(Nes::NesRegisters::A))
+		if (blockSet->defs.Contains(TAC_REG_A))
 			s.Append(_T("A, "));
-		if (blockSet->defs.Contains(Nes::NesRegisters::X))
+		if (blockSet->defs.Contains(TAC_REG_X))
 			s.Append(_T("X, "));
-		if (blockSet->defs.Contains(Nes::NesRegisters::Y))
+		if (blockSet->defs.Contains(TAC_REG_Y))
 			s.Append(_T("Y, "));
 		s.Append(_T("\n"));
 		COUT << s.ToString();*/

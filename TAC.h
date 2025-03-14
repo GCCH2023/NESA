@@ -101,12 +101,33 @@ private:
 
 OStream& operator<<(OStream& os, const TACOperand& obj);
 
+// TAC 中用到的寄存器或标志位枚举
+enum TACRegister
+{
+	TAC_REG_A,
+	TAC_REG_X,
+	TAC_REG_Y,
+	TAC_REG_N,
+	TAC_REG_V,
+	TAC_REG_Z,
+	TAC_REG_C,
+	TAC_REG_P,
+	TAC_REG_SP
+};
+
+const TCHAR* ToString(TACRegister reg);
+
 // NES 寄存器 操作数
 extern TACOperand RegisterP;
 extern TACOperand RegisterA;
 extern TACOperand RegisterX;
 extern TACOperand RegisterY;
 extern TACOperand RegisterSP;
+// 标志寄存器的标志位对应的操作数
+extern TACOperand RegisterN;
+extern TACOperand RegisterV;
+extern TACOperand RegisterZ;
+extern TACOperand RegisterC;
 
 // 三地址码
 // 包含一个操作码和三个操作数

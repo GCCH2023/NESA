@@ -11,11 +11,15 @@ function(nullptr),
 subroutine(nullptr),
 tempAllocator(1024 * 1024)
 {
-	registers[Nes::NesRegisters::A] = NewString(_T("A"));
-	registers[Nes::NesRegisters::X] = NewString(_T("X"));
-	registers[Nes::NesRegisters::Y] = NewString(_T("Y"));
-	registers[Nes::NesRegisters::P] = NewString(_T("P"));
-	registers[Nes::NesRegisters::SP] = NewString(_T("SP"));
+	registers[TAC_REG_A] = NewString(_T("A"));
+	registers[TAC_REG_X] = NewString(_T("X"));
+	registers[TAC_REG_Y] = NewString(_T("Y"));
+	registers[TAC_REG_P] = NewString(_T("P"));
+	registers[TAC_REG_N] = NewString(_T("N"));
+	registers[TAC_REG_V] = NewString(_T("V"));
+	registers[TAC_REG_Z] = NewString(_T("Z"));
+	registers[TAC_REG_C] = NewString(_T("C"));
+	registers[TAC_REG_SP] = NewString(_T("SP"));
 }
 
 
