@@ -57,6 +57,8 @@ enum class CNodeKind
 	EXPR_NOT,  // !
 };
 
+// 获取节点类型的字符串表示
+const TCHAR* ToString(CNodeKind kind);
 
 // C语言语法节点
 struct CNode
@@ -129,3 +131,6 @@ struct CNode
 	// 是否是表达式节点
 	bool IsExpression() const { return kind >= CNodeKind::EXPR_VARIABLE && kind <= CNodeKind::EXPR_NOT; }
 };
+
+// 获取运算符的优先级
+int GetOperatorPriority(CNodeKind op);

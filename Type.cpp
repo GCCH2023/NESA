@@ -199,7 +199,7 @@ const Field* Type::GetField(int offset)
 		size = (size + field->align - 1) & ~(field->align - 1);  // 向上取整到字段的对齐字节
 		if (size == offset)
 			return field;
-		if (size > offset)
+		if ((int)size > offset)
 			return nullptr;
 
 		size += GetTypeBytes(field->type);

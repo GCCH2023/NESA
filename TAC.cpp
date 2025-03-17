@@ -44,6 +44,15 @@ z(z_)
 
 }
 
+TAC::TAC(const TAC* tac):
+op(tac->op),
+x(tac->x),
+y(tac->y),
+z(tac->z)
+{
+
+}
+
 const TCHAR* ToString(TACOperator op)
 {
 	static const TCHAR* names[] =
@@ -87,6 +96,16 @@ const TCHAR* ToString(TACOperator op)
 		_T("CLV"),
 		_T("CLD"),
 		_T("SED"),
+
+		_T("FLAGN"),
+
+		_T("BOOL_GREAT"),
+		_T("BOOL_GEQ"),
+		_T("BOOL_LESS"),
+		_T("BOOL_LEQ"),
+		_T("BOOL_EQ"),
+		_T("BOOL_NEQ"),
+		_T("BOOL_BIT"),
 	};
 	return names[(int)op];
 }
@@ -266,7 +285,7 @@ OStream& operator<<(OStream& out, const TAC* tac)
 		out << _T("return");
 		break;
 	case TACOperator::SHL:
-		out << tac->z << _T(" = ") << tac->x << _T(") << _T(") << tac->y;
+		out << tac->z << _T(" = ") << tac->x << _T(" << ") << tac->y;
 		break;
 	case TACOperator::SHR:
 		out << tac->z << _T(" = ") << tac->x << _T(" >> ") << tac->y;
@@ -302,6 +321,33 @@ OStream& operator<<(OStream& out, const TAC* tac)
 	case TACOperator::CLV:
 		out << ToString(tac->op);
 		break;
+	case TACOperator::FLAGV:
+		out << tac->z << _T(" = ") << tac->x << _T(" FLAGV ") << tac->y;
+		break;
+	case TACOperator::BOOL_GREAT:
+		out << tac->z << _T(" = ") << tac->x << _T(" > ") << tac->y;
+		break;
+	case TACOperator::BOOL_GEQ:
+		out << tac->z << _T(" = ") << tac->x << _T(" >= ") << tac->y;
+		break;
+	case TACOperator::BOOL_LESS:
+		out << tac->z << _T(" = ") << tac->x << _T(" < ") << tac->y;
+		break;
+	case TACOperator::BOOL_LEQ:
+		out << tac->z << _T(" = ") << tac->x << _T(" <= ") << tac->y;
+		break;
+	case TACOperator::BOOL_EQ:
+		out << tac->z << _T(" = ") << tac->x << _T(" == ") << tac->y;
+		break;
+	case TACOperator::BOOL_NEQ:
+		out << tac->z << _T(" = ") << tac->x << _T(" != ") << tac->y;
+		break;
+	case TACOperator::BOOL_BAND:
+		out << tac->z << _T(" = (") << tac->x << _T(" & ") << tac->y << _T(") != 0");
+		break;
+	case TACOperator::BOOL_BIT:
+		out << tac->z << _T(" = (") << tac->x << _T(" >> ") << tac->y << _T(") & 1");
+		break;
 	default:
 	{
 			   Sprintf<> s;
@@ -330,10 +376,5 @@ TACOperand::TACOperand() :
 data(0)
 {
 
-}
-
-bool TACOperand::operator==(const TACOperand& other) const
-{
-	return data == other.data;
 }
 

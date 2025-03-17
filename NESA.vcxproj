@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+    <Text Include="日志.txt" />
     <Text Include="说明.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -177,10 +178,13 @@
     <ClInclude Include="String.h" />
     <ClInclude Include="TAC.h" />
     <ClInclude Include="TACDeadCodeElimination.h" />
+    <ClInclude Include="TACFlagRegisterOptimizer.h" />
     <ClInclude Include="TACFunction.h" />
     <ClInclude Include="TACOptimizer.h" />
+    <ClInclude Include="TACBasicBlockOptimizer.h" />
     <ClInclude Include="TACPeephole.h" />
     <ClInclude Include="TACTranslater.h" />
+    <ClInclude Include="TACTranslater1.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="CTreeOptimizer.h" />
     <ClInclude Include="Type.h" />
@@ -223,11 +227,14 @@
     <ClCompile Include="String.cpp" />
     <ClCompile Include="TAC.cpp" />
     <ClCompile Include="TACDeadCodeElimination.cpp" />
+    <ClCompile Include="TACFlagRegisterOptimizer.cpp" />
     <ClCompile Include="TACFunction.cpp" />
     <ClCompile Include="TACOptimizer.cpp" />
+    <ClCompile Include="TACBasicBlockOptimizer.cpp" />
     <ClCompile Include="TACPeephole.cpp" />
     <ClCompile Include="TACTranslater.cpp" />
     <ClCompile Include="CTreeOptimizer.cpp" />
+    <ClCompile Include="TACTranslater1.cpp" />
     <ClCompile Include="Type.cpp" />
     <ClCompile Include="TypeManager.cpp" />
     <ClCompile Include="Variable.cpp" />

@@ -4,6 +4,8 @@
 #include "NesSubroutine.h"
 #include "NesBasicBlock.h"
 
+class Allocator;
+
 using InstructionList = std::vector<Instruction>;
 using SubroutineList = std::vector<NesSubroutine*>;
 

@@ -44,6 +44,7 @@
   <ItemGroup>
     <Text Include="ReadMe.txt" />
     <Text Include="说明.txt" />
+    <Text Include="日志.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -175,6 +176,15 @@
     <ClInclude Include="GlobalParser.h">
       <Filter>Parser</Filter>
     </ClInclude>
+    <ClInclude Include="TACBasicBlockOptimizer.h">
+      <Filter>IR</Filter>
+    </ClInclude>
+    <ClInclude Include="TACTranslater1.h">
+      <Filter>IR</Filter>
+    </ClInclude>
+    <ClInclude Include="TACFlagRegisterOptimizer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -290,6 +300,15 @@
     </ClCompile>
     <ClCompile Include="GlobalParser.cpp">
       <Filter>Parser</Filter>
+    </ClCompile>
+    <ClCompile Include="TACBasicBlockOptimizer.cpp">
+      <Filter>IR</Filter>
+    </ClCompile>
+    <ClCompile Include="TACTranslater1.cpp">
+      <Filter>IR</Filter>
+    </ClCompile>
+    <ClCompile Include="TACFlagRegisterOptimizer.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

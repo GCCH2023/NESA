@@ -40,6 +40,20 @@ void DumpType(const Type* type)
 	}
 }
 
+// 根据运算符的优先级来输出表达式节点
+// 如果该节点的优先级低于父节点优先级，则输出括号
+OStream& DumpExpression(OStream& os, CNode* child, CNodeKind parentKind)
+{
+	if (GetOperatorPriority(child->kind) > GetOperatorPriority(parentKind))
+	{
+		COUT << _T("(") << child << _T(")");
+	}
+	else
+	{
+		COUT << child;
+	}
+	return os;
+}
 
 OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 {
@@ -136,53 +150,45 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 									 return os << obj->field->name;
 	}
+
+	// 双目运算符
 	case CNodeKind::EXPR_BOR:
-	{
-								return os << obj->e.x << _T(" | ") << obj->e.y;
-	}
 	case CNodeKind::EXPR_BAND:
-	{
-								 return os << obj->e.x << _T(" & ") << obj->e.y;
-	}
 	case CNodeKind::EXPR_XOR:
-	{
-								return os << obj->e.x << _T(" ^ ") << obj->e.y;
-	}
 	case CNodeKind::EXPR_SHIFT_LEFT:
-	{
-									   return os << obj->e.x << _T(" << ") << obj->e.y;
-	}
 	case CNodeKind::EXPR_SHIFT_RIGHT:
-	{
-										return os << obj->e.x << _T(" >> ") << obj->e.y;
-	}
 	case CNodeKind::EXPR_ADD:
-	{
-								return os << obj->e.x << _T(" + ") << obj->e.y;
-	}
 	case CNodeKind::EXPR_SUB:
-	{
-								return os << obj->e.x << _T(" - ") << obj->e.y;
-	}
 	case CNodeKind::EXPR_AND:
-	{
-								return os << obj->e.x << _T(" || ") << obj->e.y;
-	}
 	case CNodeKind::EXPR_OR:
-	{
-							   return os << obj->e.x << _T(" || ") << obj->e.y;
-	}
-	case CNodeKind::EXPR_NOT:
-	{
-								return os << _T("!") << obj->e.y;
-	}
 	case CNodeKind::EXPR_ASSIGN:
+	case CNodeKind::EXPR_GREAT:
+	case CNodeKind::EXPR_GREAT_EQUAL:
+	case CNodeKind::EXPR_EQUAL:
+	case CNodeKind::EXPR_NOT_EQUAL:
+	case CNodeKind::EXPR_LESS:
+	case CNodeKind::EXPR_LESS_EQUAL:
+	case CNodeKind::EXPR_ARROW:
+	case CNodeKind::EXPR_DOT:
 	{
-								   return os << obj->e.x << _T(" = ") << obj->e.y;
+								DumpExpression(os, obj->e.x, obj->kind);
+								os << _T(" ") << ToString(obj->kind) << _T(" ");
+								return DumpExpression(os, obj->e.y, obj->kind);
 	}
+
+	// 单目运算符
+	case CNodeKind::EXPR_NOT:
 	case CNodeKind::EXPR_DEREF:
+	case CNodeKind::EXPR_ADDR:
 	{
-								return os << _T("*") << obj->e.x;
+								 os << ToString(obj->kind);
+								 return DumpExpression(os, obj->e.x, obj->kind);
+	}
+	
+	case CNodeKind::EXPR_INDEX:
+	{
+								  DumpExpression(os, obj->e.x, obj->kind);
+								  return os << _T("[") << obj->e.y << _T("]");
 	}
 	case CNodeKind::EXPR_CALL:
 	{
@@ -198,10 +204,6 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 								 }
 								 return os << _T(")");
 	}
-	case CNodeKind::EXPR_ADDR:
-	{
-								 return os << _T("&") << obj->e.x;
-	}
 	case CNodeKind::EXPR_CAST:
 	{
 								 os << _T("(");
@@ -209,42 +211,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 								 return os << _T(")") << obj->cast.expr;
 	}
 
-	case CNodeKind::EXPR_GREAT:
-	{
-								  return os << obj->e.x << _T(" > ") << obj->e.y;
-	}
-	case CNodeKind::EXPR_GREAT_EQUAL:
-	{
-										return os << obj->e.x << _T(" >= ") << obj->e.y;
-	}
-	case CNodeKind::EXPR_EQUAL:
-	{
-								  return os << obj->e.x << _T(" == ") << obj->e.y;
-	}
-	case CNodeKind::EXPR_NOT_EQUAL:
-	{
-									  return os << obj->e.x << _T(" != ") << obj->e.y;
-	}
-	case CNodeKind::EXPR_LESS:
-	{
-								 return os << obj->e.x << _T(" < ") << obj->e.y;
-	}
-	case CNodeKind::EXPR_LESS_EQUAL:
-	{
-									   return os << obj->e.x << _T(" <= ") << obj->e.y;
-	}
-	case CNodeKind::EXPR_INDEX:
-	{
-								  return os << obj->e.x << _T("[") << obj->e.y << _T("]");
-	}
-	case CNodeKind::EXPR_ARROW:
-	{
-								  return os << obj->e.x << _T("->") << obj->e.y;
-	}
-	case CNodeKind::EXPR_DOT:
-	{
-								return os << obj->e.x << _T(".") << obj->e.y;
-	}
+
 	default:
 		throw Exception(_T("输出节点字符串: 未实现的节点类型"));
 	}

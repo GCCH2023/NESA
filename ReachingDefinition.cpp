@@ -3,7 +3,6 @@
 #include "TACFunction.h"
 #include "NesDataBase.h"
 using namespace std;
-#include "TACTranslater.h"
 
 
 

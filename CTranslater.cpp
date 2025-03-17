@@ -266,6 +266,48 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
+		case TACOperator::BOOL_GREAT:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_GREAT, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
+		case TACOperator::BOOL_GEQ:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_GREAT_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
+		case TACOperator::BOOL_LESS:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_LESS, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
+		case TACOperator::BOOL_LEQ:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_LESS_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
+		case TACOperator::BOOL_EQ:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
+		case TACOperator::BOOL_NEQ:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_NOT_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
+		case TACOperator::BOOL_BAND:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_NOT_EQUAL, expr, GetExpression(TACOperand(0)));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
+		case TACOperator::BOOL_BIT:
+			expr = allocator.New<CNode>(CNodeKind::EXPR_SHIFT_RIGHT, GetExpression(tac->x), GetExpression(tac->y));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_BAND, expr, GetExpression(TACOperand(1)));
+			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			break;
 		case TACOperator::ARRAY_GET:
 		{
 									   // 可能是给结构体字段赋值
@@ -282,25 +324,25 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 										   auto fieldNode = allocator.New<CNode>(field);
 										   expr = allocator.New<CNode>(CNodeKind::EXPR_DOT, x, fieldNode);
 									   }
-									   else if (type->GetKind() == TypeKind::Pointer)
-									   {
-										   // y 必定是整数，此时是用指针的高字节赋值 z = *((char*)&x + y)，因为指针占2个字节
-										   assert(tac->y.IsInterger());
-										   int offset = tac->y.GetValue();
-										   // (1) 取指针的地址 &x
-										   expr = allocator.New<CNode>(CNodeKind::EXPR_ADDR, x);
-										   // (2) 强制类型转换为 (char*)&x
-										   expr = allocator.New<CNode>(TypeManager::pValue, expr);
-										   // (3) 可选的偏移字节 (char*)&x + offset
-										   if (offset > 0)
-										   {
-											   CNode* offsetNode = allocator.New<CNode>(offset);
-											   expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, expr, offsetNode);
-										   }
-										   // 解引用
-										   expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, expr);
-									   }
-									   else
+									   //else if (type->GetKind() == TypeKind::Pointer)
+									   //{
+										  // // y 必定是整数，此时是用指针的高字节赋值 z = *((char*)&x + y)，因为指针占2个字节
+										  // assert(tac->y.IsInterger());
+										  // int offset = tac->y.GetValue();
+										  // // (1) 取指针的地址 &x
+										  // expr = allocator.New<CNode>(CNodeKind::EXPR_ADDR, x);
+										  // // (2) 强制类型转换为 (char*)&x
+										  // expr = allocator.New<CNode>(TypeManager::pValue, expr);
+										  // // (3) 可选的偏移字节 (char*)&x + offset
+										  // if (offset > 0)
+										  // {
+											 //  CNode* offsetNode = allocator.New<CNode>(offset);
+											 //  expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, expr, offsetNode);
+										  // }
+										  // // 解引用
+										  // expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, expr);
+									   //}
+									   //else
 									   {
 										   expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
 									   }
@@ -500,15 +542,27 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 		{
 								  // 还不知道怎么翻译push，先翻译为函数调用吧
 								  CNode* params = GetExpression(tac->x);
-								  current = allocator.New<CNode>(NewString(_T("Push")), params);
+								  expr = allocator.New<CNode>(NewString(_T("Push")), params);
+								  current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								  break;
 		}
 		case TACOperator::POP:
 		{
 								 // 还不知道怎么翻译pop，先翻译为函数调用吧
-								 current = allocator.New<CNode>(NewString(_T("Pop")), (CNode*)nullptr);
-								 current = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), current);
+								 expr = allocator.New<CNode>(NewString(_T("Pop")), (CNode*)nullptr);
+								 expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
+		}
+		case TACOperator::FLAGV:
+		{
+								   // 翻译为函数调用
+								   CNode* params = GetExpression(tac->x);
+								   params->next = GetExpression(tac->y);
+								   expr = allocator.New<CNode>(NewString(_T("IsOverflow")), (CNode*)nullptr);
+								   expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
+								   current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+								   break;
 		}
 
 		case TACOperator::CLI:

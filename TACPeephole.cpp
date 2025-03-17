@@ -29,7 +29,7 @@ void TACPeephole::Optimize(TACFunction* subroutine)
 {
 	Reset();
 
-	TACValue axyValue[3];
+	TACValue axyValue[9];
 	TAC* last = nullptr;
 	// 遍历基本块
 	for (auto block : subroutine->GetBasicBlocks())
@@ -39,13 +39,13 @@ void TACPeephole::Optimize(TACFunction* subroutine)
 		for (auto tac : block->GetCodes())
 		{
 			// 1. 首先，尝试用常量替换操作数 x 和 y
-			if (tac->x.IsRegister() && tac->x.GetValue() <= TAC_REG_Y)
+			if (tac->x.IsRegister() && tac->x.GetValue() <= TAC_REG_C)
 			{
 				int index = tac->x.GetValue();
 				if (axyValue[index].kind == TACValueKind::Constant)
 					tac->x = axyValue[index].value;
 			}
-			if (tac->y.IsRegister() && tac->y.GetValue() <= TAC_REG_Y)
+			if (tac->y.IsRegister() && tac->y.GetValue() <= TAC_REG_C)
 			{
 				int index = tac->y.GetValue();
 				if (axyValue[index].kind == TACValueKind::Constant)
@@ -61,7 +61,7 @@ void TACPeephole::Optimize(TACFunction* subroutine)
 			{
 				// 不能折叠就算了
 			}
-			// 3. 尝试 赋值替换 a = b, c = a, 替换为 c = b
+			// 3. 尝试 赋值替换 a = b, c = a op d, 替换为 c = b op d
 			if (last && last->op == TACOperator::ASSIGN)
 			{
 				if (tac->x == last->z)
@@ -75,7 +75,7 @@ void TACPeephole::Optimize(TACFunction* subroutine)
 			}
 
 			// 最后更新寄存器的值
-			if (tac->z.IsRegister() && tac->z.GetValue() <= TAC_REG_Y)
+			if (tac->z.IsRegister() && tac->z.GetValue() <= TAC_REG_C)
 			{
 				if (tac->x.IsInterger())
 				{

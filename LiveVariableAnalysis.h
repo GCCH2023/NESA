@@ -4,10 +4,10 @@
 
 struct BasicBlockLiveVariableSet
 {
-	NodeSet uses;
-	NodeSet defs;
-	NodeSet in;
-	NodeSet out;
+	NodeSet uses;  // 使用前未定值的变量集合
+	NodeSet defs;  // 定值前未使用的变量集合
+	NodeSet in;  // 入口处的活跃变量集
+	NodeSet out;  // 出口处的活跃变量集
 };
 
 // 进行活跃变量分析

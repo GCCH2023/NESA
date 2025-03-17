@@ -45,6 +45,19 @@ enum class TACOperator
 	CLV,
 	CLD,
 	SED,
+
+	// 扩展的用于检测标志位的操作符
+	FLAGV,  // 溢出检测，z = ((x ^ y) & 0x80) == 0  && ((x ^ z) & 0x80) == 1
+
+	// 扩展的布尔运算赋值表达式
+	BOOL_GREAT,  // z = x > y,
+	BOOL_GEQ,  // z = x >= y,
+	BOOL_LESS,  // z = x < y,
+	BOOL_LEQ,  // z = x <= y,
+	BOOL_EQ,  // z = x == y,
+	BOOL_NEQ,  // z = x != y,
+	BOOL_BAND,  // z = (x & y) != 0
+	BOOL_BIT,  // z = x 的位y
 };
 
 const TCHAR* ToString(TACOperator op);
@@ -71,7 +84,14 @@ public:
 public:
 	TACOperand();
 	TACOperand(uint32_t value);
-	bool operator==(const TACOperand& other) const;
+	inline bool operator==(const TACOperand& other) const
+	{
+		return data == other.data;
+	}
+	inline bool operator!=(const TACOperand& other) const
+	{
+		return data != other.data;
+	}
 	// 是否临时变量
 	inline bool IsTemp() const { return GetKind() == TEMP; }
 	// 是否寄存器
@@ -87,7 +107,7 @@ public:
 	// 设置值
 	inline void SetValue(int value) { data = (value & VALUE_MASK) | (data & ~VALUE_MASK); }
 	// 获取类别
-	inline uint32_t GetKind() const { return data & KIND_MASK; }
+	inline OperandKind GetKind() const { return (OperandKind)(data & KIND_MASK); }
 	// 设置类别
 	inline void SetKind(uint32_t kind) { data = (data & ~KIND_MASK) | kind; }
 	// 是否是零
@@ -95,6 +115,8 @@ public:
 
 	// 获取哈希值
 	inline uint32_t GetHash() const { return data; }
+	// 换取整数表示
+	inline uint32_t ToInteger() const { return data; }
 private:
 	uint32_t data;
 };
@@ -102,6 +124,7 @@ private:
 OStream& operator<<(OStream& os, const TACOperand& obj);
 
 // TAC 中用到的寄存器或标志位枚举
+// 不要随便改变位置
 enum TACRegister
 {
 	TAC_REG_A,
@@ -139,6 +162,7 @@ public:
 	TAC(TACOperator op, TACOperand z);
 	TAC(TACOperator op, TACOperand z, TACOperand x);
 	TAC(TACOperator op, TACOperand z, TACOperand x, TACOperand y);
+	TAC(const TAC* tac);
 
 	// 是否条件跳转
 	inline bool IsConditionalJump() const { return op >= TACOperator::IFGEQ && op <= TACOperator::IFEQ; };

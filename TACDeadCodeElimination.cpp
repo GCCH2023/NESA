@@ -44,14 +44,14 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 				break;  // 获取数组元素，不需要特殊处理
 			case TACOperator::ARRAY_SET:
 				// x[y] = z, z是寄存器，标记被使用
-				if (tac->z.IsRegister() && tac->z.GetValue() <= TAC_REG_Y)
+				if (tac->z.IsRegister() && tac->z.GetValue() <= TAC_REG_C)
 				{
 					axyUses += tac->z.GetValue();
 				}
 				++it;
 				continue;
 			}
-			if (tac->z.IsRegister() && tac->z.GetValue() <= TAC_REG_Y)
+			if (tac->z.IsRegister() && tac->z.GetValue() <= TAC_REG_C)
 			{
 				// 判断它是否被后面的基本块引用，也就是在这个基本块的出口处，这个变量是活跃的
 				// 判断它是否被这个基本块后面的代码引用
@@ -65,11 +65,11 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 				axyUses -= tac->z.GetValue();  // 对AXY的定值，则标记前面的AXY没有被使用
 			}
 			// 如果这条代码使用到了AXY，就标记
-			if (tac->x.IsRegister() && tac->x.GetValue() <= TAC_REG_Y)
+			if (tac->x.IsRegister() && tac->x.GetValue() <= TAC_REG_C)
 			{
 				axyUses += tac->x.GetValue();
 			}
-			if (tac->y.IsRegister() && tac->y.GetValue() <= TAC_REG_Y)
+			if (tac->y.IsRegister() && tac->y.GetValue() <= TAC_REG_C)
 			{
 				axyUses += tac->y.GetValue();
 			}
