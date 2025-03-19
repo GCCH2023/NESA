@@ -1,15 +1,13 @@
 #pragma once
 #include "DataFlowAnalyzer.h"
 #include "NodeSet.h"
+#include "TAC.h"
 
 class TACFunction;
-class TAC;
 
 struct AXYSet
 {
-	NodeSet a;
-	NodeSet x;
-	NodeSet y;
+	NodeSet set[TAC_ANALIZE_REG_COUNT];  // AXY NVZC 7个的集合
 
 	AXYSet& operator|=(const AXYSet& other);
 };
@@ -29,10 +27,8 @@ struct BasicBlockReachingDefinitionSet
 // 保存的是定值三地址码在列表中的索引
 struct TacAxyDefinition
 {
-	// AXY 的定值三地址码索引列表
-	std::vector<int> adefs;
-	std::vector<int> xdefs;
-	std::vector<int> ydefs;
+	// AXY NVZC 的定值三地址码索引列表
+	std::vector<int> defs[TAC_ANALIZE_REG_COUNT];
 
 	//// 获取 寄存器 A 的掩码
 	//inline NodeSet GetAMask() const { return (1 << adefs.size()) - 1; }
@@ -49,6 +45,7 @@ struct TacAxyDefinition
 
 
 // 进行到达定值分析
+// 基本块的 tag 设置为 BasicBlockReachingDefinitionSet 指针
 class ReachingDefinition : public DataFlowAnalyzer
 {
 public:

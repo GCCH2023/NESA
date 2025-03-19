@@ -149,7 +149,7 @@ void ParseNes(const TCHAR* rom)
 
 		// 二. 详细分析一个函数（不包括它调用的函数） 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = 0x8E92; // db.GetInterruptNmiAddress(); // db.GetInterruptResetAddress();
+		Nes::Address addr = db.GetInterruptResetAddress();
 
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
@@ -164,15 +164,15 @@ void ParseNes(const TCHAR* rom)
 		COUT << _T("\n三地址码:\n");
 		tacSub->Dump();
 
-		//// 对三地址码进行窥孔优化
-		//tacPh.Optimize(tacSub);
-		//COUT << _T("\n窥孔优化后:\n");
-		//tacSub->Dump();
+		// 对三地址码进行窥孔优化
+		tacPh.Optimize(tacSub);
+		COUT << _T("\n窥孔优化后:\n");
+		tacSub->Dump();
 
-		//// 对三地址码进行死代码消除
-		//tacDce.Optimize(tacSub);
-		//COUT << _T("\n死代码消除后:\n");
-		//tacSub->Dump();
+		// 对三地址码进行死代码消除
+		tacDce.Optimize(tacSub);
+		COUT << _T("\n死代码消除后:\n");
+		tacSub->Dump();
 
 		// 生成C代码
 		auto func = translater.TranslateSubroutine(tacSub);

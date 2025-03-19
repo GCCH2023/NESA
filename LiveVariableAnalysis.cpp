@@ -12,15 +12,20 @@ allocator(allocator_)
 
 }
 
+// 获取集合包含的变量的字符串
 template<size_t N>
-void FormatRegisters(Sprintf<N>& s, const NodeSet& n)
+void FormatVariableSet(Sprintf<N>& s, const NodeSet& n)
 {
-	for (int i = TAC_REG_A; i < TAC_REG_C; ++i)
+	for (auto i : n.ToVector())
 	{
-		if(n.Contains(i))
+		if (i < TAC_ANALIZE_REG_COUNT)
 		{
 			s.Append(ToString((TACRegister)i));
 			s.Append(_T(", "));
+		}
+		else
+		{
+			s.Append(_T("t%d, "), i);
 		}
 	}
 }
@@ -40,7 +45,7 @@ void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks)
 		}
 		else
 		{
-			FormatRegisters(s, blockSet->in);
+			FormatVariableSet(s, blockSet->in);
 		}
 		s.Append(_T(" OUT: "));
 		if (blockSet->out.None())
@@ -49,7 +54,7 @@ void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks)
 		}
 		else
 		{
-			FormatRegisters(s, blockSet->out);
+			FormatVariableSet(s, blockSet->out);
 		}
 		s.Append(_T("\n"));
 	}
@@ -57,7 +62,7 @@ void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks)
 }
 
 // 分析寄存器 AXY 的引用（定义或使用）情况
-void AnalyzeRegisterReference(TACOperand& operand, NodeSet& defs, NodeSet& uses, NodeSet& state)
+void AnalyzeReference(TACOperand& operand, NodeSet& defs, NodeSet& uses, NodeSet& state)
 {
 	if (operand.IsRegister())
 	{
@@ -70,6 +75,21 @@ void AnalyzeRegisterReference(TACOperand& operand, NodeSet& defs, NodeSet& uses,
 			}
 			uses += index;  // 标记使用
 		}
+	}
+	else if (operand.IsTemp())
+	{
+		int index = operand.GetValue() + TAC_ANALIZE_REG_COUNT;
+		if (index >= MAX_NODE)
+		{
+			Sprintf<> s;
+			s.Format(_T("对子程序进行活跃变量分析时，变量的数量超过容量 %d"), MAX_NODE);
+			throw Exception(s.ToString());
+		}
+		if (!defs.Contains(index))  // 使用前没有定值
+		{
+			state += index;
+		}
+		uses += index;  // 标记使用
 	}
 }
 
@@ -114,20 +134,20 @@ void LiveVariableAnalysis::Initialize()
 			else if (tac->op == TACOperator::ARRAY_SET)
 			{
 				// 数组元素赋值：x[y] = z，使用 y，z，x比不可能是AXY寄存器，不管
-				AnalyzeRegisterReference(tac->y, defs, uses, blockSet->uses);
-				AnalyzeRegisterReference(tac->z, defs, uses, blockSet->uses);
+				AnalyzeReference(tac->y, defs, uses, blockSet->uses);
+				AnalyzeReference(tac->z, defs, uses, blockSet->uses);
 				continue;
 			}
 			// 通常情况：z = x op y，定义 z，使用 x，y
-			AnalyzeRegisterReference(tac->x, defs, uses, blockSet->uses);
-			AnalyzeRegisterReference(tac->y, defs, uses, blockSet->uses);
-			AnalyzeRegisterReference(tac->z, uses, defs, blockSet->defs);
+			AnalyzeReference(tac->x, defs, uses, blockSet->uses);
+			AnalyzeReference(tac->y, defs, uses, blockSet->uses);
+			AnalyzeReference(tac->z, uses, defs, blockSet->defs);
 		}
 		/*Sprintf<> s;
 		s.Append(_T("基本块%04X，使用: "), block->GetStartAddress());
-		FormatRegisters(s, blockSet->uses);
+		FormatVariableSet(s, blockSet->uses);
 		s.Append(_T(", 定义: "));
-		FormatRegisters(s, blockSet->defs);
+		FormatVariableSet(s, blockSet->defs);
 		s.Append(_T("\n"));
 		COUT << s.ToString();*/
 	}

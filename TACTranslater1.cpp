@@ -181,7 +181,8 @@ void TACTranslater1::TranslateFlag(const Instruction& intruction, TAC* tac)
 
 	if (entry.kind & Write_N)
 	{
-		AddTAC(allocator.New<TAC>(TACOperator::BOOL_BAND, RegisterN, tac->z, 0x80), intruction.GetAddress());
+		// AddTAC(allocator.New<TAC>(TACOperator::BOOL_BAND, RegisterN, tac->z, 0x80), intruction.GetAddress());
+		AddTAC(allocator.New<TAC>(TACOperator::BOOL_LESS, RegisterN, tac->z, 0), intruction.GetAddress());
 	}
 	if (entry.kind & Write_Z)
 	{
@@ -252,28 +253,28 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 			tac = allocator.New<TAC>(TACOperator::ROR, GetOperand(i), GetOperand(i), TACOperand(1));
 			break;
 		case Nes::Opcode::Bpl:
-			tac = allocator.New<TAC>(TACOperator::IFEQ, GetOperand(i), RegisterN, 0);
+			tac = allocator.New<TAC>(TACOperator::IFFALSE, GetOperand(i), RegisterN);
 			break;
 		case Nes::Opcode::Bmi:
-			tac = allocator.New<TAC>(TACOperator::IFEQ, GetOperand(i), RegisterN, 1);
+			tac = allocator.New<TAC>(TACOperator::IFTRUE, GetOperand(i), RegisterN);
 			break;
 		case Nes::Opcode::Bne:
-			tac = allocator.New<TAC>(TACOperator::IFEQ, GetOperand(i), RegisterZ, 0);
+			tac = allocator.New<TAC>(TACOperator::IFFALSE, GetOperand(i), RegisterZ);
 			break;
 		case Nes::Opcode::Beq:
-			tac = allocator.New<TAC>(TACOperator::IFEQ, GetOperand(i), RegisterZ, 1);
+			tac = allocator.New<TAC>(TACOperator::IFTRUE, GetOperand(i), RegisterZ);
 			break;
 		case Nes::Opcode::Bcc:
-			tac = allocator.New<TAC>(TACOperator::IFEQ, GetOperand(i), RegisterC, 0);
+			tac = allocator.New<TAC>(TACOperator::IFFALSE, GetOperand(i), RegisterC);
 			break;
 		case Nes::Opcode::Bcs:
-			tac = allocator.New<TAC>(TACOperator::IFEQ, GetOperand(i), RegisterC, 1);
+			tac = allocator.New<TAC>(TACOperator::IFTRUE, GetOperand(i), RegisterC);
 			break;
 		case Nes::Opcode::Bvc:
-			tac = allocator.New<TAC>(TACOperator::IFEQ, GetOperand(i), RegisterV, 0);
+			tac = allocator.New<TAC>(TACOperator::IFFALSE, GetOperand(i), RegisterV);
 			break;
 		case Nes::Opcode::Bvs:
-			tac = allocator.New<TAC>(TACOperator::IFEQ, GetOperand(i), RegisterV, 1);
+			tac = allocator.New<TAC>(TACOperator::IFTRUE, GetOperand(i), RegisterV);
 			break;
 		case Nes::Opcode::Cli:
 			tac = allocator.New<TAC>(TACOperator::CLI);
@@ -409,7 +410,7 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 		case Nes::Opcode::Cmp:
 			// C = A >= M
 			AddTAC(allocator.New<TAC>(TACOperator::BOOL_GEQ, RegisterC, RegisterA, GetOperand(i)), i.GetAddress());
-			tac = allocator.New<TAC>(TACOperator::SUB, GetSharedTemp(), RegisterX, GetOperand(i));
+			tac = allocator.New<TAC>(TACOperator::SUB, GetSharedTemp(), RegisterA, GetOperand(i));
 			break;
 		case Nes::Opcode::Cpx:
 			// C = X >= M
@@ -447,7 +448,7 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 								 // r += C
 								 AddTAC(allocator.New<TAC>(TACOperator::ADD, r, r, RegisterC), i.GetAddress());
 								 // V = 
-								 AddTAC(allocator.New<TAC>(TACOperator::FLAGV, A, GetOperand(i)), i.GetAddress());
+								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_FLAGV, A, GetOperand(i)), i.GetAddress());
 								 // C = (r & 0x100) != 0
 								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_BAND, r, 0x100), i.GetAddress());
 								 // A = r
@@ -465,7 +466,7 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 								 // r -= t
 								 AddTAC(allocator.New<TAC>(TACOperator::SUB, r, r, t), i.GetAddress());
 								 // V = 
-								 AddTAC(allocator.New<TAC>(TACOperator::FLAGV, A, GetOperand(i)), i.GetAddress());
+								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_FLAGV, A, GetOperand(i)), i.GetAddress());
 								 // C = r <= 255
 								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_LEQ, r, 0x100), i.GetAddress());
 								 // A = r

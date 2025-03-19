@@ -480,6 +480,15 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 		case TACOperator::IFLEQ:
 			ConditionalJump(pCondition, CNodeKind::EXPR_LESS_EQUAL, tac, jumpAddr);
 			continue;
+		case TACOperator::IFTRUE:
+			pCondition = allocator.New<CNode>(CNodeKind::EXPR_NOT_EQUAL,
+				GetExpression(tac->x), GetExpression(TACOperand(0)));
+			jumpAddr = tac->z.GetValue();
+			continue;
+		case TACOperator::IFFALSE:
+			pCondition = allocator.New<CNode>(CNodeKind::EXPR_EQUAL, GetExpression(tac->x), GetExpression(TACOperand(0)));
+			jumpAddr = tac->z.GetValue();
+			continue;
 		case TACOperator::GOTO:
 		{
 								  // 新：当作条件总是真的跳转语句来翻译
@@ -554,7 +563,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
-		case TACOperator::FLAGV:
+		case TACOperator::BOOL_FLAGV:
 		{
 								   // 翻译为函数调用
 								   CNode* params = GetExpression(tac->x);

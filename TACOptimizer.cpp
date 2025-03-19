@@ -15,3 +15,8 @@ void TACOptimizer::Optimize(TACFunction* subroutine)
 {
 
 }
+
+void TACOptimizer::Reset()
+{
+
+}

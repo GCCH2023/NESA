@@ -17,8 +17,10 @@ enum class TACOperator
 	IFGEQ,  // if x >= y goto z
 	IFLESS,  // if x < y goto z
 	IFLEQ,  // if x <= y goto z
-	IFNEQ,  // if x != y goto z
 	IFEQ,  // if x == y goto z
+	IFNEQ,  // if x != y goto z
+	IFTRUE,  // if x goto z
+	IFFALSE,  // if !x goto z
 	ARRAY_GET,  // 获取数组元素 z = x[y]，x 是数组基地址，y 是元素的偏移量字节数
 	ARRAY_SET,  // 设置数组元素 x[y] = z，x 是数组基地址，y 是元素的偏移量字节数
 	ADDR,  // 取地址，z = &x
@@ -47,7 +49,7 @@ enum class TACOperator
 	SED,
 
 	// 扩展的用于检测标志位的操作符
-	FLAGV,  // 溢出检测，z = ((x ^ y) & 0x80) == 0  && ((x ^ z) & 0x80) == 1
+	BOOL_FLAGV,  // 溢出检测，z = ((x ^ y) & 0x80) == 0  && ((x ^ z) & 0x80) == 1
 
 	// 扩展的布尔运算赋值表达式
 	BOOL_GREAT,  // z = x > y,
@@ -61,6 +63,25 @@ enum class TACOperator
 };
 
 const TCHAR* ToString(TACOperator op);
+
+// 是否条件分支运算符
+inline bool IsConditionalBranch(TACOperator op)
+{
+	return op >= TACOperator::IFGREAT && op <= TACOperator::IFFALSE;
+}
+
+// 是否是布尔运算符
+inline bool IsBool(TACOperator op)
+{
+	return op >= TACOperator::BOOL_FLAGV && op <= TACOperator::BOOL_BIT;
+}
+
+// 是否是关系运算符
+inline bool IsRelation(TACOperator op)
+{
+	return op >= TACOperator::BOOL_GREAT && op <= TACOperator::BOOL_NEQ;
+}
+
 
 // 操作数
 // 与 NES 地址和寄存器相关
@@ -94,6 +115,8 @@ public:
 	}
 	// 是否临时变量
 	inline bool IsTemp() const { return GetKind() == TEMP; }
+	// 是否全局变量
+	inline bool IsGlobal() const { return GetKind() == GLOBAL; }
 	// 是否寄存器
 	inline bool IsRegister() const { return GetKind() == REGISTER; }
 	// 是否内存地址
@@ -182,6 +205,5 @@ OStream& operator<<(OStream& os, const TAC* obj);
 // 输出带地址的三地址码
 OStream& DumpAddressTAC(OStream& os, const TAC* tac);
 
-
-
-
+// 需要分析的寄存器数量
+#define TAC_ANALIZE_REG_COUNT TAC_REG_C + 1

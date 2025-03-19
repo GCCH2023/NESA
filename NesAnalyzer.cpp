@@ -162,11 +162,11 @@ void NesAnalyzer::AnalyzeTACSubroutine(TACFunction* subroutine)
 		if ((block->flag & BBF_END_MASK) == BBF_END_RETURN)
 		{
 			auto blockSet = (BasicBlockReachingDefinitionSet*)block->tag;
-			if (blockSet->out.a.Any())
+			if (blockSet->out.set[TAC_REG_A].Any())
 				subroutine->flag |= SUBF_RETURN_A;
-			if (blockSet->out.x.Any())
+			if (blockSet->out.set[TAC_REG_X].Any())
 				subroutine->flag |= SUBF_RETURN_X;
-			if (blockSet->out.y.Any())
+			if (blockSet->out.set[TAC_REG_Y].Any())
 				subroutine->flag |= SUBF_RETURN_Y;
 		}
 	}

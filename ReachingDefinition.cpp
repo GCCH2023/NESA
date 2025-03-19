@@ -48,20 +48,10 @@ ReachingDefinition::~ReachingDefinition()
 void DumpAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub)
 {
 	auto& codes = tacSub->GetCodes();
-	COUT << "获取AXY的所有定值点：\n";
-	COUT << "A:\n";
-	for (auto i : axyDefs.adefs)
+	COUT << _T("获取AXY的所有定值点：\n");
+	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
 	{
-		DumpAddressTAC(COUT, codes[i]) << endl;
-	}
-	COUT << "X:\n";
-	for (auto i : axyDefs.xdefs)
-	{
-		DumpAddressTAC(COUT, codes[i]) << endl;
-	}
-	COUT << "Y:\n";
-	for (auto i : axyDefs.ydefs)
-	{
+		COUT << ToString((TACRegister)i) << _T(":\n");
 		DumpAddressTAC(COUT, codes[i]) << endl;
 	}
 }
@@ -76,12 +66,14 @@ void ReachingDefinition::GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunctio
 		if (code->op == TACOperator::CALL)
 		{
 			auto sub = db.FindSubroutine(code->z.GetValue());
+			if (!sub)
+				continue;
 			if (sub->flag & SUBF_RETURN_A)
-				axyDefs.adefs.push_back(i);
+				axyDefs.defs[TAC_REG_A].push_back(i);
 			if (sub->flag & SUBF_RETURN_X)
-				axyDefs.xdefs.push_back(i);
+				axyDefs.defs[TAC_REG_X].push_back(i);
 			if (sub->flag & SUBF_RETURN_Y)
-				axyDefs.ydefs.push_back(i);
+				axyDefs.defs[TAC_REG_Y].push_back(i);
 			continue;
 		}
 		if (code->z.IsRegister())
@@ -89,13 +81,13 @@ void ReachingDefinition::GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunctio
 			switch (code->z.GetValue())
 			{
 			case  TAC_REG_A:
-				axyDefs.adefs.push_back(i);
+				axyDefs.defs[TAC_REG_A].push_back(i);
 				break;
 			case  TAC_REG_X:
-				axyDefs.xdefs.push_back(i);
+				axyDefs.defs[TAC_REG_X].push_back(i);
 				break;
 			case  TAC_REG_Y:
-				axyDefs.ydefs.push_back(i);
+				axyDefs.defs[TAC_REG_Y].push_back(i);
 				break;
 			}
 		}
@@ -130,34 +122,24 @@ TACBasicBlock* GetBasickBlockByAddress(const TACBasicBlockList& blocks, Nes::Add
 }
 
 // 计算各个基本块的生成杀死集
+// 每个变量的定值点，杀死这个变量的其他定值点
+// 对于一个基本块，每个变量最多只有一个定值点可以到达出口
 void GetBasickBlockGenKillMap(TacAxyDefinition& axyDefs, TACFunction* tacSub,
 	const TACBasicBlockList& blocks)
 {
 	auto codes = tacSub->GetCodes();
 	// 依次遍历 AXY 寄存器的定值点，获取对应的基本块来设置它的生成杀死集
-	size_t index = 0;
-	for (auto d : axyDefs.adefs)
+	// 每个变量只有最后一次定值可以导出基本块的出口，所以要清除其他定值点
+	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
 	{
-		auto code = codes[d];
-		TACBasicBlock* block = GetBasickBlockByAddress(blocks, code->address);
-		((BasicBlockReachingDefinitionSet*)block->tag)->genKill.a = 1 << index;  // 清空
-		++index;
-	}
-	index = 0;
-	for (auto d : axyDefs.xdefs)
-	{
-		auto code = codes[d];
-		TACBasicBlock* block = GetBasickBlockByAddress(blocks, code->address);
-		((BasicBlockReachingDefinitionSet*)block->tag)->genKill.x = 1 << index;  // 清空
-		++index;
-	}
-	index = 0;
-	for (auto d : axyDefs.ydefs)
-	{
-		auto code = codes[d];
-		TACBasicBlock* block = GetBasickBlockByAddress(blocks, code->address);
-		((BasicBlockReachingDefinitionSet*)block->tag)->genKill.y = 1 << index;  // 清空
-		++index;
+		size_t index = 0;
+		for (auto d : axyDefs.defs[i])
+		{
+			auto code = codes[d];
+			TACBasicBlock* block = GetBasickBlockByAddress(blocks, code->address);
+			((BasicBlockReachingDefinitionSet*)block->tag)->genKill.set[i] = 1 << index;  // 清空
+			++index;
+		}
 	}
 }
 
@@ -193,37 +175,39 @@ bool ReachingDefinition::IteraterBasicBlock(TACBasicBlock* block)
 
 AXYSet& AXYSet::operator|=(const AXYSet& other)
 {
-	a |= other.a;
-	x |= other.x;
-	y |= other.y;
+	for (int i = 0; i < TAC_ANALIZE_REG_COUNT; ++i)
+	{
+		set[i] |= other.set[i];
+	}
 	return *this;
 }
 
+// 有一个集合变化，就认为变化
 bool BasicBlockReachingDefinitionSet::EvalOut()
 {
-	auto value = out.a;
 	bool ret = false;
-	out.a = genKill.a.Any() ? genKill.a : in.a;
-	if (out.a != value)
-		ret = true;
-	value = out.x;
-	out.x = genKill.x.Any() ? genKill.x : in.x;
-	if (out.x != value)
-		ret = true;
-	value = out.y;
-	out.y = genKill.y.Any() ? genKill.y : in.y;
-	if (out.y != value)
-		ret = true;
+	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
+	{
+		auto value = out.set[i];
+		// 对于每个变量，如果这个基本块有它的定值，则出口集就是这个定值点
+		// 否则，出口集是它的入口集
+		out.set[i] = genKill.set[i].Any() ? genKill.set[i] : in.set[i];
+		if (out.set[i] != value)
+			ret = true;
+	}
 	return ret;
 }
 
 void TacAxyDefinition::CheckDefinitionLimit()
 {
-	if (adefs.size() > MAX_NODE || xdefs.size() > MAX_NODE || ydefs.size() > MAX_NODE)
+	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
 	{
-		Sprintf<> s;
-		s.Format(_T("对子程序进行到达定值分析时，AXY中的一个定值点数量超过 %d"), MAX_NODE);
-		throw Exception(s.ToString());
+		if (defs[i].size() > MAX_NODE)
+		{
+			Sprintf<> s;
+			s.Format(_T("对子程序进行到达定值分析时，变量的定值点超过容量 %d"), MAX_NODE);
+			throw Exception(s.ToString());
+		}
 	}
 }
 
@@ -231,13 +215,14 @@ void TacAxyDefinition::GetDefinitionTACList(std::vector<TAC*>& result, AXYSet& s
 {
 	result.clear();
 	auto& codes = tacSub->GetCodes();
-	auto list = set.a.ToVector();
-	for (auto i : list)
-		result.push_back(codes[adefs[i]]);
-	list = set.x.ToVector();
-	for (auto i : list)
-		result.push_back(codes[xdefs[i]]);
-	list = set.y.ToVector();
-	for (auto i : list)
-		result.push_back(codes[ydefs[i]]);
+	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
+	{
+		auto list = set.set[i].ToVector();
+		for (auto d : list)
+		{
+			auto& varDefs = defs[i];
+			auto index = varDefs[d];
+			result.push_back(codes[index]);
+		}
+	}
 }

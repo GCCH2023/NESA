@@ -183,7 +183,10 @@
       <Filter>IR</Filter>
     </ClInclude>
     <ClInclude Include="TACFlagRegisterOptimizer.h">
-      <Filter>头文件</Filter>
+      <Filter>IR</Filter>
+    </ClInclude>
+    <ClInclude Include="TACWholeOptimizer.h">
+      <Filter>IR</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -308,7 +311,10 @@
       <Filter>IR</Filter>
     </ClCompile>
     <ClCompile Include="TACFlagRegisterOptimizer.cpp">
-      <Filter>源文件</Filter>
+      <Filter>IR</Filter>
+    </ClCompile>
+    <ClCompile Include="TACWholeOptimizer.cpp">
+      <Filter>IR</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

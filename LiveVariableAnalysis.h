@@ -2,6 +2,8 @@
 #include "DataFlowAnalyzer.h"
 #include "NodeSet.h"
 
+// 节点集的前 TAC_ANALIZE_REG_COUNT 位用于表示寄存器变量
+// 后面的位则用于表示临时变量
 struct BasicBlockLiveVariableSet
 {
 	NodeSet uses;  // 使用前未定值的变量集合

@@ -69,8 +69,10 @@ const TCHAR* ToString(TACOperator op)
 		_T("IFGEQ"),
 		_T("IFLESS"),
 		_T("IFLEQ"),
-		_T("IFNEQ"),
 		_T("IFEQ"),
+		_T("IFNEQ"),
+		_T("IFTRUE"),
+		_T("IFFALSE"),
 		_T("ARRAY_GET"),
 		_T("ARRAY_SET"),
 		_T("ADDR"),
@@ -266,11 +268,17 @@ OStream& operator<<(OStream& out, const TAC* tac)
 	case TACOperator::IFLESS:
 		out << _T("if ") << tac->x << _T(" < ") << tac->y << _T(" goto ") << tac->z;
 		break;
+	case TACOperator::IFEQ:
+		out << _T("if ") << tac->x << _T(" == ") << tac->y << _T(" goto ") << tac->z;
+		break;
 	case TACOperator::IFNEQ:
 		out << _T("if ") << tac->x << _T(" != ") << tac->y << _T(" goto ") << tac->z;
 		break;
-	case TACOperator::IFEQ:
-		out << _T("if ") << tac->x << _T(" == ") << tac->y << _T(" goto ") << tac->z;
+	case TACOperator::IFTRUE:
+		out << _T("if ") << tac->x << _T(" == true") << _T(" goto ") << tac->z;
+		break;
+	case TACOperator::IFFALSE:
+		out << _T("if ") << tac->x << _T(" == false") << _T(" goto ") << tac->z;
 		break;
 	case TACOperator::CALL:
 		out << _T("sub_") << tac->x << _T("(");
@@ -321,7 +329,7 @@ OStream& operator<<(OStream& out, const TAC* tac)
 	case TACOperator::CLV:
 		out << ToString(tac->op);
 		break;
-	case TACOperator::FLAGV:
+	case TACOperator::BOOL_FLAGV:
 		out << tac->z << _T(" = ") << tac->x << _T(" FLAGV ") << tac->y;
 		break;
 	case TACOperator::BOOL_GREAT:
