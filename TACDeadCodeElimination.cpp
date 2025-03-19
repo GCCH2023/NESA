@@ -2,6 +2,7 @@
 #include "TACDeadCodeElimination.h"
 #include "LiveVariableAnalysis.h"
 #include "TACFunction.h"
+#include "NesDataBase.h"
 
 TACDeadCodeElimination::TACDeadCodeElimination(NesDataBase& db) :
 TACOptimizer(db)
@@ -42,13 +43,29 @@ void MarkUnuse(NodeSet& varUses, TACOperand& operand)
 	varUses -= index;
 }
 
-// 判断变量是否没被使用
-bool IsNotUse(NodeSet& out, NodeSet& varUses, TACOperand& operand)
+// 在集合中标记变量被定义
+void MarkDefinition(NodeSet& varDefs, TACOperand& operand)
 {
 	int index = operand.GetValue();
 	if (operand.IsTemp())
 		index += TAC_ANALIZE_REG_COUNT;
-	return !out.Contains(index) && !varUses.Contains(index);
+	varDefs += index;
+}
+
+
+// 判断变量是否被使用
+bool IsUsed(NodeSet& out, NodeSet& varUses, NodeSet& varDefs, TACOperand& operand)
+{
+	int index = operand.GetValue();
+	if (operand.IsTemp())
+		index += TAC_ANALIZE_REG_COUNT;
+	// 被基本块后面的指令使用
+	if (varUses.Contains(index))
+		return true;
+	// 到达基本块出口并且在出口处活跃
+	if (!varDefs.Contains(index) && out.Contains(index))
+		return true;
+	return false;
 }
 
 // void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks);
@@ -74,14 +91,10 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 		auto& codes = block->GetCodes();
 		addrMap[codes[0]->address] = block;
 		NodeSet varUses;  // 寄存器变量 + 临时变量 是否被当前基本块当前代码后面的代码使用
+		NodeSet varDefs;  // 是否遇到过了变量的定值，只有变量的最后一个定值可以到达基本块出口
 		for (auto it = codes.rbegin(); it != codes.rend();)
 		{
 			auto tac = *it;
-			//if (tac->address == 0x801B)
-			//{
-			//	COUT << tac;
-			//	int a = 0;
-			//}
 			// 数组需要特殊处理
 			switch (tac->op)
 			{
@@ -90,21 +103,42 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 			case TACOperator::ARRAY_SET:
 				// x[y] = z, z是寄存器，标记被使用
 				MarkUse(varUses, tac->z);
+				MarkUse(varUses, tac->x);
+				MarkUse(varUses, tac->y);
 				++it;
 				continue;
+			case TACOperator::CALL:
+			{
+									  auto sub = db.FindSubroutine(tac->z.GetValue());
+									  if (sub)  // 找不到说明还没分析，先不管
+									  {
+										  if (sub->flag & SUBF_PARAM)
+										  {
+											  varUses |= NodeSet(sub->flag & SUBF_PARAM);  // 标记参数AXY被使用
+										  }
+										  auto rets = (sub->flag & SUBF_RETURN) >> 3;
+										  if (rets)
+										  {
+											  varDefs |= NodeSet(rets);  // 标记定值
+										  }
+									  }
+									  ++it;
+									  continue;  // 函数调用不要删除
 			}
-			if (IsAxyNvzc(tac->z) || tac->z.IsTemp())
+			}
+			if (IsAxyNvzcTemp(tac->z))
 			{
 				// 判断它是否被后面的基本块引用，也就是在这个基本块的出口处，这个变量是活跃的
 				// 判断它是否被这个基本块后面的代码引用
 				auto live = (BasicBlockLiveVariableSet*)block->tag;
-				if (IsNotUse(live->out, varUses, tac->z))
+				if (!IsUsed(live->out, varUses, varDefs, tac->z))
 				{
 					// 删除这条代码
 					it = TACList::reverse_iterator(codes.erase((++it).base()));
 					continue;
 				}
 				MarkUnuse(varUses, tac->z);  // 新的定值点，则标记前面的AXY没有被使用
+				MarkDefinition(varDefs, tac->z);
 			}
 			// 如果这条代码使用到了某个变量，就标记使用
 			TryMarkUse(varUses, tac->x);
@@ -128,6 +162,30 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 			auto b = addrMap[tac->z.GetValue()];
 			uint32_t newAddr = b->GetCodes()[0]->address;
 			tac->z.SetValue(newAddr);
+		}
+	}
+
+	// 删除没用到的临时变量
+	std::vector<bool> tempUse(256);
+	for (auto block : subroutine->GetBasicBlocks())
+	{
+		for (auto tac : block->GetCodes())
+		{
+			if (tac->x.IsTemp())
+				tempUse[tac->x.GetValue()] = true;
+			if (tac->y.IsTemp())
+				tempUse[tac->y.GetValue()] = true;
+			if (tac->z.IsTemp())
+				tempUse[tac->z.GetValue()] = true;
+		}
+	}
+
+	auto& types = subroutine->GetTempVariableTypes();
+	for (size_t i = 0; i < types.size(); ++i)
+	{
+		if (tempUse[i] == false)
+		{
+			types[i] = nullptr;
 		}
 	}
 }

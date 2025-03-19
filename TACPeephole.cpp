@@ -60,16 +60,16 @@ bool CombineConditionalBranch(TAC* tac, TAC* boolExpr)
 			// 如果有一个操作数是 0，还可以优化
 			if (boolExpr->x.IsZero())
 			{
-				// z = x1 != 0 => if! x1 goto z
-				tac->op = TACOperator::IFFALSE;
+				// a = y1 == 0, if! a goto L => if y1 goto L
+				tac->op = TACOperator::IFTRUE;
 				tac->x = boolExpr->y;
 				tac->y = 0;
 				return true;
 			}
 			else if (boolExpr->y.IsZero())
 			{
-				// z = y1 == 0 => if! y1 goto z
-				tac->op = TACOperator::IFFALSE;
+				// a = x1 == 0, if! a goto L => if x1 goto L
+				tac->op = TACOperator::IFTRUE;
 				tac->x = boolExpr->x;
 				tac->y = 0;
 				return true;
@@ -126,6 +126,96 @@ void SetOperandDefinition(std::vector<TAC*>& varValues, TAC* tac)
 	}
 }
 
+// 判断操作数的值是否发生改变
+bool IsOperandChanged(std::vector<TAC*>& varValues, TACOperand& operand, TAC* current)
+{
+	// 如果有定值点，并且定值点地址大于等于使用点地址，说明改变了
+	auto tac = GetOperandDefinition(varValues, operand);
+	return tac && tac->address >= current->address;
+}
+
+// 进行代数优化
+void OptimizeExpression(TACOperand& operand, TACOperand& other, TAC* current, TAC* tac, std::vector<TAC*>& varValues)
+{
+	// a = b op1 num1, c = a op2 num2 =>
+	// c = (b op1 num1) op2 num2 =>
+	// c = b op3 num3
+	// op3 由 op1 和 op2 决定
+	if (!IsAxyNvzcTemp(tac->x) || IsOperandChanged(varValues, tac->x, current))
+		return;
+
+	if (CombineConditionalBranch(current, tac))
+		return;
+
+	if (!tac->y.IsInterger())
+		return;
+
+	switch (tac->op)
+	{
+	case TACOperator::SUB:  // a = b - num1
+		switch (current->op)
+		{
+			// d = a < num2 => d = b - num1 < num2 => b < num1 + num2
+		case TACOperator::BOOL_LESS:
+		case TACOperator::IFLESS:
+			operand = tac->x;
+			other = TACOperand(tac->y.GetValue() + other.GetValue());
+			break;
+			// d = a <= num2 => d = b - num1 <= num2 => b <= num1 + num2
+		case TACOperator::BOOL_LEQ:
+		case TACOperator::IFLEQ:
+			operand = tac->x;
+			other = TACOperand(tac->y.GetValue() + other.GetValue());
+			break;
+			// d = a == num2 => d = b - num1 == num2 => b == num1 + num2
+		case TACOperator::BOOL_EQ:
+		case TACOperator::IFEQ:
+			operand = tac->x;
+			other = TACOperand(tac->y.GetValue() + other.GetValue());
+			break;
+		}
+		break;
+	case TACOperator::BOOL_EQ:  // a = b == num1
+		switch (current->op)
+		{
+			// d = a == num2 => d = (b == num1) == num2
+		case TACOperator::BOOL_LEQ:
+		case TACOperator::IFLEQ:
+			if (tac->y.GetValue() == other.GetValue())  // num1 == num2 => d = b == num1
+				operand = tac->x;
+			break;
+			// if a goto z => if b == num1 goto z
+		case TACOperator::IFTRUE:
+			current->x = tac->x;
+			current->y = tac->y;
+			current->op = TACOperator::IFEQ;
+			break;
+			// if !a goto z => if b != num1 goto z
+		case TACOperator::IFFALSE:
+			current->x = tac->x;
+			current->y = tac->y;
+			current->op = TACOperator::IFNEQ;
+			break;
+		}
+		break;
+	case TACOperator::BOOL_LESS:  // a = b < num1
+		switch (current->op)
+		{
+			// if a goto z => if b < num1 goto z
+		case TACOperator::IFTRUE:
+			current->x = tac->x;
+			current->y = tac->y;
+			current->op = TACOperator::IFEQ;
+			break;
+		case TACOperator::IFFALSE:
+			current->x = tac->x;
+			current->y = tac->y;
+			current->op = TACOperator::IFNEQ;
+			break;
+		}
+		break;
+	}
+}
 
 // 尝试用常量替换操作数
 // operand : 当前处理的操作数
@@ -146,8 +236,7 @@ void TryReplaceOperand(TACOperand& operand, TACOperand& other, TAC* current, std
 			else if(IsAxyNvzcTemp(tac->x))
 			{
 				// 寄存器或临时变量，只要用于赋值的变量的值没变，也可以替换
-				auto tac1 = GetOperandDefinition(varValues, tac->x);
-				if (!tac1 || tac1->address < tac->address)
+				if (!IsOperandChanged(varValues, tac->x, tac))
 				{
 					// 在其他基本块定值或者在当前指令之前定值
 					operand = tac->x;
@@ -160,103 +249,9 @@ void TryReplaceOperand(TACOperand& operand, TACOperand& other, TAC* current, std
 			//}
 
 		}
-		else if (CombineConditionalBranch(current, tac))
-		{
-
-		}
 		else if (other.IsInterger())  // 尝试代数优化
 		{
-			// a = b op1 num1, c = a op2 num2 =>
-			// c = (b op1 num1) op2 num2 =>
-			// c = b op3 num3
-			// op3 由 op1 和 op2 决定
-			if (tac->x.IsInterger())
-			{
-				switch (tac->op)
-				{
-				case TACOperator::SUB:  // a = num1 - b
-					switch (current->op)
-					{
-					// d = a < num2 => d = num1 - b < num2 => num1 - num2 < b => b >= num1 - num2
-					case TACOperator::BOOL_LESS:
-					case TACOperator::IFLESS:
-						operand = tac->y;
-						other = TACOperand(tac->x.GetValue() - other.GetValue());
-						current->op = (TACOperator)((int)current->op - 1);  // 小于变为大于等于
-						break;
-					}
-				}
-			
-			}
-			else if (tac->y.IsInterger())
-			{
-				switch (tac->op)
-				{
-				case TACOperator::SUB:  // a = b - num1
-					switch (current->op)
-					{
-						// d = a < num2 => d = b - num1 < num2 => b < num1 + num2
-					case TACOperator::BOOL_LESS:
-					case TACOperator::IFLESS:
-						operand = tac->x;
-						other = TACOperand(tac->y.GetValue() + other.GetValue());
-						break;
-						// d = a <= num2 => d = b - num1 <= num2 => b <= num1 + num2
-					case TACOperator::BOOL_LEQ:
-					case TACOperator::IFLEQ:
-						operand = tac->x;
-						other = TACOperand(tac->y.GetValue() + other.GetValue());
-						break;
-						// d = a == num2 => d = b - num1 == num2 => b == num1 + num2
-					case TACOperator::BOOL_EQ:
-					case TACOperator::IFEQ:
-						operand = tac->x;
-						other = TACOperand(tac->y.GetValue() + other.GetValue());
-						break;
-					}
-					break;
-				case TACOperator::BOOL_EQ:  // a = b == num1
-					switch (current->op)
-					{
-						// d = a == num2 => d = (b == num1) == num2
-					case TACOperator::BOOL_LEQ:
-					case TACOperator::IFLEQ:
-						if (tac->y.GetValue() == other.GetValue())  // num1 == num2 => d = b == num1
-							operand = tac->x;
-						break;
-						// if a goto z => if b == num1 goto z
-					case TACOperator::IFTRUE:
-						current->x = tac->x;
-						current->y = tac->y;
-						current->op = TACOperator::IFEQ;
-						break;
-						// if !a goto z => if b != num1 goto z
-					case TACOperator::IFFALSE:
-						current->x = tac->x;
-						current->y = tac->y;
-						current->op = TACOperator::IFNEQ;
-						break;
-					}
-					break;
-				case TACOperator::BOOL_LESS:  // a = b < num1
-					switch (current->op)
-					{
-						// if a goto z => if b < num1 goto z
-					case TACOperator::IFTRUE:
-						current->x = tac->x;
-						current->y = tac->y;
-						current->op = TACOperator::IFEQ;
-						break;
-					case TACOperator::IFFALSE:
-						current->x = tac->x;
-						current->y = tac->y;
-						current->op = TACOperator::IFNEQ;
-						break;
-					}
-					break;
-				}
-
-			}
+			OptimizeExpression(operand, other, current, tac, varValues);
 		}
 	}
 }

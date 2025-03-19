@@ -4,7 +4,9 @@
 #include "NesDataBase.h"
 #include "ReachingDefinition.h"
 #include "LiveVariableAnalysis.h"
-#include "TACTranslater.h"
+#include "TACTranslater1.h"
+#include "TACPeephole.h"
+#include "TACDeadCodeElimination.h"
 #include "LiveVariableAnalysis.h"
 #include "GlobalParser.h"
 
@@ -110,7 +112,11 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 	// 迭代分析所有子程序
 	NodeSet analyzeSubs = 0;  // 已经分析过了的子程序集
 	Allocator tempAllocator;
-	TACTranslater tacTranslater(db, tempAllocator);
+
+	TACTranslater1 tacTranslater(db, tempAllocator);
+	TACPeephole tacPh(db);
+	TACDeadCodeElimination tacDce(db);
+
 	int iter = 0;
 	while (true)
 	{
@@ -124,6 +130,9 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 			{
 				// 没有分析过并且它调用的子程序都分析过了，那么可以分析这个子程序了
 				auto tacSub = tacTranslater.Translate(sub);
+				tacPh.Optimize(tacSub);
+				tacDce.Optimize(tacSub);
+
 				AnalyzeTACSubroutine(tacSub);
 				sub->flag = tacSub->flag;
 				analyzeSubs |= 1 << sd->index;  // 标记此子程序已经分析

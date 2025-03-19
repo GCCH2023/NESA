@@ -185,7 +185,6 @@
     <ClInclude Include="TACPeephole.h" />
     <ClInclude Include="TACTranslater.h" />
     <ClInclude Include="TACTranslater1.h" />
-    <ClInclude Include="TACWholeOptimizer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="CTreeOptimizer.h" />
     <ClInclude Include="Type.h" />
@@ -236,7 +235,6 @@
     <ClCompile Include="TACTranslater.cpp" />
     <ClCompile Include="CTreeOptimizer.cpp" />
     <ClCompile Include="TACTranslater1.cpp" />
-    <ClCompile Include="TACWholeOptimizer.cpp" />
     <ClCompile Include="Type.cpp" />
     <ClCompile Include="TypeManager.cpp" />
     <ClCompile Include="Variable.cpp" />

@@ -150,6 +150,8 @@ protected:  // C函数处理
 	void SetFunctionType();
 	// 添加所有临时变量
 	void SetLocalVariables();
+	// 根据TAC中的临时变量索引获取C局部变量名称
+	String* GetLocalVariableName(int index);
 protected:
 	NesDataBase& db;
 	Allocator& allocator;  // 用于创建输出结果

@@ -342,7 +342,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 										  // // 解引用
 										  // expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, expr);
 									   //}
-									   //else
+									   else
 									   {
 										   expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
 									   }
@@ -830,16 +830,28 @@ void CTranslater::SetLocalVariables()
 	int i = 0;
 	for (auto type : types)
 	{
+		if (type == nullptr)
+		{
+			++i;
+			continue;
+		}
 		// 添加
 		auto variable = allocator.New<Variable>();
-		if (type == GetCDB().GetAXYType())
-			variable->name = NewString(_T("axy"), i);
-		else
-			variable->name = NewString(_T("temp%d"), i);
+		variable->name = GetLocalVariableName(i);
 		variable->type = type;
 		this->function->AddVariable(variable);
 		++i;
 	}
+}
+
+String* CTranslater::GetLocalVariableName(int index)
+{
+	auto& types = this->subroutine->GetTempVariableTypes();
+	auto type = types[index];
+	if (type == GetCDB().GetAXYType())
+		return NewString(_T("axy"), index);
+	else
+		return NewString(_T("temp%d"), index);
 }
 
 // 当要将控制流图中的一个自循环节点归约时
@@ -1057,9 +1069,12 @@ const Variable* CTranslater::GetLocalVariable(String* name, Type* type)
 
 const Variable* CTranslater::GetLocalVariable(int index)
 {
+	// 三地址码中的临时变量和C函数的临时变量不是一一对应的
+	// 必须根据名称来查找
+	auto name = GetLocalVariableName(index);
 	for (auto v = this->function->GetVariableList(); v; v = v->next)
 	{
-		if (index-- == 0)
+		if (v->name == name)
 			return v;
 	}
 	return nullptr;

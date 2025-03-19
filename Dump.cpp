@@ -168,11 +168,16 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::EXPR_NOT_EQUAL:
 	case CNodeKind::EXPR_LESS:
 	case CNodeKind::EXPR_LESS_EQUAL:
+	{
+								DumpExpression(os, obj->e.x, obj->kind);
+								os << _T(" ") << ToString(obj->kind) << _T(" ");
+								return DumpExpression(os, obj->e.y, obj->kind);
+	}
 	case CNodeKind::EXPR_ARROW:
 	case CNodeKind::EXPR_DOT:
 	{
 								DumpExpression(os, obj->e.x, obj->kind);
-								os << _T(" ") << ToString(obj->kind) << _T(" ");
+								os << ToString(obj->kind);
 								return DumpExpression(os, obj->e.y, obj->kind);
 	}
 

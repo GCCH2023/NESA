@@ -185,9 +185,6 @@
     <ClInclude Include="TACFlagRegisterOptimizer.h">
       <Filter>IR</Filter>
     </ClInclude>
-    <ClInclude Include="TACWholeOptimizer.h">
-      <Filter>IR</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -311,9 +308,6 @@
       <Filter>IR</Filter>
     </ClCompile>
     <ClCompile Include="TACFlagRegisterOptimizer.cpp">
-      <Filter>IR</Filter>
-    </ClCompile>
-    <ClCompile Include="TACWholeOptimizer.cpp">
       <Filter>IR</Filter>
     </ClCompile>
   </ItemGroup>

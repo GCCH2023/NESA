@@ -15,7 +15,7 @@ TACTranslater1::~TACTranslater1()
 {
 }
 
-#include "TACFlagRegisterOptimizer.h"
+//#include "TACFlagRegisterOptimizer.h"
 
 TACFunction* TACTranslater1::Translate(NesSubroutine* subroutine)
 {
@@ -32,8 +32,8 @@ TACFunction* TACTranslater1::Translate(NesSubroutine* subroutine)
 	for (auto block : subroutine->GetBasicBlocks())
 	{
 		auto tacBlock = TranslateBasickBlock(block);
-		TACFlagRegisterOptimizer opt(allocator);
-		tacBlock->SetCodes(opt.Optimize(tacBlock->GetCodes()));
+		//TACFlagRegisterOptimizer opt(allocator);
+		//tacBlock->SetCodes(opt.Optimize(tacBlock->GetCodes()));
 		this->tacSub->AddBasicBlock(tacBlock);
 		blockMap[block] = tacBlock;
 	}
