@@ -216,6 +216,32 @@ CNodeKind CTranslater::TranslateOperator(TACOperator op)
 	}
 }
 
+CNode* CTranslater::TranslateCall(TAC* call, CNode* params)
+{
+	String* name = nullptr;
+	if (call->x.IsAddress())  // 直接给出函数地址
+	{
+		name = NewString(_T("sub_%04X"), call->x.GetValue());
+	}
+	else if (call->x.IsTemp())  // 函数指针解引用出来的临时变量
+	{
+		name = GetLocalVariableName(call->x.GetValue());
+	}
+	else
+	{
+		Sprintf<> s;
+		s.Format(_T("三地址码翻译为C语句：%04X 解析函数名称失败"), call->address);
+		throw Exception(s.ToString());
+	}
+	CNode* expr = allocator.New<CNode>(name, params);
+	// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
+	if (call->z.IsTemp())
+	{
+		expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(call->z), expr);
+	}
+	return allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+}
+
 // 临时变量必定是两条三地址码连着，所以直接合并成一个表达式
 CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock, uint32_t& jumpAddr)
 {
@@ -436,29 +462,14 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 									if (codes[i]->op != TACOperator::CALL)
 										throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
 									// 最后是 CALL 指令
-									tac = codes[i];
-									uint32_t callAddr = tac->x.GetValue();
-									expr = allocator.New<CNode>(NewString(_T("sub_%04X"), callAddr), params);
-									// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
-									if (tac->z.IsTemp())
-									{
-										expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-									}
-									current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+									current = TranslateCall(codes[i]);
 									break;
 		}
 		case	TACOperator::CALL:
 		{
 									 // 如果有参数，则必是 若干个 ARG 后面跟着一个 CALL
 									 // 直接出现 CALL，说明没有参数
-									 uint32_t callAddr = codes[i]->x.GetValue();
-									 expr = allocator.New<CNode>(NewString(_T("sub_%04X"), callAddr), (CNode*)nullptr);
-									 // 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
-									 if (tac->z.IsTemp())
-									 {
-										 expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-									 }
-									 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+									 current = TranslateCall(tac);
 									 break;
 		}
 

@@ -58,7 +58,7 @@ void GlobalParser::Parse(NesSubroutine* subroutine)
 			break;
 		case Nes::Indirect:
 			address = i.GetOperandAddress();
-			type = TypeManager::pValue;
+			type = TypeManager::pFunc;
 			break;
 		case Nes::IndirectX:
 			address = i.GetByte();
@@ -79,7 +79,8 @@ void GlobalParser::Parse(NesSubroutine* subroutine)
 				continue;
 			auto oldSize = GetTypeBytes(global->type);
 			auto newSize = GetTypeBytes(type);
-			if (newSize > oldSize)  // 新类型比原来大，就使用新类型
+			if (newSize > oldSize ||  // 新类型比原来大或者是函数指针类型，就使用新类型
+				type->GetKind() == TypeKind::Pointer && type->pa.type->GetKind() == TypeKind::Function)
 			{
 				// 1. 修改变量类型
 				GetCDB().SetGlobalVariableType(address, type);

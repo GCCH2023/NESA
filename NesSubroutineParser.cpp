@@ -158,9 +158,11 @@ bool NesSubroutineParser::ParseInstruction(const Instruction& instruction)
 													  jumpAddr = instruction.GetOperandAddress();
 												  else
 												  {
-													  TCHAR buffer[128];
+													  // 间接寻址相当于尾函数调用
+													  return false;
+													/*  TCHAR buffer[128];
 													  _stprintf_s(buffer, 128, _T("地址为 %04X 的无条件跳转指令的非绝对寻址模式未实现"), instruction.address);
-													  throw Exception(buffer);
+													  throw Exception(buffer);*/
 												  }
 
 												  AddBasicBlockStartAddress(jumpAddr);
@@ -328,9 +330,12 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 														jumpAddr = instruction.GetOperandAddress();
 													else
 													{
-														TCHAR buffer[128];
+														// 间接寻址相当于尾函数调用
+														block->flag |= BBF_END_RETURN;
+														break;
+													/*	TCHAR buffer[128];
 														_stprintf_s(buffer, 128, _T("地址为 %04X 的无条件跳转指令的非绝对寻址模式未实现"), instruction.address);
-														throw Exception(buffer);
+														throw Exception(buffer);*/
 													}
 													NesBasicBlock* next = this->subroutine->FindBasicBlock(jumpAddr);
 													if (!next)

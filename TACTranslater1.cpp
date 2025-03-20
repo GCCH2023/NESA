@@ -345,6 +345,24 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 										 break;
 									 }
 								 }
+								 else
+								 {
+									 // 间接寻址相当于尾函数调用
+									 auto addr = i.GetOperandAddress();  // 函数指针地址
+									 auto pFunc = GetCDB().GetGlobalVariable(addr);  // 获取函数指针全局变量
+									 auto pfType = pFunc->type;
+									 assert(pfType->GetKind() == TypeKind::Pointer);
+									 assert(pfType->pa.type->GetKind() == TypeKind::Function);
+									 // 函数返回值和参数目前还没实现，先当作没有处理
+									 // 1. 先生成一条解引用指令
+									 tac = allocator.New<TAC>(TACOperator::DEREF, NewTemp(pfType->pa.type), GetOperand(i));
+									 // 2. 生成函数调用指令
+									 tac = allocator.New<TAC>(TACOperator::CALL, 0, tac->z, 0);
+									 AddTAC(tac, i.GetAddress());
+									 // 3. 尾调用需要添加 return
+									 tac = allocator.New<TAC>(TACOperator::RETURN);
+									 break;
+								 }
 								 tac = allocator.New<TAC>(TACOperator::GOTO, GetOperand(i));
 								 tac->z.SetKind(TACOperand::ADDRESS);
 								 break;
@@ -524,6 +542,8 @@ TACOperand TACTranslater1::GetOperand(const Instruction& instruction)
 		return TACOperand(TACOperand::ADDRESS | instruction.GetConditionalJumpAddress());
 	case AddrMode::ZeroPage:
 		return TACOperand(TACOperand::GLOBAL | instruction.GetByte());
+	case AddrMode::Indirect:
+		return TACOperand(TACOperand::GLOBAL | instruction.GetOperandAddress());
 	case AddrMode::IndirectY:
 	{
 								// [Y + [zp]]

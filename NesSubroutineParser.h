@@ -32,6 +32,7 @@ protected:
 	// 解析基本块的所有指令
 	void ParseBasicBlockInstructions(NesBasicBlock* block);
 	// 解析基本块的单条指令
+	// 分析函数调用关系，基本块之间的关系等
 	// nextAddr 是后面一条指令的地址
 	void ParseBasicBlockInstruction(NesBasicBlock* block, const Instruction& instruction, Nes::Address nextAddr);
 	// 设置两个基本块的前后关系

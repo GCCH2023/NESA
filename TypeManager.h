@@ -42,6 +42,7 @@ public:
 	static Type* ppValue;  // 指向值的2重指针，占2个字节，用于间接变址寻址
 	static Type* ValueArray;  // 值数组类型，元素数量未知，默认为1个元素
 	static Type* pValueArray;  // 值指针数组类型，元素数量未知，默认为1个元素
+	static Type* pFunc;  // 函数指针类型，用于 JMP 间接跳转
 private:
 	friend TypeManager& GetTypeManager();
 	TypeManager(Allocator& allocator);

@@ -38,6 +38,7 @@ Type* TypeManager::pValue = nullptr;
 Type* TypeManager::ppValue = nullptr;
 Type* TypeManager::ValueArray = nullptr;
 Type* TypeManager::pValueArray = nullptr;
+Type* TypeManager::pFunc = nullptr;
 
 
 TypeManager::TypeManager(Allocator& allocator_) :
@@ -72,6 +73,10 @@ allocator(allocator_)
 	Type pvArray = vArray;
 	pvArray.pa.type = pValue;
 	pValueArray = GetType(&pvArray);
+	// 不清楚具体的函数类型是什么，用 void() 统一表示
+	Type func(TypeKind::Function);
+	func.f.returnType = Void;
+	pFunc = NewPointer(GetType(&func));
 }
 
 Type* TypeManager::NewArray(Type* elementType, size_t count)
