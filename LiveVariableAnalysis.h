@@ -1,6 +1,5 @@
 #pragma once
-#include "DataFlowAnalyzer.h"
-#include "NodeSet.h"
+#include "TACFunctionAnalyzer.h"
 
 // 节点集的前 TAC_ANALIZE_REG_COUNT 位用于表示寄存器变量
 // 后面的位则用于表示临时变量
@@ -14,16 +13,14 @@ struct BasicBlockLiveVariableSet
 
 // 进行活跃变量分析
 // 结果保存在基本块 tag 中，类型为 BasicBlockLiveVariableSet*
-class LiveVariableAnalysis : public DataFlowAnalyzer
+class LiveVariableAnalysis:
+	public TACFunctionAnalyzer
 {
 public:
 	LiveVariableAnalysis(NesDataBase& db, Allocator& allocator);
 protected:
 	virtual void Initialize() override;
 
-	virtual bool IteraterBasicBlock(TACBasicBlock* block) override;
-
-private:
-	Allocator& allocator;  // 用于创建输出结果
+	virtual bool AnalyzeNode(TACBasicBlock* block) override;
 };
 

@@ -89,6 +89,8 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 	for (auto block : subroutine->GetBasicBlocks())
 	{
 		auto& codes = block->GetCodes();
+		if (codes.empty())
+			continue;
 		addrMap[codes[0]->address] = block;
 		NodeSet varUses;  // 寄存器变量 + 临时变量 是否被当前基本块当前代码后面的代码使用
 		NodeSet varDefs;  // 是否遇到过了变量的定值，只有变量的最后一个定值可以到达基本块出口

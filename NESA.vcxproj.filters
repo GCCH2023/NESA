@@ -185,6 +185,9 @@
     <ClInclude Include="TACFlagRegisterOptimizer.h">
       <Filter>IR</Filter>
     </ClInclude>
+    <ClInclude Include="TACFunctionAnalyzer.h">
+      <Filter>DataFlow</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -240,9 +243,6 @@
     </ClCompile>
     <ClCompile Include="CNode.cpp">
       <Filter>C</Filter>
-    </ClCompile>
-    <ClCompile Include="DataFlowAnalyzer.cpp">
-      <Filter>DataFlow</Filter>
     </ClCompile>
     <ClCompile Include="LiveVariableAnalysis.cpp">
       <Filter>DataFlow</Filter>
@@ -309,6 +309,9 @@
     </ClCompile>
     <ClCompile Include="TACFlagRegisterOptimizer.cpp">
       <Filter>IR</Filter>
+    </ClCompile>
+    <ClCompile Include="TACFunctionAnalyzer.cpp">
+      <Filter>DataFlow</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

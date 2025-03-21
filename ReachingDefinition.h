@@ -1,9 +1,5 @@
 #pragma once
-#include "DataFlowAnalyzer.h"
-#include "NodeSet.h"
-#include "TAC.h"
-
-class TACFunction;
+#include "TACFunctionAnalyzer.h"
 
 struct AXYSet
 {
@@ -46,7 +42,8 @@ struct TacAxyDefinition
 
 // 进行到达定值分析
 // 基本块的 tag 设置为 BasicBlockReachingDefinitionSet 指针
-class ReachingDefinition : public DataFlowAnalyzer
+class ReachingDefinition:
+	public TACFunctionAnalyzer
 {
 public:
 	ReachingDefinition(NesDataBase& db, Allocator& allocator);
@@ -54,10 +51,9 @@ public:
 
 	virtual void Initialize() override;
 private:
-	Allocator& allocator;  // 用于创建输出结果
 	TacAxyDefinition axyDefs;
 protected:
-	virtual bool IteraterBasicBlock(TACBasicBlock* block) override;
+	virtual bool AnalyzeNode(TACBasicBlock* block) override;
 	void GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub);
 
 	virtual void Uninitialize() override;

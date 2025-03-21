@@ -5,9 +5,8 @@
 using namespace std;
 
 
-LiveVariableAnalysis::LiveVariableAnalysis(NesDataBase& db_, Allocator& allocator_):
-DataFlowAnalyzer(db_),
-allocator(allocator_)
+LiveVariableAnalysis::LiveVariableAnalysis(NesDataBase& db, Allocator& allocator):
+TACFunctionAnalyzer(db, allocator)
 {
 
 }
@@ -97,7 +96,7 @@ void AnalyzeReference(TACOperand& operand, NodeSet& defs, NodeSet& uses, NodeSet
 // 首先计算出每个基本块的引用集和定义集
 void LiveVariableAnalysis::Initialize()
 {
-	for (auto block : this->subroutine->GetBasicBlocks())
+	for (auto block : GetFunction()->GetBasicBlocks())
 	{
 		NodeSet defs = 0;  // 前3位表示 AXY 是否定义
 		NodeSet uses = 0;  // 前3位表示 AXY 是否被使用
@@ -153,7 +152,7 @@ void LiveVariableAnalysis::Initialize()
 	}
 }
 
-bool LiveVariableAnalysis::IteraterBasicBlock(TACBasicBlock* block)
+bool LiveVariableAnalysis::AnalyzeNode(TACBasicBlock* block)
 {
 	auto blockSet = (BasicBlockLiveVariableSet*)block->tag;
 	// OUT[B] = 所有后继活跃变量的并集

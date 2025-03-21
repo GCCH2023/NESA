@@ -126,7 +126,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 		for (auto sub : subroutines)
 		{
 			auto sd = (SubroutineData*)sub->tag;
-			if ((analyzeSubs & (1 << sd->index)) == 0 && (sd->calls & analyzeSubs) == sd->calls)
+			if (!analyzeSubs.Contains(sd->index) && (sd->calls & analyzeSubs) == sd->calls)
 			{
 				// 没有分析过并且它调用的子程序都分析过了，那么可以分析这个子程序了
 				auto tacSub = tacTranslater.Translate(sub);
@@ -135,13 +135,13 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 
 				AnalyzeTACSubroutine(tacSub);
 				sub->flag = tacSub->flag;
-				analyzeSubs |= 1 << sd->index;  // 标记此子程序已经分析
+				analyzeSubs += sd->index;  // 标记此子程序已经分析
 			}
 		}
 		if (analyzeSubs == oldState)
 		{
 			// 判断是否全部分析完毕，也可能是存在环状调用导致分析无法进行下去
-			NodeSet mask = (1 << subroutines.size()) - 1;
+			NodeSet mask((1 << subroutines.size()) - 1);
 			if (analyzeSubs != mask)
 			{
 				throw Exception(_T("分析失败：分析子程序调用关系时遇到环状调用"));
@@ -189,7 +189,7 @@ void NesAnalyzer::Analyze()
 {
 	NesSubroutineParser parser(db);
 
-	Nes::Address addr = db.GetInterruptResetAddress();
+	Nes::Address addr = db.GetInterruptNmiAddress();
 
 	AnalyzeSubroutine(parser, addr);
 

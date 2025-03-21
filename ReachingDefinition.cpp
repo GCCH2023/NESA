@@ -1,7 +1,5 @@
 #include "stdafx.h"
 #include "ReachingDefinition.h"
-#include "TACFunction.h"
-#include "NesDataBase.h"
 using namespace std;
 
 
@@ -32,9 +30,8 @@ void DumpAllBasicBlockDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub
 	}
 }
 
-ReachingDefinition::ReachingDefinition(NesDataBase& db_, Allocator& allocator_):
-DataFlowAnalyzer(db_),
-allocator(allocator_)
+ReachingDefinition::ReachingDefinition(NesDataBase& db, Allocator& allocator):
+TACFunctionAnalyzer(db, allocator)
 {
 
 }
@@ -98,7 +95,7 @@ void ReachingDefinition::GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunctio
 
 void ReachingDefinition::Uninitialize()
 {
-	// DumpAllBasicBlockDefinitions(axyDefs, this->subroutine);
+	// DumpAllBasicBlockDefinitions(axyDefs, GetFunction());
 }
 
 TACBasicBlock* GetBasickBlockByAddress(const TACBasicBlockList& blocks, Nes::Address address)
@@ -145,21 +142,21 @@ void GetBasickBlockGenKillMap(TacAxyDefinition& axyDefs, TACFunction* tacSub,
 
 void ReachingDefinition::Initialize()
 {
-	auto& blocks = this->subroutine->GetBasicBlocks();
+	auto& blocks = GetFunction()->GetBasicBlocks();
 	for (auto block : blocks)
 	{
 		block->tag = allocator.New<BasicBlockReachingDefinitionSet>();
 	}
 
 	// 只分析寄存器 A, X, Y，其他寄存器和临时变量或者全局变量忽略掉
-	GetAXYDefinitions(axyDefs, this->subroutine);
+	GetAXYDefinitions(axyDefs, GetFunction());
 	axyDefs.CheckDefinitionLimit();
 
 	// 接下来计算各个基本块的生成集和杀死集
-	GetBasickBlockGenKillMap(axyDefs, this->subroutine, blocks);
+	GetBasickBlockGenKillMap(axyDefs, GetFunction(), blocks);
 }
 
-bool ReachingDefinition::IteraterBasicBlock(TACBasicBlock* block)
+bool ReachingDefinition::AnalyzeNode(TACBasicBlock* block)
 {
 	auto blockSet = (BasicBlockReachingDefinitionSet*)block->tag;
 	// IN[B] = 所有前驱的定值点的并集
