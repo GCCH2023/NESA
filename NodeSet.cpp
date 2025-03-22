@@ -18,16 +18,6 @@ void DumpNodeSet(NodeSet& bs)
 	}
 }
 
-void BasicBlock::Dump()
-{
-	COUT << _T("block ") << index << _T(" , Ç°Çý : ");
-	DumpNodeSet(pred);
-	COUT << _T(" ºó¼Ì : ");
-	DumpNodeSet(succ);
-	COUT << endl;
-}
-
-
 const TCHAR* ToString(CtrlTreeNodeType region)
 {
 	static const TCHAR* names[] =

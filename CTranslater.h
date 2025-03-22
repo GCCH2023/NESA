@@ -67,8 +67,6 @@ protected:
 	void Reset();
 	// 将若干节点归约为一个节点，并生成这个节点的C语句
 	Node CReduce(Node parent, std::vector<Node> children, CtrlTreeNodeType type);
-	// 创建一个新的基本块
-	Node CreateBasicBlock();
 	// 归约两个区域构成的连续区域  a -> b
 	Node ReduceRegionList(NodeSet& N, Node a, Node b);
 	// 归约自循环 a -> a
@@ -151,16 +149,12 @@ protected:
 	TACFunction* subroutine;
 protected:
 	// 调试使用
-	// 输出所有基本块构成的控制流图
-	void DumpCFG();
 	// 输出所有控制树节点构成的控制流图
 	void DumpControlTree();
 	// 输出当前分析的节点集
 	void DumpCurrentCFG(NodeSet& N);
 private:
 	Allocator tempAllocator;  // 用于创建临时节点
-	BasicBlock blocks[MAX_NODE];  // 基本块列表，每个基本块对应控制流图中的一个节点
-	int blockCount;
 
 	std::unique_ptr<DirectedGraph<ControlTreeNodeEx>> graph;  // 控制树节点构成的有向图
 

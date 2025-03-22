@@ -14,38 +14,6 @@ inline std::vector<Node> Nodes(NodeSet& s)
 	return s.ToVector();
 }
 
-struct Edge
-{
-	Node from;
-	Node to;
-};
-
-
-struct BasicBlock
-{
-	int index;
-	NodeSet pred;  // 前驱节点集
-	NodeSet succ;  // 后继节点集
-	NodeSet domin;  // 必经节点集
-
-	// 获取后继数量
-	inline int GetSuccCount() const { return succ.GetSize(); }
-	// 获取前驱数量
-	inline int GetPredCount() const { return pred.GetSize(); }
-	// 获取所有前驱基本块的索引列表
-	inline std::vector<Node> Pred() const { return pred.ToVector(); }
-	// 获取所有后继基本块的索引列表
-	inline std::vector<Node> Succ() const { return succ.ToVector(); }
-	// 获取指定节点的相邻（前驱+后继）节点集合
-	inline std::vector<Node> Adjacent() const
-	{
-		NodeSet total = pred | succ;
-		return total.ToVector();
-	}
-	// 输出字符串表示
-	void Dump();
-};
-
 enum CtrlTreeNodeType
 {
 	CTNTYPE_LEAF,  // 叶子区域
@@ -59,7 +27,7 @@ enum CtrlTreeNodeType
 
 const TCHAR* ToString(CtrlTreeNodeType region);
 
-struct ControlTreeNode : BasicBlock
+struct ControlTreeNode
 {
 	CtrlTreeNodeType type;
 	// 不同类型对应不同的字段

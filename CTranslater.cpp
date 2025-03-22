@@ -98,34 +98,13 @@ void CTranslater::BuildCFG()
 			edges.push_back({ (int)block->tag, (int)succ->tag });
 		}
 	}
-	//
-	for (size_t i = 0; i < edges.size(); ++i)
-	{
-		DirectedGraphEdge& p = edges[i];
-		int first = p.source;
-		int second = p.target;
-		blocks[first].succ |= 1 << second;
-		blocks[second].pred |= 1 << first;
-
-		if (blockCount < first)
-			blockCount = first;
-		if (blockCount < second)
-			blockCount = second;
-	}
-	++blockCount;
-	for (int i = 0; i < blockCount; ++i)
-	{
-		blocks[i].index = i;
-	}
 
 	this->graph = std::make_unique<DirectedGraph<ControlTreeNodeEx>>(edges);
 }
 
 void CTranslater::Reset()
 {
-	memset(blocks, 0, sizeof(blocks));
 	this->graph.reset();
-	blockCount = 0;
 	tempAllocator.Reset();
 	function = nullptr;
 	subroutine = nullptr;
@@ -1115,14 +1094,6 @@ Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType t
 	return parent;
 }
 
-Node CTranslater::CreateBasicBlock()
-{
-	if (blockCount >= MAX_NODE)
-		throw Exception(_T("基本块数量过多"));
-	blocks[blockCount].index = blockCount;
-	return blockCount++;
-}
-
 Node CTranslater::ReduceRegionList(NodeSet& N, Node a, Node b)
 {
 	// r 的前驱是 a 的前驱
@@ -1350,19 +1321,6 @@ NodeSet CTranslater::CAnalysis(NodeSet N)
 		;
 	}
 	return N;
-}
-
-void CTranslater::DumpCFG()
-{
-	for (int i = 0; i < blockCount; ++i)
-	{
-		auto block = &blocks[i];
-		COUT << _T("block ") << i << _T(" , 前驱 : ");
-		DumpNodeSet(block->pred);
-		COUT << _T(" 后继 : ");
-		DumpNodeSet(block->succ);
-		COUT << endl;
-	}
 }
 
 void CTranslater::DumpControlTree()
