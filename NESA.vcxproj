@@ -155,6 +155,7 @@
     <ClInclude Include="CTranslater.h" />
     <ClInclude Include="CTreeVisitor.h" />
     <ClInclude Include="DataFlowAnalyzer.h" />
+    <ClInclude Include="DirectedGraph.h" />
     <ClInclude Include="DominatorAnalyzer.h" />
     <ClInclude Include="Dump.h" />
     <ClInclude Include="Exception.h" />
@@ -201,6 +202,7 @@
     <ClCompile Include="CNode.cpp" />
     <ClCompile Include="CTranslater.cpp" />
     <ClCompile Include="CTreeVisitor.cpp" />
+    <ClCompile Include="DirectedGraph.cpp" />
     <ClCompile Include="DominatorAnalyzer.cpp" />
     <ClCompile Include="Dump.cpp" />
     <ClCompile Include="Exception.cpp" />

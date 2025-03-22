@@ -37,7 +37,7 @@ struct BasicBlock
 	// 获取所有后继基本块的索引列表
 	inline std::vector<Node> Succ() const { return succ.ToVector(); }
 	// 获取指定节点的相邻（前驱+后继）节点集合
-	inline std::vector<Node> Adjacent()
+	inline std::vector<Node> Adjacent() const
 	{
 		NodeSet total = pred | succ;
 		return total.ToVector();

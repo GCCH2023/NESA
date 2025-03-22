@@ -191,6 +191,9 @@
     <ClInclude Include="DominatorAnalyzer.h">
       <Filter>DataFlow</Filter>
     </ClInclude>
+    <ClInclude Include="DirectedGraph.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -318,6 +321,9 @@
     </ClCompile>
     <ClCompile Include="DominatorAnalyzer.cpp">
       <Filter>DataFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectedGraph.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
