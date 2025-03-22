@@ -74,10 +74,16 @@ public:
 		return (1 << nodesCount) - 1;
 	}
 	// 获取指定索引的节点
-	inline DirectedGraphNode& operator[](size_t index)
+	inline DirectedGraphNode<T>& operator[](size_t index)
 	{
 		return nodes[index];
 	}
+	inline DirectedGraphNode<T>* GetNode(size_t index)
+	{
+		return &nodes[index];
+	}
+	// 获取节点数量
+	inline int GetNodeCount() const { return nodesCount; }
 protected:
 	std::vector<DirectedGraphNode<T>> nodes;
 	int nodesCount;  // 节点数量

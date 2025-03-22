@@ -202,7 +202,6 @@
     <ClCompile Include="CNode.cpp" />
     <ClCompile Include="CTranslater.cpp" />
     <ClCompile Include="CTreeVisitor.cpp" />
-    <ClCompile Include="DirectedGraph.cpp" />
     <ClCompile Include="DominatorAnalyzer.cpp" />
     <ClCompile Include="Dump.cpp" />
     <ClCompile Include="Exception.cpp" />

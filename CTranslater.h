@@ -1,7 +1,7 @@
 #pragma once
-#include "NodeSet.h"
 #include "CNode.h"
 #include "TACFunction.h"
+#include "DirectedGraph.h"
 
 class TACFunction;
 class NesDataBase;
@@ -10,7 +10,7 @@ struct Type;
 class CDataBase;
 struct String;
 
-struct ControlTreeNodeEx : BasicBlock
+struct ControlTreeNodeEx
 {
 	CtrlTreeNodeType type;
 	// 不同类型对应不同的字段
@@ -36,6 +36,13 @@ struct ControlTreeNodeEx : BasicBlock
 	// 对应的条件表达式，两个顺序基本块构成的循环，必然是先归约语句序列，而后是循环，那么就要保存
 	// 后面基本块的条件表达式
 	CNode* condition;
+	ControlTreeNodeEx():
+		type(CtrlTreeNodeType::CTNTYPE_LEAF),
+		statement(nullptr),
+		condition(nullptr)
+	{
+		_if = { 0 };
+	}
 };
 
 // 将基本块构成的控制流图翻译为C语句
@@ -53,17 +60,15 @@ public:
 
 protected:
 	// 输入控制流图的边集，分析后获得控制树，返回其根节点
-	ControlTreeNodeEx* Analyze(Edge edges[], size_t count);
-	// 根据边集构建控制流图
-	void BuildCFG(Edge edges[], size_t count);
+	ControlTreeNodeEx* Analyze();
+	// 构建函数基本块的控制流图
+	void BuildCFG();
 	// 重置内部数据
 	void Reset();
 	// 将若干节点归约为一个节点，并生成这个节点的C语句
 	Node CReduce(Node parent, std::vector<Node> children, CtrlTreeNodeType type);
 	// 创建一个新的基本块
 	Node CreateBasicBlock();
-	// 创建一个新的控制树节点
-	Node CreateControlTreeNode();
 	// 归约两个区域构成的连续区域  a -> b
 	Node ReduceRegionList(NodeSet& N, Node a, Node b);
 	// 归约自循环 a -> a
@@ -82,23 +87,8 @@ protected:
 	// a 除了 b之外的后继边，翻译为goto语句
 	Node ReduceRegionPoint2Loop(NodeSet& N, Node a, Node b);
 
-
-	// 获取控制树节点的入口叶子节点集合
-	void GetLeafEntry(ControlTreeNodeEx* node, std::vector<Node>& nodes);
-	// 获取区域的出口叶子节点
-	void GetLeafExit(ControlTreeNodeEx* node, std::vector<Node>& nodes);
-	// 获取抽象边（高级结构中的边）对应的叶子边
-	// 一条抽象边对应多条叶子边
-	std::vector<Edge> GetLeafEdges(Edge e);
-
 	// 分析控制流图节点集，获取控制树节点集
 	NodeSet CAnalysis(NodeSet N);
-	// 获取所有节点构成的集合
-	NodeSet GetFullSet()
-	{
-		return (1 << blockCount) - 1;
-	}
-	void InitializeBaseControlTree(NodeSet N);
 
 protected:
 	void OnReduceSelfLoop(Node node);
@@ -172,8 +162,7 @@ private:
 	BasicBlock blocks[MAX_NODE];  // 基本块列表，每个基本块对应控制流图中的一个节点
 	int blockCount;
 
-	ControlTreeNodeEx* ctrees[MAX_NODE];  // 控制树节点列表
-	int controlTreeNodeCount;
+	std::unique_ptr<DirectedGraph<ControlTreeNodeEx>> graph;  // 控制树节点构成的有向图
 
 	String* registers[9];  // AXYPNVZCSP 9个寄存器
 	std::unordered_map<Nes::Address, String*> labels;  // 地址到标签语句的映射
