@@ -21,7 +21,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <assert.h>
-
+#include <stack>
+#define NOMINMAX
 #include <windows.h>
 
 #include "config.h"

@@ -9,6 +9,7 @@
 #include "TACDeadCodeElimination.h"
 #include "LiveVariableAnalysis.h"
 #include "GlobalParser.h"
+#include "DirectedGraph.h"
 
 struct SubroutineData
 {
@@ -80,6 +81,45 @@ void NesAnalyzer::DumpAllCallRelation()
 		DumpCallRelation(sub);
 }
 
+
+std::vector<NodeSet> GetStrongConnect(SubroutineList& suroutines)
+{
+	// 首先构造边集
+	DirectedGraphEdgeList edges(32);
+	edges.clear();
+	for (auto sub : suroutines)
+	{
+		auto sd = (SubroutineData*)sub->tag;
+		for (auto called : Nodes(sd->calls))
+		{
+			edges.push_back({ sd->index, called });
+		}
+	}
+	DirectedGraph<int> graph(edges);
+	auto vec = graph.Tarjan();
+	// 删除大小为1的强连通分量列表
+	auto it = std::remove_if(vec.begin(), vec.end(), [](const NodeSet& nodeSet) {
+		return nodeSet.GetSize() == 1; // 删除条件：大小为 1
+	});
+	vec.erase(it, vec.end());
+	return vec;
+}
+
+
+// 处理环形调用关系，返回是否成功处理
+bool CanAnalyzeCycle(NodeSet analyzed, NodeSet cycle, SubroutineList& subroutines)
+{
+	analyzed |= cycle;  // 对于环，将构成环的所有节点当作已分析处理
+	for (auto index : cycle.ToVector())
+	{
+		auto sub = subroutines[index];
+		SubroutineData* sd = (SubroutineData*)sub->tag;
+		if ((sd->calls & analyzed) != sd->calls)
+			return false;  // 它调用的函数没分析完毕，那么这个环还不能够分析
+	}
+	return true;
+}
+
 void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 {
 	// 首先给所有子程序编号
@@ -110,43 +150,95 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 		}
 	}
 	// 迭代分析所有子程序
-	NodeSet analyzeSubs = 0;  // 已经分析过了的子程序集
 	Allocator tempAllocator;
 
 	TACTranslater1 tacTranslater(db, tempAllocator);
 	TACPeephole tacPh(db);
 	TACDeadCodeElimination tacDce(db);
 
+	// 首先计算强连通分量
+	auto strongConnect = GetStrongConnect(subroutines);
+
 	int iter = 0;
+	NodeSet analyzeSubs = 0;  // 已经分析过了的子程序集
+	NodeSet full((1 << subroutines.size()) - 1);
 	while (true)
 	{
-		NodeSet oldState = analyzeSubs;
-		//printf("迭代次数 %d\n", iter++);
-		// 遍历每个子程序，分析满足条件的
-		for (auto sub : subroutines)
+		while (true)
 		{
-			auto sd = (SubroutineData*)sub->tag;
-			if (!analyzeSubs.Contains(sd->index) && (sd->calls & analyzeSubs) == sd->calls)
+			NodeSet oldState = analyzeSubs;
+			//printf("迭代次数 %d\n", iter++);
+			// 遍历每个子程序，分析满足条件的
+			for (auto sub : subroutines)
 			{
-				// 没有分析过并且它调用的子程序都分析过了，那么可以分析这个子程序了
+				auto sd = (SubroutineData*)sub->tag;
+				if (!analyzeSubs.Contains(sd->index) && (sd->calls & analyzeSubs) == sd->calls)
+				{
+					// 没有分析过并且它调用的子程序都分析过了，那么可以分析这个子程序了
+					auto tacSub = tacTranslater.Translate(sub);
+					tacPh.Optimize(tacSub);
+					tacDce.Optimize(tacSub);
+
+					AnalyzeTACSubroutine(tacSub);
+					sub->flag = tacSub->flag;
+					analyzeSubs += sd->index;  // 标记此子程序已经分析
+				}
+			}
+			if (analyzeSubs == oldState)
+			{
+				if (analyzeSubs == full)
+					return;    // 全部函数分析完毕
+				break;  // 遇到环形调用
+			}
+		}
+
+		// 存在环状调用的情况
+		// 从后往前遍历强连通分量列表
+		auto it = strongConnect.rbegin();
+		for (; it != strongConnect.rend(); ++it)
+		{
+			if (!CanAnalyzeCycle(analyzeSubs, *it, subroutines))
+				continue;
+
+			auto indexVec = it->ToVector();
+			std::vector<TACFunction*> funcs(indexVec.size());
+			// 分析整个环的所有函数
+			for (auto index : indexVec)
+			{
+				auto sub = subroutines[index];
 				auto tacSub = tacTranslater.Translate(sub);
 				tacPh.Optimize(tacSub);
 				tacDce.Optimize(tacSub);
-
-				AnalyzeTACSubroutine(tacSub);
-				sub->flag = tacSub->flag;
-				analyzeSubs += sd->index;  // 标记此子程序已经分析
+				funcs[index] = tacSub;
 			}
-		}
-		if (analyzeSubs == oldState)
-		{
-			// 判断是否全部分析完毕，也可能是存在环状调用导致分析无法进行下去
-			NodeSet mask((1 << subroutines.size()) - 1);
-			if (analyzeSubs != mask)
+			// 迭代分析，直到所有函数的返回值和参数保持不变
+			bool cycleEnd = false;
+			while (!cycleEnd)
 			{
-				throw Exception(_T("分析失败：分析子程序调用关系时遇到环状调用"));
+				cycleEnd = true;
+				for (auto func : funcs)
+				{
+					auto oldFlag = func->flag;
+					func->flag = 0;
+					AnalyzeTACSubroutine(func);
+					if (func->flag != oldFlag)
+						cycleEnd = false;
+				}
 			}
-			break;
+			// 保存结果，标记函数分析完毕
+			for (auto index : indexVec)
+			{
+				auto tacSub = funcs[index];
+				subroutines[index]->flag = tacSub->flag;
+				analyzeSubs += index;
+			}
+			// 分析完毕后从强连通列表删除它
+			strongConnect.erase((it + 1).base());
+			break;  // 环处理完毕，继续单个分析
+		}
+		if (it == strongConnect.rend())
+		{
+			throw Exception(_T("函数原型分析失败：未知的错误"));
 		}
 	}
 }

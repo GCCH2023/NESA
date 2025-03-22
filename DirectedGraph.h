@@ -84,6 +84,62 @@ public:
 	}
 	// 获取节点数量
 	inline int GetNodeCount() const { return nodesCount; }
+	// 使用 Tarjan 算法获取有向图的强连通风量
+	// 每个NodeSet表示一个强连通分量
+	std::vector<NodeSet> Tarjan() const
+	{
+		std::vector<NodeSet> sccs;  // 存储所有强连通分量
+		std::vector<int> dfn(nodesCount, -1);  // DFS 访问顺序
+		std::vector<int> low(nodesCount, -1);  // 最小可达节点
+		std::stack<Node> stack;  // 用于存储当前路径上的节点
+		std::vector<bool> inStack(nodesCount, false);  // 标记节点是否在栈中
+		int index = 0;  // DFS 访问顺序计数器
+
+		// 对所有未访问的节点调用 StrongConnect
+		for (Node v = 0; v < nodesCount; ++v) {
+			if (dfn[v] == -1) {
+				StrongConnect(v, &dfn[0], low, stack, inStack, index, sccs);
+			}
+		}
+
+		return sccs;
+	}
+protected:
+	void StrongConnect(Node v, int dfn[],
+		std::vector<int>& low,
+		std::stack<Node>& stack,
+		std::vector<bool>& inStack,
+		int& index,
+		std::vector<NodeSet>& sccs) const
+	{
+		dfn[v] = low[v] = index++;
+		stack.push(v);
+		inStack[v] = true;
+
+		// 遍历所有后继节点
+		for (Node w : nodes[v].Succ()) {
+			if (dfn[w] == -1) {  // 如果未访问过
+				StrongConnect(w, dfn, low, stack, inStack, index, sccs);
+				low[v] = std::min(low[v], low[w]);
+			}
+			else if (inStack[w]) {  // 如果已在栈中
+				low[v] = std::min(low[v], dfn[w]);
+			}
+		}
+
+		// 如果 v 是强连通分量的根节点
+		if (low[v] == dfn[v]) {
+			NodeSet scc;
+			Node w;
+			do {
+				w = stack.top();
+				stack.pop();
+				inStack[w] = false;
+				scc += w;
+			} while (w != v);
+			sccs.push_back(scc);
+		}
+	}
 protected:
 	std::vector<DirectedGraphNode<T>> nodes;
 	int nodesCount;  // 节点数量
