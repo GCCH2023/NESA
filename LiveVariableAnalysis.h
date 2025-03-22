@@ -20,7 +20,6 @@ public:
 	LiveVariableAnalysis(NesDataBase& db, Allocator& allocator);
 protected:
 	virtual void Initialize() override;
-
 	virtual bool AnalyzeNode(TACBasicBlock* block) override;
 };
 

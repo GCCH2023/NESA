@@ -49,14 +49,13 @@ public:
 	ReachingDefinition(NesDataBase& db, Allocator& allocator);
 	~ReachingDefinition();
 
-	virtual void Initialize() override;
 private:
 	TacAxyDefinition axyDefs;
 protected:
+	virtual void Initialize() override;
 	virtual bool AnalyzeNode(TACBasicBlock* block) override;
-	void GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub);
-
 	virtual void Uninitialize() override;
 
+	void GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub);
 };
 

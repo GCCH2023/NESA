@@ -188,6 +188,9 @@
     <ClInclude Include="TACFunctionAnalyzer.h">
       <Filter>DataFlow</Filter>
     </ClInclude>
+    <ClInclude Include="DominatorAnalyzer.h">
+      <Filter>DataFlow</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -311,6 +314,9 @@
       <Filter>IR</Filter>
     </ClCompile>
     <ClCompile Include="TACFunctionAnalyzer.cpp">
+      <Filter>DataFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DominatorAnalyzer.cpp">
       <Filter>DataFlow</Filter>
     </ClCompile>
   </ItemGroup>
