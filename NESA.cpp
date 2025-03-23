@@ -20,6 +20,7 @@ using namespace Nes;
 #include "Dump.h"
 #include "CDataBase.h"
 #include "GlobalParser.h"
+#include "TACFunctionParser.h"
 
 // 用DAG生成基本块的C语句测试
 // a = b + c
@@ -108,7 +109,7 @@ void ParseNes(const TCHAR* rom)
 
 		TACTranslater1 ntt(db, allocator);
 		TACPeephole tacPh(db);
-		TACDeadCodeElimination tacDce(db);
+		TACDeadCodeElimination tacDce(db, allocator);
 		CTranslater translater(allocator, db);
 		CTreeOptimizer ctreeOptimizer;
 		GlobalParser globalParser(db);
@@ -149,7 +150,7 @@ void ParseNes(const TCHAR* rom)
 
 		// 二. 详细分析一个函数（不包括它调用的函数） 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = 0xF3A7; // db.GetInterruptNmiAddress();
+		Nes::Address addr = 0xF8D9; // db.GetInterruptNmiAddress();
 
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
@@ -253,6 +254,73 @@ void TACBasicBlockOptimizerTest()
 	}
 }
 
+// 三地址码函数分析
+void TACFunctionParserTest(const TCHAR* rom)
+{
+	Allocator allocator;
+	try
+	{
+		NesDataBase db(rom);
+		Sprintf<> s;
+		s.Format(_T("成功加载ROM: %s\n"), rom);
+		s.Append(_T("中断向量处理程序 NMI : 0x%04X\n"), db.GetInterruptNmiAddress());
+		s.Append(_T("中断向量处理程序 RESET : 0x%04X\n"), db.GetInterruptResetAddress());
+		s.Append(_T("中断向量处理程序 IRQ : 0x%04X\n"), db.GetInterruptIrqAddress());
+		COUT << s.ToString();
+
+		TACTranslater1 ntt(db, allocator);
+		CTranslater translater(allocator, db);
+		CTreeOptimizer ctreeOptimizer;
+		GlobalParser globalParser(db);
+		TACFunctionParser funcParser(db);
+
+		// 二. 详细分析一个函数（不包括它调用的函数） 
+		NesSubroutineParser parser(db);
+		Nes::Address addr = 0xF8D9; // db.GetInterruptNmiAddress();
+
+		NesSubroutine* subroutine = parser.Parse(addr);
+		COUT << _T("\n基本块:\n");
+		// 输出 FC 指令
+		parser.Dump();
+
+		// 解析全局变量
+		globalParser.Parse(subroutine);
+
+		// 生成三地址码
+		TACFunction* tacSub = ntt.Translate(subroutine);
+		COUT << _T("\n三地址码:\n");
+		tacSub->Dump();
+
+		// 分析函数
+		funcParser.Parse(tacSub);
+		COUT << _T("\n分析函数后:\n");
+		tacSub->Dump();
+
+		// 生成C代码
+		auto func = translater.TranslateSubroutine(tacSub);
+		//COUT << func->GetBody();
+
+		//COUT << _T("\n语法树结构:\n");
+		//DumpCNodeStructures(COUT, func->GetBody(), 0);
+
+		// 优化C代码结构
+		ctreeOptimizer.Optimize(func->GetBody());
+		//COUT << _T("\n优化语法树结构后:\n");
+		//DumpCNodeStructures(COUT, func->GetBody(), 0);
+		COUT << endl;
+		DumpDefinition(func);
+	}
+	catch (Exception& e)
+	{
+		COUT << e.Message() << endl;
+	}
+	catch (std::exception& e)
+	{
+		cout << e.what() << endl;
+	}
+}
+
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
@@ -260,6 +328,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
+	// TACFunctionParserTest(_T(R"(D:\FC\miaoliro.nes)"));
 	system("pause");
 	return 0;
 }

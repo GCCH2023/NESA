@@ -4,8 +4,9 @@
 #include "TACFunction.h"
 #include "NesDataBase.h"
 
-TACDeadCodeElimination::TACDeadCodeElimination(NesDataBase& db) :
-TACOptimizer(db)
+TACDeadCodeElimination::TACDeadCodeElimination(NesDataBase& db, Allocator& allocator_) :
+TACOptimizer(db),
+allocator(allocator_)
 {
 
 }
@@ -62,10 +63,11 @@ bool IsUsed(NodeSet& out, NodeSet& varUses, NodeSet& varDefs, TACOperand& operan
 	// 被基本块后面的指令使用
 	if (varUses.Contains(index))
 		return true;
-	// 到达基本块出口并且在出口处活跃
-	if (!varDefs.Contains(index) && out.Contains(index))
-		return true;
-	return false;
+	// 被新定值覆盖了
+	if (varDefs.Contains(index))
+		return false;
+	// 在出口处活跃
+	return out.Contains(index);
 }
 
 // void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks);
@@ -77,9 +79,9 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 {
 	Reset();
 
-	Allocator allocator(4 * 1024 * 1024);
 	// 首先进行活跃变量分析
 	LiveVariableAnalysis lva(db, allocator);
+	lva.SetExitOut(subroutine->GetReturnFlag());
 	lva.Analyze(subroutine);
 	// DumpAllBasicBlockLiveVariables(subroutine->GetBasicBlocks());
 
@@ -149,6 +151,15 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 		}
 	}
 
+	// 输出地址到基本块的映射
+	//Sprintf<> s;
+	//s.Format(_T("地址-基本块映射：\n"));
+	//for (auto it : addrMap)
+	//{
+	//	s.Append(_T("%04X -> %04X\n"), it.first, it.second->GetStartAddress());
+	//}
+	//COUT << s.ToString();
+
 	// 修正跳转地址
 	for (auto block : subroutine->GetBasicBlocks())
 	{
@@ -162,6 +173,10 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 			// 前面 n 条指令可能被删除了，
 			// 现在跳转到删除后的基本块的第一条指令的地址
 			auto b = addrMap[tac->z.GetValue()];
+			if (b->GetCodes().empty())
+			{
+				throw Exception(_T("错误: 基本块不包含任何指令"));
+			}
 			uint32_t newAddr = b->GetCodes()[0]->address;
 			tac->z.SetValue(newAddr);
 		}

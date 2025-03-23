@@ -194,6 +194,9 @@
     <ClInclude Include="DirectedGraph.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="TACFunctionParser.h">
+      <Filter>IR</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -321,6 +324,9 @@
     </ClCompile>
     <ClCompile Include="DominatorAnalyzer.cpp">
       <Filter>DataFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="TACFunctionParser.cpp">
+      <Filter>IR</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -183,6 +183,7 @@
     <ClInclude Include="TACFlagRegisterOptimizer.h" />
     <ClInclude Include="TACFunction.h" />
     <ClInclude Include="TACFunctionAnalyzer.h" />
+    <ClInclude Include="TACFunctionParser.h" />
     <ClInclude Include="TACOptimizer.h" />
     <ClInclude Include="TACBasicBlockOptimizer.h" />
     <ClInclude Include="TACPeephole.h" />
@@ -233,6 +234,7 @@
     <ClCompile Include="TACFlagRegisterOptimizer.cpp" />
     <ClCompile Include="TACFunction.cpp" />
     <ClCompile Include="TACFunctionAnalyzer.cpp" />
+    <ClCompile Include="TACFunctionParser.cpp" />
     <ClCompile Include="TACOptimizer.cpp" />
     <ClCompile Include="TACBasicBlockOptimizer.cpp" />
     <ClCompile Include="TACPeephole.cpp" />

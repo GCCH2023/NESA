@@ -2,14 +2,11 @@
 #include "NesAnalyzer.h"
 #include "NesSubroutineParser.h"
 #include "NesDataBase.h"
-#include "ReachingDefinition.h"
-#include "LiveVariableAnalysis.h"
 #include "TACTranslater1.h"
-#include "TACPeephole.h"
-#include "TACDeadCodeElimination.h"
-#include "LiveVariableAnalysis.h"
 #include "GlobalParser.h"
 #include "DirectedGraph.h"
+#include "TACFunctionParser.h"
+#include "NesUtil.h"
 
 struct SubroutineData
 {
@@ -76,7 +73,6 @@ void NesAnalyzer::DumpCallRelation(NesSubroutine* subroutine)
 
 void NesAnalyzer::DumpAllCallRelation()
 {
-	auto& subroutines = db.GetSubroutines();
 	for (auto sub : subroutines)
 		DumpCallRelation(sub);
 }
@@ -123,7 +119,6 @@ bool CanAnalyzeCycle(NodeSet analyzed, NodeSet cycle, SubroutineList& subroutine
 void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 {
 	// 首先给所有子程序编号
-	auto& subroutines = db.GetSubroutines();
 	if (subroutines.size() > MAX_NODE)
 	{
 		Sprintf<> s;
@@ -145,7 +140,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 		SubroutineData* sd = (SubroutineData*)sub->tag;
 		for (auto addr : sub->GetCalls())
 		{
-			auto callSub = db.FindSubroutine(addr);
+			auto callSub = FindSubroutine(addr);
 			sd->calls |= 1 << ((SubroutineData*)callSub->tag)->index;  // 设置子程序的调用集
 		}
 	}
@@ -153,8 +148,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 	Allocator tempAllocator;
 
 	TACTranslater1 tacTranslater(db, tempAllocator);
-	TACPeephole tacPh(db);
-	TACDeadCodeElimination tacDce(db);
+	TACFunctionParser tacFuncParser(db);
 
 	// 首先计算强连通分量
 	auto strongConnect = GetStrongConnect(subroutines);
@@ -176,10 +170,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 				{
 					// 没有分析过并且它调用的子程序都分析过了，那么可以分析这个子程序了
 					auto tacSub = tacTranslater.Translate(sub);
-					tacPh.Optimize(tacSub);
-					tacDce.Optimize(tacSub);
-
-					AnalyzeTACSubroutine(tacSub);
+					tacFuncParser.Parse(tacSub);
 					sub->flag = tacSub->flag;
 					analyzeSubs += sd->index;  // 标记此子程序已经分析
 				}
@@ -207,8 +198,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 			{
 				auto sub = subroutines[index];
 				auto tacSub = tacTranslater.Translate(sub);
-				tacPh.Optimize(tacSub);
-				tacDce.Optimize(tacSub);
+				tacFuncParser.Parse(tacSub);
 				funcs[index] = tacSub;
 			}
 			// 迭代分析，直到所有函数的返回值和参数保持不变
@@ -220,7 +210,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 				{
 					auto oldFlag = func->flag;
 					func->flag = 0;
-					AnalyzeTACSubroutine(func);
+					tacFuncParser.Parse(func);
 					if (func->flag != oldFlag)
 						cycleEnd = false;
 				}
@@ -243,38 +233,6 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 	}
 }
 
-void NesAnalyzer::AnalyzeTACSubroutine(TACFunction* subroutine)
-{
-	auto& blocks = subroutine->GetBasicBlocks();
-	// 进行活跃变量分析，以确定是否使用AXY作为参数
-	LiveVariableAnalysis lva(db, allocator);
-	lva.Analyze(subroutine);
-	// 如果入口基本块中使用了AXY，则AXY作为参数
-	auto entry = *blocks.begin();
-	auto lives = (BasicBlockLiveVariableSet*)entry->tag;
-	subroutine->flag = (uint32_t)lives->in.ToInteger();
-
-	// 进行到达定值分析，如果AXY能够到达返回基本块，则可能是返回值
-	ReachingDefinition rd(db, allocator);
-	rd.Analyze(subroutine);
-
-	for (auto block : subroutine->GetBasicBlocks())
-	{
-		if ((block->flag & BBF_END_MASK) == BBF_END_RETURN)
-		{
-			auto blockSet = (BasicBlockReachingDefinitionSet*)block->tag;
-			if (blockSet->out.set[TAC_REG_A].Any())
-				subroutine->flag |= SUBF_RETURN_A;
-			if (blockSet->out.set[TAC_REG_X].Any())
-				subroutine->flag |= SUBF_RETURN_X;
-			if (blockSet->out.set[TAC_REG_Y].Any())
-				subroutine->flag |= SUBF_RETURN_Y;
-		}
-	}
-
-	DumpTACSubroutineAXY(subroutine);
-}
-
 // 主要是解析 NES 中的三个中断处理程序，根据它们调用的子程序地址，
 // 逐渐解析出所有的子程序代码
 void NesAnalyzer::Analyze()
@@ -294,6 +252,15 @@ void NesAnalyzer::Analyze()
 void NesAnalyzer::AddSubroutine(NesSubroutine* subroutine)
 {
 	subMap.insert({ subroutine->GetStartAddress(), subroutine });
+	subroutines.push_back(subroutine);
+}
+
+NesSubroutine* NesAnalyzer::FindSubroutine(Nes::Address address)
+{
+	auto it = subMap.find(address);
+	if (it != subMap.end())
+		return it->second;
+	return nullptr;
 }
 
 bool NesAnalyzer::IsSubroutineAnalyzed(Nes::Address addr)

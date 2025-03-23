@@ -6,11 +6,15 @@ class TACDeadCodeElimination :
 	public TACOptimizer
 {
 public:
-	TACDeadCodeElimination(NesDataBase& db);
+	// allocator 用于分配临时对象
+	TACDeadCodeElimination(NesDataBase& db, Allocator& allocator);
 	~TACDeadCodeElimination();
 
 	virtual void Optimize(TACFunction* subroutine) override;
 
 	virtual void Reset() override;
+
+protected:
+	Allocator& allocator;
 };
 

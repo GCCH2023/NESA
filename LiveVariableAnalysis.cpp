@@ -102,6 +102,11 @@ void LiveVariableAnalysis::Initialize()
 		NodeSet uses = 0;  // 前3位表示 AXY 是否被使用
 		auto blockSet = allocator.New<BasicBlockLiveVariableSet>();
 		block->tag = blockSet;
+		// 如果是出口基本块，则OUT初始化为默认值
+		if ((block->flag & BBF_END_MASK) == BBF_END_RETURN)
+		{
+			blockSet->out = exitOut;
+		}
 		for (auto tac : block->GetCodes())
 		{
 			// 函数调用也可能给AXY定值

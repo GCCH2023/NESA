@@ -18,8 +18,13 @@ class LiveVariableAnalysis:
 {
 public:
 	LiveVariableAnalysis(NesDataBase& db, Allocator& allocator);
+	// 设置出口基本块的活跃变量集初始值
+	inline void SetExitOut(NodeSet out) { exitOut = out; }
 protected:
 	virtual void Initialize() override;
 	virtual bool AnalyzeNode(TACBasicBlock* block) override;
+
+protected:
+	NodeSet exitOut;  // 出口基本块的活跃变量集初始值
 };
 

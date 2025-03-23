@@ -288,6 +288,7 @@ void TACPeephole::Optimize(TACFunction* subroutine)
 			{
 				tac->x = Evaluate(tac->op, tac->x, tac->y);
 				tac->y = 0;
+				tac->op = TACOperator::ASSIGN;
 			}
 			catch (Exception&)
 			{

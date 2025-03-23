@@ -165,6 +165,12 @@ TACOperand Evaluate(TACOperator op, TACOperand x, TACOperand y)
 	case TACOperator::SHL: return TACOperand((uint8_t)(a << b));
 	case TACOperator::ROR: return TACOperand(RotateRight(a, b));
 	case TACOperator::ROL: return TACOperand(RotateLeft(a, b));
+	case TACOperator::BOOL_EQ: return TACOperand(a == b);
+	case TACOperator::BOOL_NEQ: return TACOperand(a != b);
+	case TACOperator::BOOL_LESS: return TACOperand(a < b);
+	case TACOperator::BOOL_LEQ: return TACOperand(a <= b);
+	case TACOperator::BOOL_GREAT: return TACOperand(a > b);
+	case TACOperator::BOOL_GEQ: return TACOperand(a >= b);
 	}
 	Sprintf<> s;
 	s.Format(_T("无法进行求值的操作码 "), ToString(op));
@@ -275,10 +281,10 @@ OStream& operator<<(OStream& out, const TAC* tac)
 		out << _T("if ") << tac->x << _T(" != ") << tac->y << _T(" goto ") << tac->z;
 		break;
 	case TACOperator::IFTRUE:
-		out << _T("if ") << tac->x << _T(" == true") << _T(" goto ") << tac->z;
+		out << _T("if ") << tac->x << _T(" == true goto") << tac->z;
 		break;
 	case TACOperator::IFFALSE:
-		out << _T("if ") << tac->x << _T(" == false") << _T(" goto ") << tac->z;
+		out << _T("if ") << tac->x << _T(" == false goto ") << tac->z;
 		break;
 	case TACOperator::CALL:
 		out << _T("sub_") << tac->x << _T("(");
