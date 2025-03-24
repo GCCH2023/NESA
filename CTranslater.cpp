@@ -61,7 +61,7 @@ Function* CTranslater::TranslateSubroutine(TACFunction* subroutine)
 ControlTreeNodeEx* CTranslater::Analyze()
 {
 	NodeSet N = CAnalysis(this->graph->GetFullSet());
-	if (N.GetSize() != 1)  // 也可能只有一个基本块
+	if (N.Count() != 1)  // 也可能只有一个基本块
 	{
 		DumpCurrentCFG(N);
 		throw Exception(_T("控制树无法归约到单一根节点"));

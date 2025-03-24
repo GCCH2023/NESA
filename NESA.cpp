@@ -276,7 +276,7 @@ void TACFunctionParserTest(const TCHAR* rom)
 
 		// 二. 详细分析一个函数（不包括它调用的函数） 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = 0xF8D9; // db.GetInterruptNmiAddress();
+		Nes::Address addr = 0x81C6; // db.GetInterruptNmiAddress();
 
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");

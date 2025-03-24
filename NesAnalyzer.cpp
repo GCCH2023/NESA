@@ -10,7 +10,7 @@
 
 struct SubroutineData
 {
-	size_t index;  // 在列表中的索引
+	int index;  // 在列表中的索引
 	NodeSet calls;  // 调用的函数，需要先分析
 };
 
@@ -52,23 +52,44 @@ NesSubroutine* NesAnalyzer::AnalyzeSubroutine(NesSubroutineParser& parser, Nes::
 	return subroutine;
 }
 
+// 输出函数集
+void DumpSubroutineSet(SubroutineList& suroutines, NodeSet& set)
+{
+	Sprintf<> s;
+	auto vec = set.ToVector();
+	if (vec.empty())
+	{
+		s.Format(_T("空"));
+	}
+	else
+	{
+		for (auto i : vec)
+		{
+			s.Append(_T("%04X, "), suroutines[i]->GetStartAddress());
+		}
+		s.Erase(2);
+		s.Append(_T("\n"));
+		COUT << s.ToString();
+	}
+}
+
 void NesAnalyzer::DumpCallRelation(NesSubroutine* subroutine)
 {
-	TCHAR buffer[256];
-	TCHAR* p = buffer;
-	p += _stprintf_s(buffer, 256, _T("子程序 %04X - %04X 调用："), subroutine->GetStartAddress(), subroutine->GetEndAddress());
+	Sprintf<> s;
+	s.Format(_T("子程序 %04X - %04X 调用："), subroutine->GetStartAddress(), subroutine->GetEndAddress());
 	auto& calls = subroutine->GetCalls();
 	if (calls.empty())
-		_stprintf_s(p, 256 - (p - buffer), _T("无\n"));
+		s.Append(_T("无\n"));
 	else
 	{
 		for (auto call : calls)
 		{
-			p += _stprintf_s(p, 256 - (p - buffer), _T("%04X, "), call);
+			s.Append(_T("%04X, "), call);
 		}
-		_stprintf_s(p, 256 - (p - buffer), _T("\n"));
+		s.Erase(2);
+		s.Append(_T("\n"));
 	}
-	COUT << buffer;
+	COUT << s.ToString();
 }
 
 void NesAnalyzer::DumpAllCallRelation()
@@ -78,14 +99,20 @@ void NesAnalyzer::DumpAllCallRelation()
 }
 
 
+
 std::vector<NodeSet> GetStrongConnect(SubroutineList& suroutines)
 {
+	//COUT << _T("获取强连通集:\n");
+	Sprintf<> s;
 	// 首先构造边集
 	DirectedGraphEdgeList edges(32);
 	edges.clear();
 	for (auto sub : suroutines)
 	{
 		auto sd = (SubroutineData*)sub->tag;
+		//s.Format(_T("%04X: "), sub->GetStartAddress());
+		//COUT << s.ToString();
+		//DumpSubroutineSet(suroutines, sd->calls);
 		for (auto called : Nodes(sd->calls))
 		{
 			edges.push_back({ sd->index, called });
@@ -95,9 +122,12 @@ std::vector<NodeSet> GetStrongConnect(SubroutineList& suroutines)
 	auto vec = graph.Tarjan();
 	// 删除大小为1的强连通分量列表
 	auto it = std::remove_if(vec.begin(), vec.end(), [](const NodeSet& nodeSet) {
-		return nodeSet.GetSize() == 1; // 删除条件：大小为 1
+		return nodeSet.Count() == 1; // 删除条件：大小为 1
 	});
 	vec.erase(it, vec.end());
+
+	//for (auto v : vec)
+	//	DumpSubroutineSet(suroutines, v);
 	return vec;
 }
 
@@ -126,7 +156,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 		throw Exception(s.ToString());  // 需要自定义类来实现
 	}
 
-	size_t index = 0;
+	int index = 0;
 	// 创建附加数据用于分析
 	for (auto sub : subroutines)
 	{
@@ -141,7 +171,8 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 		for (auto addr : sub->GetCalls())
 		{
 			auto callSub = FindSubroutine(addr);
-			sd->calls |= 1 << ((SubroutineData*)callSub->tag)->index;  // 设置子程序的调用集
+			auto index = ((SubroutineData*)callSub->tag)->index;
+			sd->calls += index;  // 设置子程序的调用集
 		}
 	}
 	// 迭代分析所有子程序
@@ -155,7 +186,8 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 
 	int iter = 0;
 	NodeSet analyzeSubs = 0;  // 已经分析过了的子程序集
-	NodeSet full((1 << subroutines.size()) - 1);
+	NodeSet full = NodeSet::FullSet(subroutines.size());
+	int count = 0;
 	while (true)
 	{
 		while (true)
@@ -170,6 +202,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 				{
 					// 没有分析过并且它调用的子程序都分析过了，那么可以分析这个子程序了
 					auto tacSub = tacTranslater.Translate(sub);
+					COUT << count++ << _T(" ");
 					tacFuncParser.Parse(tacSub);
 					sub->flag = tacSub->flag;
 					analyzeSubs += sd->index;  // 标记此子程序已经分析
@@ -210,6 +243,7 @@ void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 				{
 					auto oldFlag = func->flag;
 					func->flag = 0;
+					COUT << count++ << _T(" ");
 					tacFuncParser.Parse(func);
 					if (func->flag != oldFlag)
 						cycleEnd = false;
@@ -239,7 +273,7 @@ void NesAnalyzer::Analyze()
 {
 	NesSubroutineParser parser(db);
 
-	Nes::Address addr = db.GetInterruptResetAddress();
+	Nes::Address addr = db.GetInterruptNmiAddress();
 
 	AnalyzeSubroutine(parser, addr);
 

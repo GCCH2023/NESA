@@ -449,7 +449,8 @@ static const OpcodeEntry opentrys[] =
 	OpcodeEntry(Opcode::Cmp, am_aby, 4), // D9
 	OpcodeEntry(Opcode::Nop, am_def, 2), // DA
 	OpcodeEntry(Opcode::Dcp, am_aby, 7), // DB
-	OpcodeEntry(Opcode::Nop, am_abx, 4), // DC
+	// OpcodeEntry(Opcode::Nop, am_abx, 4), // DC
+	OpcodeEntry::None,  // DC
 	OpcodeEntry(Opcode::Cmp, am_abx, 4), // DD
 	OpcodeEntry(Opcode::Dec, am_abx, 7), // DE
 	OpcodeEntry(Opcode::Dcp, am_abx, 7), // DF

@@ -491,6 +491,9 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 								 tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterA, r), i.GetAddress();
 								 break;
 		}
+		case Nes::Opcode::Sax:
+			tac = allocator.New<TAC>(TACOperator::BAND, GetOperand(i), RegisterA, RegisterX);
+			break;
 		default:
 		{
 				   TCHAR buffer[64];
@@ -609,6 +612,26 @@ bool TACTranslater1::TranslateOperand(TAC& tac, const Instruction& instruction)
 		tac.x = TACOperand(TACOperand::GLOBAL | instruction.GetByte());
 		tac.y = RegisterY;
 		return true;
+	case AddrMode::IndirectX:
+	{
+								// [[zp + X]] 对应的C代码为
+								// char g_zp[];
+								// char X;
+								// char A = *(char*)g_zp[X];
+								// 1. 取数组元素
+								auto code = allocator.New<TAC>(TACOperator::ARRAY_GET, NewTemp(TypeManager::Value));
+								code->x = TACOperand(TACOperand::GLOBAL | instruction.GetByte());
+								code->y = RegisterY;
+								AddTAC(code, instruction.GetAddress());
+								// 2. 类型转换 char -> char*
+								code = allocator.New<TAC>(TACOperator::CAST, NewTemp(TypeManager::pValue), code->z);
+								AddTAC(code, instruction.GetAddress());
+								// 3. 解引用
+								code = allocator.New<TAC>(TACOperator::DEREF, NewTemp(TypeManager::Value), code->z);
+								AddTAC(code, instruction.GetAddress());
+								tac.x = code->z;
+								return false;
+	}
 	case AddrMode::IndirectY:
 	{
 								// [Y + [zp]] 对应的C代码为
@@ -656,6 +679,7 @@ void TACTranslater1::AddTAC(TAC* tac, Nes::Address address)
 	// this->tacSub->AddTAC(tac);
 	tac->address = address;
 	this->tacBlock->AddTAC(tac);
+	// COUT << tac << std::endl;
 }
 
 void TACTranslater1::SaveTACStart()

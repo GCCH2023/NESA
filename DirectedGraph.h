@@ -11,9 +11,9 @@ struct DirectedGraphNode
 	T tag;  // 扩展使用
 
 	// 获取后继数量
-	inline int GetSuccCount() const { return succ.GetSize(); }
+	inline int GetSuccCount() const { return succ.Count(); }
 	// 获取前驱数量
-	inline int GetPredCount() const { return pred.GetSize(); }
+	inline int GetPredCount() const { return pred.Count(); }
 	// 获取所有前驱基本块的索引列表
 	inline std::vector<Node> Pred() const { return pred.ToVector(); }
 	// 获取所有后继基本块的索引列表
@@ -54,8 +54,8 @@ public:
 		{
 			Node source = edge.source;
 			Node target = edge.target;
-			nodes[source].succ |= 1 << target;
-			nodes[target].pred |= 1 << source;
+			nodes[source].succ += target;
+			nodes[target].pred += source;
 
 			if (nodesCount < source)
 				nodesCount = source;
@@ -71,7 +71,7 @@ public:
 	// 获取所有节点构成的全集
 	inline NodeSet GetFullSet() const
 	{
-		return (1 << nodesCount) - 1;
+		return NodeSet::FullSet(nodesCount);
 	}
 	// 获取指定索引的节点
 	inline DirectedGraphNode<T>& operator[](size_t index)

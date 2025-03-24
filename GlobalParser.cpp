@@ -85,7 +85,7 @@ void GlobalParser::Parse(NesSubroutine* subroutine)
 				// 1. 修改变量类型
 				GetCDB().SetGlobalVariableType(address, type);
 				// 2. 删除被涵盖的变量
-				GetCDB().DeleteGlobalVariables(address + oldSize, address + newSize);
+				GetCDB().DeleteGlobalVariables((CAddress)(address + oldSize), (CAddress)(address + newSize));
 			}
 			continue;  // 小于等于原来的类型的话，就保持原来的类型
 		}

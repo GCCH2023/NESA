@@ -17,7 +17,7 @@ void DominatorAnalyzer::Initialize()
 	// 每个节点的支配集合初始化为所有节点（表示未确定支配关系）。
 	// 入口节点的支配集合只包含自身。
 	auto blocks = GetFunction()->GetBasicBlocks();
-	full = (1 << blocks.size()) - 1;  // 全集
+	full = NodeSet::FullSet(blocks.size());  // 全集
 	int index = 0;
 	for (auto block : blocks)
 	{

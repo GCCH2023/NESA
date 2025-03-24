@@ -13,6 +13,13 @@ public:
 		for (auto v : values)
 			*this += v;
 	}
+
+	// 获取全集
+	static BitSet<T> FullSet(T count)
+	{
+		return (static_cast<T>(1) << count) - 1;
+	}
+
 	// 获取位集中为1的位的索引
 	std::vector<int> ToVector() const
 	{
@@ -32,7 +39,7 @@ public:
 	// 获取位集的整数表示
 	inline T ToInteger() const { return data; }
 	// 获取位集中1的个数
-	int GetSize() const
+	int Count() const
 	{
 		T s = data;
 		int n = 0;
@@ -45,13 +52,13 @@ public:
 		return n;
 	}
 	// 并上另一个位集
-	inline BitSet& operator|=(const BitSet other) { data |= other.data; return *this; }
+	inline BitSet& operator|=(const BitSet& other) { data |= other.data; return *this; }
 	// 获取两个位集的并集
-	inline BitSet operator|(const BitSet other) const { return BitSet(data | other.data); }
+	inline BitSet operator|(const BitSet& other) const { return BitSet(data | other.data); }
 	// 与另一个位集相交
-	inline BitSet& operator&=(const BitSet other) { data &= other.data; return *this; }
+	inline BitSet& operator&=(const BitSet& other) { data &= other.data; return *this; }
 	// 获取两个位集的交集
-	inline BitSet operator&(const BitSet other) const { return BitSet(data & other.data); }
+	inline BitSet operator&(const BitSet& other) const { return BitSet(data & other.data); }
 	// 对位集进行取反操作，也就是求补集
 	inline BitSet operator~() const { return BitSet(~data); }
 	// 添加一个元素
@@ -65,12 +72,12 @@ public:
 	// 获取移除一个元素后的位集
 	inline BitSet operator-(int index) const { return BitSet(data & ~((T)1 << index)); }
 	// 给集合赋值
-	inline BitSet& operator=(T value) { data = value; return *this; }
+	//inline BitSet& operator=(T value) { data = value; return *this; }
 	// 判断两个位集是否相等
-	inline bool operator==(const BitSet other) const { return data == other.data; }
+	inline bool operator==(const BitSet& other) const { return data == other.data; }
 	inline bool operator==(T value) const { return data == value; }
 	// 判断两个位集是否不等
-	inline bool operator!=(const BitSet other) const { return data != other.data; }
+	inline bool operator!=(const BitSet& other) const { return data != other.data; }
 	inline bool operator!=(T value) const { return data != value; }
 	// 位集中是否包含指定元素
 	inline bool Contains(int index) const { return (data & ((T)1 << index)) != 0; }

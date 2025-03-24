@@ -45,8 +45,8 @@ public:
 		}
 		length += static_cast<size_t>(result);
 		if (length >= N) {
-			buffer[N - 1] = '\0'; // 确保字符串以null结尾
 			length = N - 1;
+			buffer[length] = _T('\0'); // 确保字符串以null结尾
 		}
 		return buffer;
 	}
@@ -62,13 +62,23 @@ public:
 
 	// 清空缓冲区
 	void Clear() {
-		buffer[0] = '\0';
+		buffer[0] = _T('\0');
 		length = 0;
 	}
 
 	// 获取当前字符串长度
 	size_t GetLength() const {
 		return length;
+	}
+
+	// 删除指定个字符
+	void Erase(size_t count)
+	{
+		if (count > length) {
+			count = length;
+		}
+		length -= count;
+		buffer[length] = '\0';
 	}
 
 private:

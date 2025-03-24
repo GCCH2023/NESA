@@ -33,7 +33,7 @@ struct TacAxyDefinition
 	//// 获取 寄存器 Y 的掩码
 	//inline NodeSet GetYMask() const { return ((1 << ydefs.size()) - 1) << (adefs.size() + xdefs.size()); }
 
-	void CheckDefinitionLimit();
+	void CheckDefinitionLimit(TACFunction* tacSub);
 
 	// 获取所有定值点的三地址码
 	void GetDefinitionTACList(std::vector<TAC*>& result, AXYSet& set, TACFunction* tacSub);
