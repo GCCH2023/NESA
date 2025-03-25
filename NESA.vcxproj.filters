@@ -164,9 +164,6 @@
     <ClInclude Include="String.h">
       <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="BaiscBlockDAG.h">
-      <Filter>IR</Filter>
-    </ClInclude>
     <ClInclude Include="Variable.h">
       <Filter>C</Filter>
     </ClInclude>
@@ -297,9 +294,6 @@
     </ClCompile>
     <ClCompile Include="String.cpp">
       <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="BaiscBlockDAG.cpp">
-      <Filter>IR</Filter>
     </ClCompile>
     <ClCompile Include="Variable.cpp">
       <Filter>C</Filter>

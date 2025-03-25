@@ -8,6 +8,7 @@ struct String;
 class Function
 {
 public:
+	Function();
 
 	inline void SetBody(CNode* body) { this->body = body; }
 	inline CNode* GetBody() { return body; }
@@ -25,10 +26,17 @@ public:
 	const Variable* GetVariable(String* name) const;
 	// 获取局部变量列表
 	const Variable* GetVariableList() const { return variables; }
+
+	// 获取函数的开始地址
+	inline CAddress GetAddress() const { return address; }
+	// 设置函数的开始地址
+	inline void SetAddress(CAddress addr) { address = addr; }
+
 public:
-	Type* type;
-	Variable* params;
-	Variable* variables;
-	CNode* body;  // 函数体
 	String* name;
+	Type* type;
+	CAddress address;  // 函数开始地址
+	Variable* params;  // 形参列表
+	Variable* variables;  // 局部变量列表
+	CNode* body;  // 函数体
 };

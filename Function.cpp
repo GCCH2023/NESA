@@ -2,6 +2,17 @@
 #include "Function.h"
 #include "Type.h"
 
+Function::Function():
+name(nullptr),
+type(nullptr),
+address(0),
+params(nullptr),
+variables(nullptr),
+body(nullptr)
+{
+
+}
+
 void Function::AddParameter(Variable* param)
 {
 	if (this->params == nullptr)

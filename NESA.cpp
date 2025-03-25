@@ -22,35 +22,6 @@ using namespace Nes;
 #include "GlobalParser.h"
 #include "TACFunctionParser.h"
 
-// 用DAG生成基本块的C语句测试
-// a = b + c
-// b = a - d
-// c = b + c
-// d = a - d
-#include "BaiscBlockDAG.h"
-void BaiscBlockDAGTest()
-{
-	// 1. 构造三地址码
-	TACOperand a(TACOperand::TEMP | 0);
-	TACOperand b(TACOperand::TEMP | 1);
-	TACOperand c(TACOperand::TEMP | 2);
-	TACOperand d(TACOperand::TEMP | 3);
-
-	TACBasicBlock block;
-	TAC code0(TACOperator::ADD, a, b, c);
-	TAC code1(TACOperator::SUB, b, a, d);
-	TAC code2(TACOperator::ADD, c, b, c);
-	TAC code3(TACOperator::SUB, d, a, d);
-	block.AddTAC(&code0);
-	block.AddTAC(&code1);
-	block.AddTAC(&code2);
-	block.AddTAC(&code3);
-
-	BaiscBlockDAG bbDag(GetCDB().GetAllocator());
-	auto statement = bbDag.Translate(&block);
-	COUT << statement;
-}
-
 // 全局变量测试
 void GlobalTest()
 {
@@ -255,7 +226,7 @@ void TACBasicBlockOptimizerTest()
 }
 
 // 三地址码函数分析
-void TACFunctionParserTest(const TCHAR* rom)
+void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0)
 {
 	Allocator allocator;
 	try
@@ -276,7 +247,9 @@ void TACFunctionParserTest(const TCHAR* rom)
 
 		// 二. 详细分析一个函数（不包括它调用的函数） 
 		NesSubroutineParser parser(db);
-		Nes::Address addr = 0x81C6; // db.GetInterruptNmiAddress();
+		if (address == 0)
+			address = 0x8E04;
+		Nes::Address addr = address; // db.GetInterruptNmiAddress();
 
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
@@ -323,12 +296,12 @@ void TACFunctionParserTest(const TCHAR* rom)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
+	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
-	// TACFunctionParserTest(_T(R"(D:\FC\miaoliro.nes)"));
+	TACFunctionParserTest(_T(R"(D:\FC\miaoliro.nes)"), 0x8E04);
 	system("pause");
 	return 0;
 }

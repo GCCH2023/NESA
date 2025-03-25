@@ -46,7 +46,7 @@ const Variable* CDataBase::GetGlobalVariable(String* name) const
 	}
 	return nullptr;
 }
-#include "Dump.h"
+// #include "Dump.h"
 const Variable* CDataBase::AddGlobalVariable(CAddress address, Type* type, String* name /*= nullptr*/)
 {
 	// 应该保证地址和名称唯一
@@ -135,7 +135,29 @@ void CDataBase::AddFunction(Function* function)
 	if (!function)
 		return;
 
-	functions.push_back(function);
+	auto it = std::lower_bound(functions.begin(), functions.end(), function->address,
+		[](const Variable* variable, CAddress address) {
+		return variable->address < address;
+	});
+	if (it != functions.end() && (*it)->address == function->address)
+	{
+		Sprintf<> s;
+		s.Format(_T("地址为 %X 的函数已经存在"), function->address);
+		throw Exception(s.ToString());
+	}
+
+	functions.insert(it, function);
+}
+
+Function* CDataBase::GetFunction(CAddress address)
+{
+	auto it = std::lower_bound(functions.begin(), functions.end(), address,
+		[](const Variable* variable, CAddress address) {
+		return variable->address < address;
+	});
+	if (it != functions.end() && (*it)->address == address)
+		return *it;
+	return nullptr;
 }
 
 void CDataBase::AddTag(Type* tag)

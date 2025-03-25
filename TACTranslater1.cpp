@@ -355,9 +355,9 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 									 assert(pfType->pa.type->GetKind() == TypeKind::Function);
 									 // 函数返回值和参数目前还没实现，先当作没有处理
 									 // 1. 先生成一条解引用指令
-									 tac = allocator.New<TAC>(TACOperator::DEREF, NewTemp(pfType->pa.type), GetOperand(i));
+									 // tac = allocator.New<TAC>(TACOperator::DEREF, NewTemp(pfType->pa.type), GetOperand(i));
 									 // 2. 生成函数调用指令
-									 tac = allocator.New<TAC>(TACOperator::CALL, 0, tac->z, 0);
+									 tac = allocator.New<TAC>(TACOperator::CALL, 0, GetOperand(i), 0);
 									 AddTAC(tac, i.GetAddress());
 									 // 3. 尾调用需要添加 return
 									 tac = allocator.New<TAC>(TACOperator::RETURN);

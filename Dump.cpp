@@ -12,6 +12,21 @@ OStream& Indent(OStream& os, int indent)
 	return os;
 }
 
+void DumpType(const Type* type);
+
+// 输出类型列表
+void DumpTypeList(const TypeList* typeList)
+{
+	while (typeList)
+	{
+		DumpType(typeList->type);
+		typeList = typeList->next;
+		if (typeList)
+			COUT << _T(", ");
+	}
+}
+
+
 void DumpType(const Type* type)
 {
 	switch (type->GetKind())
@@ -23,7 +38,14 @@ void DumpType(const Type* type)
 	{
 							  Type* base = type->pa.type;
 							  if (base->GetKind() == TypeKind::Function)
-								  throw Exception(_T("函数指针的声明未实现"));
+							  {
+								  auto funcType = type->pa.type;
+								  DumpType(funcType->f.returnType);  // 返回值
+								  COUT << _T("(*)(");  // 函数名
+								  DumpTypeList(funcType->f.params);
+								  COUT << _T(");");
+								  break;
+							  }
 							  DumpType(base);
 							  COUT << _T("*");
 							  break;
@@ -150,6 +172,10 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 									 return os << obj->field->name;
 	}
+	case CNodeKind::EXPR_FUNCTION:
+	{
+								  return os << obj->function->name;
+	}
 
 	// 双目运算符
 	case CNodeKind::EXPR_BOR:
@@ -198,7 +224,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::EXPR_CALL:
 	{
 								 Indent(os, indent);
-								 os << obj->f.name << _T("(");
+								 os << obj->f.callee << _T("(");
 								 if (obj->f.params == nullptr)
 									 return os << _T(")");
 								 for (CNode* param = obj->f.params; param; param = param->next)
@@ -324,6 +350,7 @@ void DumpTypeQualifier(const Type* type)
 	COUT << names[(int)type->GetQualifier()];
 }
 
+
 void DumpDeclaration(const Variable* variable)
 {
 	auto type = variable->type;
@@ -331,6 +358,15 @@ void DumpDeclaration(const Variable* variable)
 	switch (type->GetKind())
 	{
 	case TypeKind::Pointer:
+		if (type->pa.type->GetKind() == TypeKind::Function)
+		{
+			auto funcType = type->pa.type;
+			DumpType(funcType->f.returnType);  // 返回值
+			COUT << _T("(* ") << variable->name << _T(")(");  // 函数名
+			DumpTypeList(funcType->f.params);
+			COUT << _T(");");
+			break;
+		}
 		DumpType(type->pa.type);
 		COUT << _T("* ") << variable->name << _T(";");
 		break;

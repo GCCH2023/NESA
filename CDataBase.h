@@ -46,6 +46,8 @@ public:
 	inline const FunctionList& GetFunctionList() const { return functions; }
 	// 添加一个函数
 	void AddFunction(Function* function);
+	// 根据地址获取函数
+	Function* GetFunction(CAddress address);
 
 	// 获取标签列表
 	inline const TagList& GetTagList() const { return tags; }
@@ -67,7 +69,7 @@ protected:
 	StringTable stringTable;
 
 	GlobalList globals;  // 全局变量列表，按地址从小到大排列
-	FunctionList functions;  // 函数列表
+	FunctionList functions;  // 函数列表，按地址从小到大排列
 	TagList tags;  // 结构体，枚举，联合体列表
 
 	Type* axyType;

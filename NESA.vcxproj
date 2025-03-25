@@ -146,7 +146,6 @@
   <ItemGroup>
     <ClInclude Include="Allocator.h" />
     <ClInclude Include="ASTManager.h" />
-    <ClInclude Include="BaiscBlockDAG.h" />
     <ClInclude Include="BitSet.h" />
     <ClInclude Include="Cartridge.h" />
     <ClInclude Include="CDataBase.h" />
@@ -197,7 +196,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ASTManager.cpp" />
-    <ClCompile Include="BaiscBlockDAG.cpp" />
     <ClCompile Include="Cartridge.cpp" />
     <ClCompile Include="CDataBase.cpp" />
     <ClCompile Include="CNode.cpp" />

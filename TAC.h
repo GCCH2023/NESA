@@ -27,7 +27,7 @@ enum class TACOperator
 	DEREF,  // 解引用，若 z 是T类型，则x 是T指针类型，z = *x
 	CAST,  // 类型转换, z = (T)x，T由符号表中的z类型给出
 	ARG,  // 传递一个函数参数，相当于 x86 中的 push x
-	CALL, // z = x(y)，x 是函数地址，y是参数数量
+	CALL, // z = x(y)，x 是函数地址或函数指针类型的变量，y是参数数量
 	GOTO, // goto z
 	RETURN,  // return x
 	SHR,  // 逻辑右移，z = x >> y，丢弃最低位

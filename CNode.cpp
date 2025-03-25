@@ -22,6 +22,15 @@ field(field_)
 
 }
 
+CNode::CNode(const Function* func):
+kind(CNodeKind::EXPR_FUNCTION),
+function(func)
+{
+
+}
+
+
+
 
 CNode::CNode(const Type* type_, CNode* expr_) :
 kind(CNodeKind::EXPR_CAST)
@@ -43,13 +52,6 @@ kind(kind_)
 	e.x = x;
 	e.y = y;
 	e.z = z;
-}
-
-CNode::CNode(String* name, CNode* params /*= nullptr*/) :
-kind(CNodeKind::EXPR_CALL)
-{
-	f.name = name;
-	f.params = params;
 }
 
 CNode::CNode(CNodeKind kind_, String* name) :
@@ -81,6 +83,8 @@ const TCHAR* ToString(CNodeKind kind)
 	case CNodeKind::EXPR_VARIABLE: return _T("EXPR_VARIABLE");
 	case CNodeKind::EXPR_FIELD: return _T("EXPR_FIELD");
 	case CNodeKind::EXPR_INTEGER: return _T("EXPR_INTEGER");
+	case CNodeKind::EXPR_FUNCTION: return _T("EXPR_FUNCTION");
+
 
 	case CNodeKind::EXPR_ADD: return _T("+");
 	case CNodeKind::EXPR_SUB: return _T("-");
@@ -184,6 +188,7 @@ int GetOperatorPriority(CNodeKind op)
 	case CNodeKind::EXPR_INTEGER:
 	case CNodeKind::EXPR_VARIABLE:
 	case CNodeKind::EXPR_FIELD:
+	case CNodeKind::EXPR_FUNCTION:
 		return 0;
 
 		// 默认情况，表示无效运算符

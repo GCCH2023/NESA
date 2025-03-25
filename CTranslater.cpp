@@ -64,7 +64,9 @@ ControlTreeNodeEx* CTranslater::Analyze()
 	if (N.Count() != 1)  // 也可能只有一个基本块
 	{
 		DumpCurrentCFG(N);
-		throw Exception(_T("控制树无法归约到单一根节点"));
+		Sprintf<> s;
+		s.Format(_T("翻译 %04X 时，控制树无法归约到单一根节点"), subroutine->GetStartAddress());
+		throw Exception(s.ToString());
 	}
 	// 在全部语句都生成后，回填标签语句
 	PatchLabels();
@@ -199,14 +201,32 @@ CNodeKind CTranslater::TranslateOperator(TACOperator op)
 
 CNode* CTranslater::TranslateCall(TAC* call, CNode* params)
 {
-	String* name = nullptr;
+	CNode* expr = nullptr;
 	if (call->x.IsAddress())  // 直接给出函数地址
 	{
-		name = NewString(_T("sub_%04X"), call->x.GetValue());
+		auto func = GetCDB().GetFunction(call->x.GetValue());
+		if (!func)
+		{
+			Sprintf<> s;
+			s.Format(_T("获取函数 %X 失败"), call->x.GetValue());
+			throw Exception(s.ToString());
+		}
+		expr = allocator.New<CNode>(func);
 	}
-	else if (call->x.IsTemp())  // 函数指针解引用出来的临时变量
+	else if (call->x.IsTemp())  // 函数指针临时变量
 	{
-		name = GetLocalVariableName(call->x.GetValue());
+		expr = allocator.New<CNode>(GetLocalVariable(call->x.GetValue()));
+	}
+	else if (call->x.IsGlobal())  // 全局函数指针
+	{
+		auto global = GetCDB().GetGlobalVariable(call->x.GetValue());
+		if (!global)
+		{
+			Sprintf<> s;
+			s.Format(_T("获取全局变量 %X 失败"), call->x.GetValue());
+			throw Exception(s.ToString());
+		}
+		expr = allocator.New<CNode>(global);
 	}
 	else
 	{
@@ -214,7 +234,7 @@ CNode* CTranslater::TranslateCall(TAC* call, CNode* params)
 		s.Format(_T("三地址码翻译为C语句：%04X 解析函数名称失败"), call->address);
 		throw Exception(s.ToString());
 	}
-	CNode* expr = allocator.New<CNode>(name, params);
+	expr = allocator.New<CNode>(CNodeKind::EXPR_CALL, expr, params);
 	// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
 	if (call->z.IsTemp())
 	{
