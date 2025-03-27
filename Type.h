@@ -9,6 +9,7 @@ enum class TypeQualifier
 	None = 0,
 	Const = 1,
 	Volatile = 2,
+	ConstVolatile = 3,
 };
 
 const TCHAR* ToString(TypeQualifier qulifier);
@@ -24,6 +25,10 @@ enum class TypeKind
 };
 
 const TCHAR* ToString(TypeKind typeKind);
+
+// 获取类型的优先级
+// 返回值越小，优先级越大
+int GetTypeKindPriority(TypeKind kind);
 
 struct Type;
 // !!! 不要直接设置next字段，这样会导致align不被计算
@@ -108,5 +113,9 @@ size_t GetTypeBytes(const Type* type);
 size_t GetTypeAlign(const Type* type);
 // 获取类型的字符串表示
 StdString ToString(Type* type);
-
+// 判断 type1 的优先级是否大于type2的优先级
+inline bool IsHigher(const Type* type1, const Type* type2)
+{
+	return GetTypeKindPriority(type1->GetKind()) < GetTypeKindPriority(type2->GetKind());
+}
 

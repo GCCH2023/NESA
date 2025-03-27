@@ -3,6 +3,7 @@
 #include "Variable.h"
 #include "CDataBase.h"
 using namespace std;
+#include "StringJoiner.h"
 
 // 缩进
 OStream& Indent(OStream& os, int indent)
@@ -10,6 +11,11 @@ OStream& Indent(OStream& os, int indent)
 	for (int i = 0; i < indent; ++i)
 		os << '\t';
 	return os;
+}
+
+void QualifierToString()
+{
+
 }
 
 void DumpType(const Type* type);
@@ -26,9 +32,17 @@ void DumpTypeList(const TypeList* typeList)
 	}
 }
 
+void DumpTypeQualifier(const Type* type)
+{
+	auto qualifer = type->GetQualifier();
+	if (qualifer != TypeQualifier::None)
+		COUT << ToString(qualifer) << _T(" ");
+}
+
 
 void DumpType(const Type* type)
 {
+	DumpTypeQualifier(type);
 	switch (type->GetKind())
 	{
 	case TypeKind::Enum: COUT << _T("enum ") << type->e.name; break;
@@ -172,10 +186,6 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 									 return os << obj->field->name;
 	}
-	case CNodeKind::EXPR_FUNCTION:
-	{
-								  return os << obj->function->name;
-	}
 
 	// 双目运算符
 	case CNodeKind::EXPR_BOR:
@@ -224,7 +234,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::EXPR_CALL:
 	{
 								 Indent(os, indent);
-								 os << obj->f.callee << _T("(");
+								 os << obj->f.name << _T("(");
 								 if (obj->f.params == nullptr)
 									 return os << _T(")");
 								 for (CNode* param = obj->f.params; param; param = param->next)
@@ -341,55 +351,81 @@ void DumpParameter(Variable* param)
 	COUT << _T(" ") << param->name;
 }
 
-void DumpTypeQualifier(const Type* type)
+inline StringJoiner& operator<<(StringJoiner& strJoiner, const String* name)
 {
-	static const TCHAR* names[] =
-	{
-		_T(""), _T("const "), _T("volatile "), _T("const volatile ")
-	};
-	COUT << names[(int)type->GetQualifier()];
+	return strJoiner << name->str;
 }
 
-
-void DumpDeclaration(const Variable* variable)
+// 在已有字符串的基础上格式化指定类型
+StringJoiner& operator<<(StringJoiner& strJoiner, const Type* type)
 {
-	auto type = variable->type;
-	DumpTypeQualifier(type);
+	auto qualifer = type->GetQualifier();
+	if (qualifer != TypeQualifier::None)
+		strJoiner << ToString(qualifer) << _T(" ");
+
 	switch (type->GetKind())
 	{
 	case TypeKind::Pointer:
-		if (type->pa.type->GetKind() == TypeKind::Function)
-		{
-			auto funcType = type->pa.type;
-			DumpType(funcType->f.returnType);  // 返回值
-			COUT << _T("(* ") << variable->name << _T(")(");  // 函数名
-			DumpTypeList(funcType->f.params);
-			COUT << _T(");");
-			break;
-		}
-		DumpType(type->pa.type);
-		COUT << _T("* ") << variable->name << _T(";");
+		if (IsHigher(type->pa.type, type))
+			strJoiner << _T("(*") >> _T(")");
+		else
+			strJoiner << _T("*");
+		strJoiner << type->pa.type;
 		break;
 	case TypeKind::Array:
-		DumpType(type->pa.type);
-		COUT << _T(" ") << variable->name << _T("[");
+		if (IsHigher(type->pa.type, type))
+			strJoiner >> _T("(");
+		strJoiner >> _T("[");
+		// 输出数组元素数量
 		if (type->pa.count > 0)
-			COUT << type->pa.count;
-		COUT << _T("];");
+		{
+			Sprintf<> s;
+			s.Format(_T("%d"), type->pa.count);
+			strJoiner >> s.ToString();
+		}
+		strJoiner >> _T("]");
+		if (IsHigher(type->pa.type, type))
+			strJoiner >> _T(")");
+		strJoiner << type->pa.type;
 		break;
-	//case TypeKind::Struct:
-	//case TypeKind::Union:
-	//case TypeKind::Enum:
-	//	DumpType(type);
-	//	COUT << _T(" ") << variable->name << _T(";");
-	//	break;
 	case TypeKind::Function:
-		throw Exception("输出变量声明的函数无法输出函数声明");
-	default:
-		DumpType(type);
-		COUT << _T(" ") << variable->name << _T(";");
+		if (IsHigher(type->f.returnType, type))
+			strJoiner >> _T("(");
+		strJoiner >> _T("(");
+		// 输出函数参数类型列表
+		{
+			auto typeList = type->f.params;
+			if (typeList)
+			{
+				strJoiner << typeList->type;
+				typeList = typeList->next;
+			}
+			while (typeList)
+			{
+				strJoiner >> _T(", ");
+				strJoiner << typeList->type;
+				typeList = typeList->next;
+			}
+		}
+		strJoiner >> _T(")");
+		if (IsHigher(type->f.returnType, type))
+			strJoiner >> _T(")");
+		strJoiner << type->pa.type;
 		break;
+	case TypeKind::Enum: strJoiner << type->e.name << _T("enum "); break;
+	case TypeKind::Struct: strJoiner << type->su.name << _T("struct "); break;
+	case TypeKind::Union: strJoiner << type->su.name << _T("union "); break;
+	default:
+		strJoiner << ToString(type->GetKind());
 	}
+	return strJoiner;
+}
+
+void DumpDeclaration(const Variable* variable)
+{
+	StringJoiner strJoiner;
+	strJoiner << variable->name << _T(" ") << variable->type >> _T(";");
+	COUT << strJoiner.ToString();
 }
 
 

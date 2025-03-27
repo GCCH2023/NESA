@@ -201,32 +201,26 @@ CNodeKind CTranslater::TranslateOperator(TACOperator op)
 
 CNode* CTranslater::TranslateCall(TAC* call, CNode* params)
 {
-	CNode* expr = nullptr;
+	String* name = nullptr;
 	if (call->x.IsAddress())  // 直接给出函数地址
 	{
-		auto func = GetCDB().GetFunction(call->x.GetValue());
-		if (!func)
-		{
-			Sprintf<> s;
-			s.Format(_T("获取函数 %X 失败"), call->x.GetValue());
-			throw Exception(s.ToString());
-		}
-		expr = allocator.New<CNode>(func);
+		name = NewString(_T("sub_%04X"), call->x.GetValue());
 	}
 	else if (call->x.IsTemp())  // 函数指针临时变量
 	{
-		expr = allocator.New<CNode>(GetLocalVariable(call->x.GetValue()));
+		name = GetLocalVariableName(call->x.GetValue());
 	}
-	else if (call->x.IsGlobal())  // 全局函数指针
+	else if (call->x.IsGlobal())  // 函数指针全局变量
 	{
-		auto global = GetCDB().GetGlobalVariable(call->x.GetValue());
+		uint32_t addr = call->x.GetValue();
+		auto global = GetCDB().GetGlobalVariable(addr);
 		if (!global)
 		{
 			Sprintf<> s;
-			s.Format(_T("获取全局变量 %X 失败"), call->x.GetValue());
+			s.Format(_T("获取全局函数指针 %X 失败"), addr);
 			throw Exception(s.ToString());
 		}
-		expr = allocator.New<CNode>(global);
+		name = global->name;
 	}
 	else
 	{
@@ -234,7 +228,7 @@ CNode* CTranslater::TranslateCall(TAC* call, CNode* params)
 		s.Format(_T("三地址码翻译为C语句：%04X 解析函数名称失败"), call->address);
 		throw Exception(s.ToString());
 	}
-	expr = allocator.New<CNode>(CNodeKind::EXPR_CALL, expr, params);
+	CNode* expr = allocator.New<CNode>(name, params);
 	// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
 	if (call->z.IsTemp())
 	{

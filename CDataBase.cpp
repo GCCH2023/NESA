@@ -136,8 +136,8 @@ void CDataBase::AddFunction(Function* function)
 		return;
 
 	auto it = std::lower_bound(functions.begin(), functions.end(), function->address,
-		[](const Variable* variable, CAddress address) {
-		return variable->address < address;
+		[](const Function* func, CAddress address) {
+		return func->address < address;
 	});
 	if (it != functions.end() && (*it)->address == function->address)
 	{
@@ -152,8 +152,8 @@ void CDataBase::AddFunction(Function* function)
 Function* CDataBase::GetFunction(CAddress address)
 {
 	auto it = std::lower_bound(functions.begin(), functions.end(), address,
-		[](const Variable* variable, CAddress address) {
-		return variable->address < address;
+		[](const Function* func, CAddress address) {
+		return func->address < address;
 	});
 	if (it != functions.end() && (*it)->address == address)
 		return *it;

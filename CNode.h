@@ -3,7 +3,6 @@
 
 struct String;
 struct Field;
-class Function;
 
 // !!!增加节点类型时，注意修改CNode中的判断类型函数
 enum class CNodeKind
@@ -25,7 +24,6 @@ enum class CNodeKind
 	EXPR_VARIABLE,  // 变量
 	EXPR_FIELD,  // 字段
 	EXPR_INTEGER,  // 整数常量
-	EXPR_FUNCTION,  // 函数
 
 	EXPR_ADD,  // 加法
 	EXPR_SUB,  // 减法
@@ -77,7 +75,6 @@ struct CNode
 		}l;  // 标签语句
 		const Variable* variable;  // 变量
 		const Field* field;  // 记录类型的字段
-		const Function* function;  // 记录类型的字段
 		struct
 		{
 			const Type* type;  // 类型转换表达式的目标类型
@@ -101,8 +98,8 @@ struct CNode
 		}s;  // if, while, do while
 		struct
 		{
-			CNode* callee;  // 函数节点
-			CNode* params;  // 参数列表
+			String* name;  // 函数名称
+			CNode* params;  // 参数链表
 		}f;
 		struct
 		{
@@ -118,10 +115,10 @@ struct CNode
 	CNode(const Variable* variable);
 	// 创建字段
 	CNode(const Field* field);
-	// 创建函数
-	CNode(const Function* func);
 	// 创建类型转换表达式
 	CNode(const Type* type, CNode* expr);
+	// 创建函数调用或标签语句
+	CNode(String* name, CNode* params);
 	// 创建整数
 	CNode(int value);
 	// 创建表达式或语句
@@ -136,4 +133,5 @@ struct CNode
 };
 
 // 获取运算符的优先级
+// 返回值越小，优先级越大
 int GetOperatorPriority(CNodeKind op);

@@ -194,6 +194,15 @@
     <ClInclude Include="TACFunctionParser.h">
       <Filter>IR</Filter>
     </ClInclude>
+    <ClInclude Include="StringJoiner.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CDirectTranslator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CGraphTranslator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -321,6 +330,15 @@
     </ClCompile>
     <ClCompile Include="TACFunctionParser.cpp">
       <Filter>IR</Filter>
+    </ClCompile>
+    <ClCompile Include="StringJoiner.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CDirectTranslator.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CGraphTranslator.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

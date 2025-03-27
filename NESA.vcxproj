@@ -96,7 +96,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
@@ -155,11 +155,13 @@
     <ClInclude Include="CTreeVisitor.h" />
     <ClInclude Include="DataFlowAnalyzer.h" />
     <ClInclude Include="DirectedGraph.h" />
+    <ClInclude Include="CDirectTranslator.h" />
     <ClInclude Include="DominatorAnalyzer.h" />
     <ClInclude Include="Dump.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="Function.h" />
     <ClInclude Include="GlobalParser.h" />
+    <ClInclude Include="CGraphTranslator.h" />
     <ClInclude Include="Instruction.h" />
     <ClInclude Include="LiveVariableAnalysis.h" />
     <ClInclude Include="Mapper.h" />
@@ -177,6 +179,7 @@
     <ClInclude Include="Sprintf.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="String.h" />
+    <ClInclude Include="StringJoiner.h" />
     <ClInclude Include="TAC.h" />
     <ClInclude Include="TACDeadCodeElimination.h" />
     <ClInclude Include="TACFlagRegisterOptimizer.h" />
@@ -201,11 +204,13 @@
     <ClCompile Include="CNode.cpp" />
     <ClCompile Include="CTranslater.cpp" />
     <ClCompile Include="CTreeVisitor.cpp" />
+    <ClCompile Include="CDirectTranslator.cpp" />
     <ClCompile Include="DominatorAnalyzer.cpp" />
     <ClCompile Include="Dump.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Function.cpp" />
     <ClCompile Include="GlobalParser.cpp" />
+    <ClCompile Include="CGraphTranslator.cpp" />
     <ClCompile Include="Instruction.cpp" />
     <ClCompile Include="LiveVariableAnalysis.cpp" />
     <ClCompile Include="Mapper.cpp" />
@@ -227,6 +232,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="String.cpp" />
+    <ClCompile Include="StringJoiner.cpp" />
     <ClCompile Include="TAC.cpp" />
     <ClCompile Include="TACDeadCodeElimination.cpp" />
     <ClCompile Include="TACFlagRegisterOptimizer.cpp" />

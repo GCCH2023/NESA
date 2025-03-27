@@ -301,7 +301,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
-	TACFunctionParserTest(_T(R"(D:\FC\miaoliro.nes)"), 0x8E04);
+	TACFunctionParserTest(_T(R"(D:\FC\miaoliro.nes)"), 0x8182);
 	system("pause");
 	return 0;
 }

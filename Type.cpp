@@ -6,7 +6,7 @@ const TCHAR* ToString(TypeQualifier qulifier)
 {
 	static const TCHAR* names[] =
 	{
-		_T("None"), _T("const"), _T("volatile")
+		_T("None"), _T("const"), _T("volatile"), _T("const volatile")
 	};
 	return names[(int)qulifier];
 }
@@ -50,6 +50,17 @@ StdString ToString(Type* type)
 		break;
 	}
 	return s.ToString();
+}
+
+int GetTypeKindPriority(TypeKind kind)
+{
+	switch (kind)
+	{
+	case TypeKind::Pointer: return 2;
+	case TypeKind::Array: return 0;
+	case TypeKind::Function: return 1;
+	default: return 3;
+	}
 }
 
 size_t GetTypeBytes(const Type* type)
