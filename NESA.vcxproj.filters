@@ -101,9 +101,6 @@
     <ClInclude Include="Exception.h">
       <Filter>Exception</Filter>
     </ClInclude>
-    <ClInclude Include="CTranslater.h">
-      <Filter>C</Filter>
-    </ClInclude>
     <ClInclude Include="NodeSet.h">
       <Filter>Common</Filter>
     </ClInclude>
@@ -201,6 +198,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="CGraphTranslator.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="CTranslator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CStatementTranslator.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -249,9 +252,6 @@
     </ClCompile>
     <ClCompile Include="Exception.cpp">
       <Filter>Exception</Filter>
-    </ClCompile>
-    <ClCompile Include="CTranslater.cpp">
-      <Filter>C</Filter>
     </ClCompile>
     <ClCompile Include="NodeSet.cpp">
       <Filter>Common</Filter>
@@ -338,6 +338,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="CGraphTranslator.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="CTranslator.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CStatementTranslator.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

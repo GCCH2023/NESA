@@ -9,7 +9,7 @@ using namespace Nes;
 #include "NesSubroutineParser.h"
 #include "TACTranslater.h"
 #include "TACTranslater1.h"
-#include "CTranslater.h"
+#include "CGraphTranslator.h"
 
 #include "ReachingDefinition.h"
 #include "LiveVariableAnalysis.h"
@@ -81,7 +81,7 @@ void ParseNes(const TCHAR* rom)
 		TACTranslater1 ntt(db, allocator);
 		TACPeephole tacPh(db);
 		TACDeadCodeElimination tacDce(db, allocator);
-		CTranslater translater(allocator, db);
+		CGraphTranslator translater(allocator, db);
 		CTreeOptimizer ctreeOptimizer;
 		GlobalParser globalParser(db);
 
@@ -106,7 +106,7 @@ void ParseNes(const TCHAR* rom)
 			tacDce.Optimize(tacSub);
 
 			// 3. 生成C代码
-			auto func = translater.TranslateSubroutine(tacSub);
+			auto func = translater.Translate(tacSub);
 
 			// 4. 优化C代码
 			ctreeOptimizer.Optimize(func->GetBody());
@@ -147,7 +147,7 @@ void ParseNes(const TCHAR* rom)
 		tacSub->Dump();
 
 		// 生成C代码
-		auto func = translater.TranslateSubroutine(tacSub);
+		auto func = translater.Translate(tacSub);
 		//COUT << func->GetBody();
 
 		//COUT << _T("\n语法树结构:\n");
@@ -240,7 +240,7 @@ void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0)
 		COUT << s.ToString();
 
 		TACTranslater1 ntt(db, allocator);
-		CTranslater translater(allocator, db);
+		CGraphTranslator translater(allocator, db);
 		CTreeOptimizer ctreeOptimizer;
 		GlobalParser globalParser(db);
 		TACFunctionParser funcParser(db);
@@ -270,7 +270,7 @@ void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0)
 		tacSub->Dump();
 
 		// 生成C代码
-		auto func = translater.TranslateSubroutine(tacSub);
+		auto func = translater.Translate(tacSub);
 		//COUT << func->GetBody();
 
 		//COUT << _T("\n语法树结构:\n");

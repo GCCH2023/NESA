@@ -151,7 +151,7 @@
     <ClInclude Include="CDataBase.h" />
     <ClInclude Include="CNode.h" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="CTranslater.h" />
+    <ClInclude Include="CGraphTranslator.h" />
     <ClInclude Include="CTreeVisitor.h" />
     <ClInclude Include="DataFlowAnalyzer.h" />
     <ClInclude Include="DirectedGraph.h" />
@@ -161,7 +161,6 @@
     <ClInclude Include="Exception.h" />
     <ClInclude Include="Function.h" />
     <ClInclude Include="GlobalParser.h" />
-    <ClInclude Include="CGraphTranslator.h" />
     <ClInclude Include="Instruction.h" />
     <ClInclude Include="LiveVariableAnalysis.h" />
     <ClInclude Include="Mapper.h" />
@@ -177,6 +176,7 @@
     <ClInclude Include="NodeSet.h" />
     <ClInclude Include="ReachingDefinition.h" />
     <ClInclude Include="Sprintf.h" />
+    <ClInclude Include="CStatementTranslator.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="String.h" />
     <ClInclude Include="StringJoiner.h" />
@@ -193,6 +193,7 @@
     <ClInclude Include="TACTranslater1.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="CTreeOptimizer.h" />
+    <ClInclude Include="CTranslator.h" />
     <ClInclude Include="Type.h" />
     <ClInclude Include="TypeManager.h" />
     <ClInclude Include="Variable.h" />
@@ -202,7 +203,7 @@
     <ClCompile Include="Cartridge.cpp" />
     <ClCompile Include="CDataBase.cpp" />
     <ClCompile Include="CNode.cpp" />
-    <ClCompile Include="CTranslater.cpp" />
+    <ClCompile Include="CGraphTranslator.cpp" />
     <ClCompile Include="CTreeVisitor.cpp" />
     <ClCompile Include="CDirectTranslator.cpp" />
     <ClCompile Include="DominatorAnalyzer.cpp" />
@@ -210,7 +211,6 @@
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Function.cpp" />
     <ClCompile Include="GlobalParser.cpp" />
-    <ClCompile Include="CGraphTranslator.cpp" />
     <ClCompile Include="Instruction.cpp" />
     <ClCompile Include="LiveVariableAnalysis.cpp" />
     <ClCompile Include="Mapper.cpp" />
@@ -225,6 +225,7 @@
     <ClCompile Include="NesSubroutineParser.cpp" />
     <ClCompile Include="NodeSet.cpp" />
     <ClCompile Include="ReachingDefinition.cpp" />
+    <ClCompile Include="CStatementTranslator.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -245,6 +246,7 @@
     <ClCompile Include="TACTranslater.cpp" />
     <ClCompile Include="CTreeOptimizer.cpp" />
     <ClCompile Include="TACTranslater1.cpp" />
+    <ClCompile Include="CTranslator.cpp" />
     <ClCompile Include="Type.cpp" />
     <ClCompile Include="TypeManager.cpp" />
     <ClCompile Include="Variable.cpp" />

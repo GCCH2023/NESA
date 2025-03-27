@@ -1,93 +1,28 @@
 #include "stdafx.h"
-#include "CTranslater.h"
+#include "CGraphTranslator.h"
 using namespace std;
 #include "Function.h"
 #include "CDataBase.h"
 
-CTranslater::CTranslater(Allocator& allocator_, NesDataBase& db_) :
+CGraphTranslator::CGraphTranslator(Allocator& allocator, NesDataBase& db_):
+CTranslator(allocator),
 db(db_),
-allocator(allocator_),
-function(nullptr),
-subroutine(nullptr),
 tempAllocator(1024 * 1024)
 {
-	registers[TAC_REG_A] = NewString(_T("A"));
-	registers[TAC_REG_X] = NewString(_T("X"));
-	registers[TAC_REG_Y] = NewString(_T("Y"));
-	registers[TAC_REG_P] = NewString(_T("P"));
-	registers[TAC_REG_N] = NewString(_T("N"));
-	registers[TAC_REG_V] = NewString(_T("V"));
-	registers[TAC_REG_Z] = NewString(_T("Z"));
-	registers[TAC_REG_C] = NewString(_T("C"));
-	registers[TAC_REG_SP] = NewString(_T("SP"));
 }
 
 
-CTranslater::~CTranslater()
+CGraphTranslator::~CGraphTranslator()
 {
 
 }
 
-Function* CTranslater::TranslateSubroutine(TACFunction* subroutine)
-{
-	if (!subroutine)
-		return nullptr;
-	Reset();
-
-	this->subroutine = subroutine;
-
-	BuildCFG();
-
-	Function* func = allocator.New<Function>();
-	this->function = func;
-	// 设置C函数的类型和参数
-	SetFunctionType();
-	// 创建临时变量
-	SetLocalVariables();
-
-	auto root = Analyze();
-
-	// 遍历控制树，生成C语句
-	// COUT << root->statement;
-	func->SetBody(root->statement);
-	TCHAR buffer[64];
-	_stprintf_s(buffer, _T("sub_%04X"), subroutine->GetStartAddress());
-	func->name = GetCDB().AddString(buffer);
-
-
-	return func;
-}
-
-ControlTreeNodeEx* CTranslater::Analyze()
-{
-	NodeSet N = CAnalysis(this->graph->GetFullSet());
-	if (N.Count() != 1)  // 也可能只有一个基本块
-	{
-		DumpCurrentCFG(N);
-		Sprintf<> s;
-		s.Format(_T("翻译 %04X 时，控制树无法归约到单一根节点"), subroutine->GetStartAddress());
-		throw Exception(s.ToString());
-	}
-	// 在全部语句都生成后，回填标签语句
-	PatchLabels();
-
-	Node n = N.ToVector()[0];
-	if (graph->GetNode(n)->tag.statement == nullptr)
-	{
-		CNode* condition = nullptr;
-		uint32_t jumpAddr;
-		auto block = this->subroutine->GetBasicBlocks()[n];
-		graph->GetNode(n)->tag.statement = TranslateRegion(condition, block, jumpAddr);
-	}
-	return &graph->GetNode(n)->tag;
-}
-
-void CTranslater::BuildCFG()
+void CGraphTranslator::BuildCFG()
 {
 	// 首先构造边集
 	DirectedGraphEdgeList edges(32);
 	edges.clear();
-	auto& basicblocks = subroutine->GetBasicBlocks();
+	auto& basicblocks = GetTACFunction()->GetBasicBlocks();
 	// 给基本块编号
 	for (size_t i = 0; i < basicblocks.size(); ++i)
 	{
@@ -104,72 +39,17 @@ void CTranslater::BuildCFG()
 	this->graph = std::make_unique<DirectedGraph<ControlTreeNodeEx>>(edges);
 }
 
-void CTranslater::Reset()
+void CGraphTranslator::Reset()
 {
+	CTranslator::Reset();
+
 	this->graph.reset();
 	tempAllocator.Reset();
-	function = nullptr;
-	subroutine = nullptr;
-	labels.clear();
-	blockStatements.clear();
-}
-
-CNode* CTranslater::GetExpression(TACOperand& operand)
-{
-	switch (operand.GetKind())
-	{
-	case TACOperand::INTEGER:
-		return allocator.New<CNode>(operand.GetValue());
-	case TACOperand::TEMP:
-	{
-							 auto var = GetLocalVariable(operand.GetValue());
-							 return allocator.New<CNode>(var);
-	}
-	case TACOperand::REGISTER:
-	{
-								 // 寄存器要么是参数，要么是局部变量，不能当作全局变量处理
-								 auto name = registers[operand.GetValue()];
-								 auto variable = this->function->GetParameter(name);
-								 if (variable)
-									 return allocator.New<CNode>(variable);
-								 variable = GetLocalVariable(name, TypeManager::Char);
-								 return allocator.New<CNode>(variable);
-	}
-	case TACOperand::GLOBAL:
-	{
-							   uint32_t addr = operand.GetValue();
-							   auto global = GetCDB().GetGlobalVariable(addr);
-							   if (!global)
-							   {
-								   Sprintf<> s;
-								   s.Format(_T("获取全局变量 %X 失败"), addr);
-								   throw Exception(s.ToString());
-							   }
-							   return allocator.New<CNode>(global);
-	}
-	case TACOperand::ADDRESS:
-	{
-								uint32_t addr = operand.GetValue();
-								auto global = GetCDB().GetGlobalVariable(addr);
-								if (!global)
-								{
-									Sprintf<> s;
-									s.Format(_T("获取全局变量 %X 失败"), addr);
-									throw Exception(s.ToString());
-								}
-								return allocator.New<CNode>(global);
-	}
-	default:
-	{
-			   TCHAR buffer[64];
-			   _stprintf_s(buffer, _T("三地址码转C语句：未实现的三地址码操作数转换"));
-			   throw Exception(buffer);
-	}
-	}
 }
 
 
-CNode* CTranslater::ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac, uint32_t& jumpAddr)
+
+CNode* CGraphTranslator::ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac, uint32_t& jumpAddr)
 {
 	// 条件跳转指令必定是基本块结束指令
 	condition = allocator.New<CNode>(kind, GetExpression(tac->x), GetExpression(tac->y));
@@ -178,7 +58,7 @@ CNode* CTranslater::ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac,
 }
 
 
-CNodeKind CTranslater::TranslateOperator(TACOperator op)
+CNodeKind CGraphTranslator::TranslateOperator(TACOperator op)
 {
 	switch (op)
 	{
@@ -199,12 +79,14 @@ CNodeKind CTranslater::TranslateOperator(TACOperator op)
 	}
 }
 
-CNode* CTranslater::TranslateCall(TAC* call, CNode* params)
+CNode* CGraphTranslator::TranslateCall(TAC* call, CNode* params)
 {
 	String* name = nullptr;
 	if (call->x.IsAddress())  // 直接给出函数地址
 	{
-		name = NewString(_T("sub_%04X"), call->x.GetValue());
+		Sprintf<> s;
+		s.Format(_T("sub_%04X"), call->x.GetValue());
+		name = GetCDB().AddString(s.ToString());
 	}
 	else if (call->x.IsTemp())  // 函数指针临时变量
 	{
@@ -238,7 +120,7 @@ CNode* CTranslater::TranslateCall(TAC* call, CNode* params)
 }
 
 // 临时变量必定是两条三地址码连着，所以直接合并成一个表达式
-CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock, uint32_t& jumpAddr)
+CNode* CGraphTranslator::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock, uint32_t& jumpAddr)
 {
 	CNode* current = nullptr, *head = nullptr, *tail = nullptr;
 	CNode* expr = nullptr;
@@ -541,7 +423,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 								 // void Ror(int*, int)
 								 CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
 								 params->next = GetExpression(tac->y);
-								 current = allocator.New<CNode>(NewString(_T("Ror")), params);
+								 current = allocator.New<CNode>(GetCDB().AddString(_T("Ror")), params);
 								 break;
 		}
 		case TACOperator::ROL:
@@ -550,21 +432,21 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 								 // void Rol(int*, int)
 								 CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
 								 params->next = GetExpression(tac->y);
-								 current = allocator.New<CNode>(NewString(_T("Rol")), params);
+								 current = allocator.New<CNode>(GetCDB().AddString(_T("Rol")), params);
 								 break;
 		}
 		case TACOperator::PUSH:
 		{
 								  // 还不知道怎么翻译push，先翻译为函数调用吧
 								  CNode* params = GetExpression(tac->x);
-								  expr = allocator.New<CNode>(NewString(_T("Push")), params);
+								  expr = allocator.New<CNode>(GetCDB().AddString(_T("Push")), params);
 								  current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								  break;
 		}
 		case TACOperator::POP:
 		{
 								 // 还不知道怎么翻译pop，先翻译为函数调用吧
-								 expr = allocator.New<CNode>(NewString(_T("Pop")), (CNode*)nullptr);
+								 expr = allocator.New<CNode>(GetCDB().AddString(_T("Pop")), (CNode*)nullptr);
 								 expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
@@ -574,7 +456,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 								   // 翻译为函数调用
 								   CNode* params = GetExpression(tac->x);
 								   params->next = GetExpression(tac->y);
-								   expr = allocator.New<CNode>(NewString(_T("IsOverflow")), (CNode*)nullptr);
+								   expr = allocator.New<CNode>(GetCDB().AddString(_T("IsOverflow")), (CNode*)nullptr);
 								   expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 								   current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								   break;
@@ -583,28 +465,28 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 		case TACOperator::CLI:
 		{
 								 // 翻译为函数调用
-								 expr = allocator.New<CNode>(NewString(_T("Cli")), (CNode*)nullptr);
+								 expr = allocator.New<CNode>(GetCDB().AddString(_T("Cli")), (CNode*)nullptr);
 								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
 		case TACOperator::SEI:
 		{
 								 // 翻译为函数调用
-								 expr = allocator.New<CNode>(NewString(_T("Sei")), (CNode*)nullptr);
+								 expr = allocator.New<CNode>(GetCDB().AddString(_T("Sei")), (CNode*)nullptr);
 								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
 		case TACOperator::CLD:
 		{
 								 // 翻译为函数调用
-								 expr = allocator.New<CNode>(NewString(_T("Cld")), (CNode*)nullptr);
+								 expr = allocator.New<CNode>(GetCDB().AddString(_T("Cld")), (CNode*)nullptr);
 								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
 		case TACOperator::SED:
 		{
 								 // 翻译为函数调用
-								 expr = allocator.New<CNode>(NewString(_T("Sed")), (CNode*)nullptr);
+								 expr = allocator.New<CNode>(GetCDB().AddString(_T("Sed")), (CNode*)nullptr);
 								 current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 								 break;
 		}
@@ -632,7 +514,7 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 	}
 	Nes::Address firstAddr = codes.empty() ? tacBlock->GetStartAddress() : codes[0]->address;
 	auto ret = NewStatementList(head, tail);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
-	blockStatements[firstAddr] = ret;  // 记录下这个基本块对应的地址及语句
+	AddAddressMapStatement(firstAddr, ret);  // 记录下这个基本块对应的地址及语句
 	return ret;
 }
 
@@ -650,20 +532,10 @@ CNode* CTranslater::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacBlock,
 //}
 
 
-String* CTranslater::GetLabelName(uint32_t jumpAddr)
-{
-	auto it = labels.find(jumpAddr);
-	if (it == labels.end())
-	{
-		auto label = NewString(_T("L%04X"), jumpAddr);
-		labels[jumpAddr] = label;
-		return label;
-	}
-	return it->second;
-}
 
 
-CNode* CTranslater::CombineListIf(CNode* statement, CNode* condition, CNode* body, CNode* elseBody /*= nullptr*/)
+
+CNode* CGraphTranslator::CombineListIf(CNode* statement, CNode* condition, CNode* body, CNode* elseBody /*= nullptr*/)
 {
 	auto ifStat = allocator.New<CNode>(CNodeKind::STAT_IF, condition, body, elseBody);
 	if (!statement)
@@ -671,7 +543,7 @@ CNode* CTranslater::CombineListIf(CNode* statement, CNode* condition, CNode* bod
 	return NewStatementPair(statement, ifStat);
 }
 
-CNode* CTranslater::GetNotExpression(CNode* expr)
+CNode* CGraphTranslator::GetNotExpression(CNode* expr)
 {
 	switch (expr->kind)
 	{
@@ -699,34 +571,9 @@ CNode* CTranslater::GetNotExpression(CNode* expr)
 	return expr;
 }
 
-void CTranslater::PatchLabels()
-{
-	for (auto label : labels)
-	{
-		auto statement = blockStatements[label.first];
-		if (statement->kind != CNodeKind::STAT_LABEL)
-		{
-			// 修改为标签语句
-			auto body = allocator.New<CNode>();
-			*body = *statement;
-			statement->kind = CNodeKind::STAT_LABEL;
-			statement->l.body = body;
-			statement->l.name = label.second;
-		}
-	}
-}
 
-String* CTranslater::NewString(const CStr format, ...)
-{
-	TCHAR buffer[256];
-	va_list va;
-	va_start(va, format);
-	_vstprintf_s(buffer, 256, format, va);
-	va_end(va);
-	return GetCDB().AddString(buffer);
-}
 
-CNode* CTranslater::NewDoWhile(CNode* condition, CNode* body)
+CNode* CGraphTranslator::NewDoWhile(CNode* condition, CNode* body)
 {
 	// do ; while (condition) => while (condition) ;
 	// 没有循环体或者条件总是为真，则转换为 while 循环
@@ -735,7 +582,7 @@ CNode* CTranslater::NewDoWhile(CNode* condition, CNode* body)
 	return allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, body);
 }
 
-CNode* CTranslater::NewStatementList(CNode* head, CNode* tail)
+CNode* CGraphTranslator::NewStatementList(CNode* head, CNode* tail)
 {
 	if (!head)
 		return NewNoneStatement();
@@ -744,7 +591,7 @@ CNode* CTranslater::NewStatementList(CNode* head, CNode* tail)
 	return allocator.New<CNode>(CNodeKind::STAT_LIST, head, tail);
 }
 
-CNode* CTranslater::NewStatementPair(CNode* first, CNode* second)
+CNode* CGraphTranslator::NewStatementPair(CNode* first, CNode* second)
 {
 	assert(first->next == nullptr);
 	// 尝试优化
@@ -777,92 +624,16 @@ CNode* CTranslater::NewStatementPair(CNode* first, CNode* second)
 	return NewStatementList(first, second);
 }
 
-CNode* CTranslater::NewNoneStatement()
+CNode* CGraphTranslator::NewNoneStatement()
 {
 	return allocator.New<CNode>(CNodeKind::STAT_NONE);
 }
 
-void CTranslater::SetFunctionType()
-{
-	// 首先创建一个表示AXY寄存器的结构体
-	Type* axyType = GetCDB().GetAXYType();
 
-	// 创建函数类型
-	Type funcType(TypeKind::Function);
-	funcType.f.returnType = TypeManager::Void;
-	if (this->subroutine->GetReturnFlag())
-	{
-		// 有返回值，那么就使用 AXY 结构体作为返回值
-		funcType.f.returnType = axyType;
-	}
-	auto param = this->subroutine->GetParamFlag();
-	Variable a;
-	a.name = registers[Nes::NesRegisters::A];
-	a.type = TypeManager::Char;
-	TypeList aType = { TypeManager::Char, nullptr };
-	Variable x;
-	x.name = registers[Nes::NesRegisters::X];
-	x.type = TypeManager::Char;
-	TypeList xType = { TypeManager::Char, nullptr };
-	Variable y;
-	y.name = registers[Nes::NesRegisters::Y];
-	y.type = TypeManager::Char;
-	TypeList yType = { TypeManager::Char, nullptr };
-	if (param)
-	{
-		if (param & (1 << Nes::NesRegisters::A))
-		{
-			funcType.AddParameter(&aType);
-			this->function->AddParameter(allocator.New<Variable>(&a));
-		}
-		if (param & (1 << Nes::NesRegisters::X))
-		{
-			funcType.AddParameter(&xType);
-			this->function->AddParameter(allocator.New<Variable>(&x));
-		}
-		if (param & (1 << Nes::NesRegisters::Y))
-		{
-			funcType.AddParameter(&yType);
-			this->function->AddParameter(allocator.New<Variable>(&y));
-		}
-	}
-	this->function->SetType(GetTypeManager().NewFunction(&funcType));
-}
-
-
-void CTranslater::SetLocalVariables()
-{
-	auto& types = this->subroutine->GetTempVariableTypes();
-	int i = 0;
-	for (auto type : types)
-	{
-		if (type == nullptr)
-		{
-			++i;
-			continue;
-		}
-		// 添加
-		auto variable = allocator.New<Variable>();
-		variable->name = GetLocalVariableName(i);
-		variable->type = type;
-		this->function->AddVariable(variable);
-		++i;
-	}
-}
-
-String* CTranslater::GetLocalVariableName(int index)
-{
-	auto& types = this->subroutine->GetTempVariableTypes();
-	auto type = types[index];
-	if (type == GetCDB().GetAXYType())
-		return NewString(_T("axy"), index);
-	else
-		return NewString(_T("temp%d"), index);
-}
 
 // 当要将控制流图中的一个自循环节点归约时
 // a -> a
-void CTranslater::OnReduceSelfLoop(Node n)
+void CGraphTranslator::OnReduceSelfLoop(Node n)
 {
 	auto node = graph->GetNode(n);
 	if (node->tag.type != CTNTYPE_LEAF)
@@ -873,18 +644,18 @@ void CTranslater::OnReduceSelfLoop(Node n)
 		return;
 	}
 	CNode* condition = nullptr;
-	auto block = this->subroutine->GetBasicBlocks()[node->index];
+	auto block = this->GetTACFunction()->GetBasicBlocks()[node->index];
 	uint32_t jumpAddr;
 	auto a = TranslateRegion(condition, block, jumpAddr);
 	node->tag.statement = NewDoWhile(condition, a);
 }
 
-void CTranslater::OnReduceList(Node f, Node s)
+void CGraphTranslator::OnReduceList(Node f, Node s)
 {
 	auto first = graph->GetNode(f);
 	auto second = graph->GetNode(s);
 	CNode* condition = nullptr;
-	auto blocks = this->subroutine->GetBasicBlocks();
+	auto blocks = this->GetTACFunction()->GetBasicBlocks();
 	uint32_t jumpAddr;
 	if (first->tag.type == CTNTYPE_LEAF)
 	{
@@ -898,13 +669,13 @@ void CTranslater::OnReduceList(Node f, Node s)
 	first->tag.condition = condition;
 }
 
-void CTranslater::OnReducePoint2Loop(Node f, Node s)
+void CGraphTranslator::OnReducePoint2Loop(Node f, Node s)
 {
 	auto first = graph->GetNode(f);
 	auto second = graph->GetNode(s);
 	auto node = first;  // 结果
 	CNode* condition = nullptr;
-	auto blocks = this->subroutine->GetBasicBlocks();
+	auto blocks = this->GetTACFunction()->GetBasicBlocks();
 	uint32_t jumpAddr;
 	if (first->tag.type == CTNTYPE_LEAF)
 	{
@@ -931,13 +702,13 @@ void CTranslater::OnReducePoint2Loop(Node f, Node s)
 	node->tag.statement = NewDoWhile(condition, node->tag.statement);
 }
 
-void CTranslater::OnReduceIf(Node _if, Node then)
+void CGraphTranslator::OnReduceIf(Node _if, Node then)
 {
 	auto cond = graph->GetNode(_if);
 	auto body = graph->GetNode(then);
 	auto node = cond;  // 结果
 	CNode* condition = nullptr;
-	auto blocks = this->subroutine->GetBasicBlocks();
+	auto blocks = this->GetTACFunction()->GetBasicBlocks();
 	uint32_t jumpAddr;
 	if (cond->tag.type == CTNTYPE_LEAF)
 	{
@@ -959,14 +730,14 @@ void CTranslater::OnReduceIf(Node _if, Node then)
 	node->tag.statement = CombineListIf(cond->tag.statement, ifCond, body->tag.statement);
 }
 
-void CTranslater::OnReduceIfElse(Node _if, Node t, Node e)
+void CGraphTranslator::OnReduceIfElse(Node _if, Node t, Node e)
 {
 	auto cond = graph->GetNode(_if);
 	auto then = graph->GetNode(t);
 	auto _else = graph->GetNode(e);
 	auto node = cond;  // 结果
 	CNode* condition = nullptr;
-	auto blocks = this->subroutine->GetBasicBlocks();
+	auto blocks = this->GetTACFunction()->GetBasicBlocks();
 	uint32_t jumpAddr;
 	if (cond->tag.type == CTNTYPE_LEAF)
 	{
@@ -1001,13 +772,13 @@ void CTranslater::OnReduceIfElse(Node _if, Node t, Node e)
 
 // a -> b, a -> c, b ->c, b -> d, c -> d 翻译为 if (x || y) { c }
 // 其中 a 包含 条件 x，b 包含条件 y， c是条件满足时要执行的
-void CTranslater::OnReduceIfOr(Node _if, Node then, Node _else)
+void CGraphTranslator::OnReduceIfOr(Node _if, Node then, Node _else)
 {
 	auto a = graph->GetNode(_if);
 	auto b = graph->GetNode(then);
 	auto c = graph->GetNode(_else);
 	auto node = a;
-	auto blocks = this->subroutine->GetBasicBlocks();
+	auto blocks = this->GetTACFunction()->GetBasicBlocks();
 	uint32_t jumpAddr;
 	CNode* condition1 = nullptr, *condition2 = nullptr;
 	if (a->tag.type == CTNTYPE_LEAF)
@@ -1059,34 +830,9 @@ void CTranslater::OnReduceIfOr(Node _if, Node then, Node _else)
 	node->tag.statement = CombineListIf(a->tag.statement, condition1, c->tag.statement);
 }
 
-const Variable* CTranslater::GetLocalVariable(String* name, Type* type)
-{
-	auto v = this->function->GetVariable(name);
-	if (v)
-		return v;
 
-	// 添加
-	auto variable = allocator.New<Variable>();
-	variable->name = name;
-	variable->type = type;
-	this->function->AddVariable(variable);
-	return variable;
-}
 
-const Variable* CTranslater::GetLocalVariable(int index)
-{
-	// 三地址码中的临时变量和C函数的临时变量不是一一对应的
-	// 必须根据名称来查找
-	auto name = GetLocalVariableName(index);
-	for (auto v = this->function->GetVariableList(); v; v = v->next)
-	{
-		if (v->name == name)
-			return v;
-	}
-	return nullptr;
-}
-
-Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType type)
+Node CGraphTranslator::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType type)
 {
 	auto ctNode = graph->GetNode(parent);
 	switch (type)
@@ -1108,7 +854,7 @@ Node CTranslater::CReduce(Node parent, vector<Node> children, CtrlTreeNodeType t
 	return parent;
 }
 
-Node CTranslater::ReduceRegionList(NodeSet& N, Node a, Node b)
+Node CGraphTranslator::ReduceRegionList(NodeSet& N, Node a, Node b)
 {
 	// r 的前驱是 a 的前驱
 
@@ -1126,7 +872,7 @@ Node CTranslater::ReduceRegionList(NodeSet& N, Node a, Node b)
 	return CReduce(a, { a, b }, CTNTYPE_LIST);
 }
 
-Node CTranslater::ReduceRegionSelfLoop(NodeSet& N, Node a)
+Node CGraphTranslator::ReduceRegionSelfLoop(NodeSet& N, Node a)
 {
 	// r 的前驱是 a 除了 a 之外的前驱
 	graph->GetNode(a)->pred -= a;
@@ -1141,7 +887,7 @@ Node CTranslater::ReduceRegionSelfLoop(NodeSet& N, Node a)
 	return CReduce(a, { a }, CTNTYPE_SELF_LOOP);
 }
 
-Node CTranslater::ReduceRegionIfElse(NodeSet& N, Node a, Node b, Node c)
+Node CGraphTranslator::ReduceRegionIfElse(NodeSet& N, Node a, Node b, Node c)
 {
 	Node r = a;
 	// r 的前驱是 a 的前驱
@@ -1162,7 +908,7 @@ Node CTranslater::ReduceRegionIfElse(NodeSet& N, Node a, Node b, Node c)
 	return CReduce(r, { a, b, c }, CTNTYPE_IF_ELSE);
 }
 
-Node CTranslater::ReduceRegionIfOr(NodeSet& N, Node a, Node b, Node c)
+Node CGraphTranslator::ReduceRegionIfOr(NodeSet& N, Node a, Node b, Node c)
 {
 	Node r = a;
 	// r 的前驱是 a 的前驱
@@ -1184,7 +930,7 @@ Node CTranslater::ReduceRegionIfOr(NodeSet& N, Node a, Node b, Node c)
 	return CReduce(r, { a, b, c }, CTNTYPE_IF_OR);
 }
 
-Node CTranslater::ReduceRegionIf(NodeSet& N, Node a, Node b)
+Node CGraphTranslator::ReduceRegionIf(NodeSet& N, Node a, Node b)
 {
 	Node r = a;
 	// r 的前驱是 a 的前驱
@@ -1205,7 +951,7 @@ Node CTranslater::ReduceRegionIf(NodeSet& N, Node a, Node b)
 	return CReduce(r, { a, b }, CTNTYPE_IF);
 }
 
-Node CTranslater::ReduceRegionPoint2Loop(NodeSet& N, Node a, Node b)
+Node CGraphTranslator::ReduceRegionPoint2Loop(NodeSet& N, Node a, Node b)
 {
 	Node r = a;
 	// r 的前驱是 a 除了 b 之外的前驱
@@ -1239,7 +985,7 @@ Node CTranslater::ReduceRegionPoint2Loop(NodeSet& N, Node a, Node b)
 	return CReduce(r, { a, b }, CTNTYPE_P2LOOP);
 }
 
-NodeSet CTranslater::CAnalysis(NodeSet N)
+NodeSet CGraphTranslator::CAnalysis(NodeSet N)
 {
 	while (true)
 	{
@@ -1337,7 +1083,33 @@ NodeSet CTranslater::CAnalysis(NodeSet N)
 	return N;
 }
 
-void CTranslater::DumpControlTree()
+CNode* CGraphTranslator::TranslateBody()
+{
+	BuildCFG();
+
+	NodeSet N = CAnalysis(this->graph->GetFullSet());
+	if (N.Count() != 1)  // 也可能只有一个基本块
+	{
+		DumpCurrentCFG(N);
+		Sprintf<> s;
+		s.Format(_T("翻译 %04X 时，控制树无法归约到单一根节点"), GetTACFunction()->GetStartAddress());
+		throw Exception(s.ToString());
+	}
+	// 在全部语句都生成后，回填标签语句
+	PatchLabels();
+
+	Node n = N.ToVector()[0];
+	if (graph->GetNode(n)->tag.statement == nullptr)
+	{
+		CNode* condition = nullptr;
+		uint32_t jumpAddr;
+		auto block = GetTACFunction()->GetBasicBlocks()[n];
+		graph->GetNode(n)->tag.statement = TranslateRegion(condition, block, jumpAddr);
+	}
+	return graph->GetNode(n)->tag.statement;
+}
+
+void CGraphTranslator::DumpControlTree()
 {
 	for (int i = 0; i < graph->GetNodeCount(); ++i)
 	{
@@ -1350,7 +1122,7 @@ void CTranslater::DumpControlTree()
 	}
 }
 
-void CTranslater::DumpCurrentCFG(NodeSet& N)
+void CGraphTranslator::DumpCurrentCFG(NodeSet& N)
 {
 	auto nodes = Nodes(N);
 	for (auto i : nodes)

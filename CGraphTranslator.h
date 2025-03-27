@@ -2,6 +2,7 @@
 #include "CNode.h"
 #include "TACFunction.h"
 #include "DirectedGraph.h"
+#include "CTranslator.h"
 
 class TACFunction;
 class NesDataBase;
@@ -49,22 +50,18 @@ struct ControlTreeNodeEx
 // 但是需要注意的是：控制流图中的边无法表示代码的前后顺序
 // 比如 a -> b, b -> a, 可以归约为 两种循环，但是从指令来看
 // 必然只有一种，这两条边中只可能有一条回边
-class CTranslater
+class CGraphTranslator:
+	public CTranslator
 {
 public:
-	CTranslater(Allocator& allocator, NesDataBase& db);
-	~CTranslater();
-
-	// 翻译子程序为C代码
-	Function* TranslateSubroutine(TACFunction* subroutine);
+	CGraphTranslator(Allocator& allocator, NesDataBase& db);
+	~CGraphTranslator();
 
 protected:
-	// 输入控制流图的边集，分析后获得控制树，返回其根节点
-	ControlTreeNodeEx* Analyze();
 	// 构建函数基本块的控制流图
 	void BuildCFG();
 	// 重置内部数据
-	void Reset();
+	virtual void Reset() override;
 	// 将若干节点归约为一个节点，并生成这个节点的C语句
 	Node CReduce(Node parent, std::vector<Node> children, CtrlTreeNodeType type);
 	// 归约两个区域构成的连续区域  a -> b
@@ -88,6 +85,9 @@ protected:
 	// 分析控制流图节点集，获取控制树节点集
 	NodeSet CAnalysis(NodeSet N);
 
+
+	virtual CNode* TranslateBody() override;
+
 protected:
 	void OnReduceSelfLoop(Node node);
 	void OnReduceList(Node first, Node second);
@@ -96,12 +96,6 @@ protected:
 	void OnReduceIfElse(Node _if, Node then, Node _else);
 	void OnReduceIfOr(Node _if, Node then, Node _else);
 protected:
-	// 获取局部变量，不存在就添加
-	const Variable* GetLocalVariable(String* name, Type* type);
-	// 按索引获取局部变量
-	const Variable* GetLocalVariable(int index);
-	// 将三地址码操作数转换为C表达式
-	CNode* GetExpression(TACOperand& operand);
 	// 条件跳转语句翻译
 	CNode* ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac, uint32_t& jumpAddr);
 	// 翻译三地址码的操作码为C语言的表达式类型
@@ -112,8 +106,6 @@ protected:
 	CNode* TranslateRegion(CNode*& condition, TACBasicBlock* tacBlock, uint32_t& jumpAddr);
 	// 根据跳转地址获取对应的标签语句
 	// CLabelStatement* GetLabel(uint32_t jumpAddr);
-	// 获取标签名称
-	String* GetLabelName(uint32_t jumpAddr);
 	// 创建分支基本块的语句
 	// 也就是语句序列后面跟着一个if语句
 	// 一个基本块通常前面是顺序执行的指令，最后以条件跳转指令结尾
@@ -123,10 +115,6 @@ protected:
 	// 对表达式进行取反
 	// 可能会修改输入的表达式的类型
 	CNode* GetNotExpression(CNode* expr);
-	// 回填标签语句
-	void PatchLabels();
-	// 创建一个字符串
-	String* NewString(const CStr format, ...);
 	// 创建一个do while 节点
 	CNode* NewDoWhile(CNode* condition, CNode* body);
 	// 创建一个列表语句节点
@@ -135,18 +123,8 @@ protected:
 	CNode* NewStatementPair(CNode* first, CNode* second);
 	// 创建一个空语句
 	CNode* NewNoneStatement();
-protected:  // C函数处理
-	// 创建C函数的类型
-	void SetFunctionType();
-	// 添加所有临时变量
-	void SetLocalVariables();
-	// 根据TAC中的临时变量索引获取C局部变量名称
-	String* GetLocalVariableName(int index);
 protected:
 	NesDataBase& db;
-	Allocator& allocator;  // 用于创建输出结果
-	Function* function;
-	TACFunction* subroutine;
 protected:
 	// 调试使用
 	// 输出所有控制树节点构成的控制流图
@@ -158,9 +136,6 @@ private:
 
 	std::unique_ptr<DirectedGraph<ControlTreeNodeEx>> graph;  // 控制树节点构成的有向图
 
-	String* registers[9];  // AXYPNVZCSP 9个寄存器
-	std::unordered_map<Nes::Address, String*> labels;  // 地址到标签语句的映射
 	//std::vector<Nes::Address> labels;
-	std::unordered_map<Nes::Address, CNode*> blockStatements;  // 地址到基本块对应的语句的映射
 };
 
