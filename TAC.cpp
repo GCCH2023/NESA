@@ -281,7 +281,7 @@ OStream& operator<<(OStream& out, const TAC* tac)
 		out << _T("if ") << tac->x << _T(" != ") << tac->y << _T(" goto ") << tac->z;
 		break;
 	case TACOperator::IFTRUE:
-		out << _T("if ") << tac->x << _T(" == true goto") << tac->z;
+		out << _T("if ") << tac->x << _T(" == true goto ") << tac->z;
 		break;
 	case TACOperator::IFFALSE:
 		out << _T("if ") << tac->x << _T(" == false goto ") << tac->z;

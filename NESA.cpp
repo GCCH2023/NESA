@@ -302,12 +302,12 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	GetTypeManager();  // ≥ı ºªØ
 
-	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
+	ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
-	TACFunctionParserTest(_T(R"(D:\FC\miaoliro.nes)"), 0xF2D1);
+	//TACFunctionParserTest(_T(R"(D:\FC\miaoliro.nes)"), 0xF2D1);
 	system("pause");
 	return 0;
 }

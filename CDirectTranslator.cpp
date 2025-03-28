@@ -446,9 +446,9 @@ CNode* CDirectTranslator::TranslateBody()
 				tail->next = current;
 				tail = current;
 			}
+			AddAddressMapStatement(tac->address, current);  // 记录每条语句对应的地址
 		}
 		auto blockStat = NewStatementList(head, tail);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
-		AddAddressMapStatement(block->GetStartAddress(), blockStat);
 		if (!funcHead)
 		{
 			funcHead = funcTail = blockStat;

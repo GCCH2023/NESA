@@ -78,6 +78,7 @@ bool IsUsed(NodeSet& out, NodeSet& varUses, NodeSet& varDefs, TACOperand& operan
 void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 {
 	Reset();
+	this->tacFunc = subroutine;
 
 	// 首先进行活跃变量分析
 	LiveVariableAnalysis lva(db, allocator);
@@ -85,15 +86,12 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 	lva.Analyze(subroutine);
 	// DumpAllBasicBlockLiveVariables(subroutine->GetBasicBlocks());
 
-	std::unordered_map<uint32_t, TACBasicBlock*> addrMap;  // 基本块第一条指令的地址到基本块的映射
-
 	// 遍历每个基本块，消除死代码（对寄存器赋值了但没有使用到的三地址码）
 	for (auto block : subroutine->GetBasicBlocks())
 	{
 		auto& codes = block->GetCodes();
 		if (codes.empty())
 			continue;
-		addrMap[codes[0]->address] = block;
 		NodeSet varUses;  // 寄存器变量 + 临时变量 是否被当前基本块当前代码后面的代码使用
 		NodeSet varDefs;  // 是否遇到过了变量的定值，只有变量的最后一个定值可以到达基本块出口
 		for (auto it = codes.rbegin(); it != codes.rend();)
@@ -160,27 +158,7 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 	//}
 	//COUT << s.ToString();
 
-	// 修正跳转地址
-	for (auto block : subroutine->GetBasicBlocks())
-	{
-		auto& codes = block->GetCodes();
-		if (codes.empty())
-			continue;
-		auto tac = *codes.rbegin();
-		if (tac->IsConditionalJump())
-		{
-			// 本来是跳转到基本块的第一条指令的地址的，
-			// 前面 n 条指令可能被删除了，
-			// 现在跳转到删除后的基本块的第一条指令的地址
-			auto b = addrMap[tac->z.GetValue()];
-			if (b->GetCodes().empty())
-			{
-				throw Exception(_T("错误: 基本块不包含任何指令"));
-			}
-			uint32_t newAddr = b->GetCodes()[0]->address;
-			tac->z.SetValue(newAddr);
-		}
-	}
+	CorrectJumpAddress();
 
 	// 删除没用到的临时变量
 	std::vector<bool> tempUse(256);
@@ -210,4 +188,32 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 void TACDeadCodeElimination::Reset()
 {
 
+}
+
+void TACDeadCodeElimination::CorrectJumpAddress()
+{
+	auto tacs = tacFunc->GetCodes();
+	// 修正跳转地址
+	for (auto block : tacFunc->GetBasicBlocks())
+	{
+		auto& codes = block->GetCodes();
+		if (codes.empty())
+			continue;
+		auto tac = *codes.rbegin();
+		if (tac->IsConditionalJump())
+		{
+			// 本来是跳转到基本块的第一条指令的地址的，
+			// 前面 n 条指令可能被删除了，现在跳转到删除指令的后面指令
+			// 查找第一条地址大于原来的跳转地址的指令
+			auto it = std::lower_bound(tacs.begin(), tacs.end(), tac->z.GetValue(),
+				[](const TAC* tac, Nes::Address address) {
+				return tac->address < address;
+			});
+			if (it == tacs.end())
+			{
+				throw Exception(_T("错误: 跳转地址丢失"));
+			}
+			tac->z.SetValue((*it)->address);
+		}
+	}
 }

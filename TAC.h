@@ -188,7 +188,7 @@ public:
 	TAC(const TAC* tac);
 
 	// 是否条件跳转
-	inline bool IsConditionalJump() const { return op >= TACOperator::IFGEQ && op <= TACOperator::IFEQ; };
+	inline bool IsConditionalJump() const { return op >= TACOperator::IFGEQ && op <= TACOperator::IFFALSE; };
 public:
 	uint32_t address;
 	TACOperator op;

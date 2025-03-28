@@ -517,22 +517,6 @@ CNode* CGraphTranslator::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacB
 	return ret;
 }
 
-//CLabelStatement* CTranslater::GetLabel(uint32_t jumpAddr)
-//{
-//	auto it = labels.find(jumpAddr);
-//	if (it == labels.end())
-//	{
-//		auto name = GetLabelName(jumpAddr);
-//		CLabelStatement* label = allocator.New<CLabelStatement>(name.c_str());  // Ä¿±êÓï¾ä´ý¶¨
-//		labels[jumpAddr] = label;
-//		return label;
-//	}
-//	return it->second;
-//}
-
-
-
-
 
 CNode* CGraphTranslator::CombineListIf(CNode* statement, CNode* condition, CNode* body, CNode* elseBody /*= nullptr*/)
 {

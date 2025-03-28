@@ -463,10 +463,6 @@ TACOperand TACTranslater::GetOperand(const Instruction& instruction)
 TACOperand TACTranslater::NewTemp(Type* type)
 {
 	int temp = this->tacSub->NewTemp(type);
-	if (temp == 4)
-	{
-		int a = 0;
-	}
 	return TACOperand(TACOperand::TEMP | temp);
 }
 
