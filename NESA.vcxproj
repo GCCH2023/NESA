@@ -176,7 +176,7 @@
     <ClInclude Include="NodeSet.h" />
     <ClInclude Include="ReachingDefinition.h" />
     <ClInclude Include="Sprintf.h" />
-    <ClInclude Include="CStatementTranslator.h" />
+    <ClInclude Include="CCommonTranslator.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="String.h" />
     <ClInclude Include="StringJoiner.h" />
@@ -225,7 +225,7 @@
     <ClCompile Include="NesSubroutineParser.cpp" />
     <ClCompile Include="NodeSet.cpp" />
     <ClCompile Include="ReachingDefinition.cpp" />
-    <ClCompile Include="CStatementTranslator.cpp" />
+    <ClCompile Include="CCommonTranslator.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

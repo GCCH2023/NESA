@@ -4,9 +4,8 @@ using namespace std;
 #include "Function.h"
 #include "CDataBase.h"
 
-CGraphTranslator::CGraphTranslator(Allocator& allocator, NesDataBase& db_):
+CGraphTranslator::CGraphTranslator(Allocator& allocator):
 CTranslator(allocator),
-db(db_),
 tempAllocator(1024 * 1024)
 {
 }
@@ -582,14 +581,6 @@ CNode* CGraphTranslator::NewDoWhile(CNode* condition, CNode* body)
 	return allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, body);
 }
 
-CNode* CGraphTranslator::NewStatementList(CNode* head, CNode* tail)
-{
-	if (!head)
-		return NewNoneStatement();
-	if (head == tail)
-		return head;
-	return allocator.New<CNode>(CNodeKind::STAT_LIST, head, tail);
-}
 
 CNode* CGraphTranslator::NewStatementPair(CNode* first, CNode* second)
 {
@@ -624,10 +615,6 @@ CNode* CGraphTranslator::NewStatementPair(CNode* first, CNode* second)
 	return NewStatementList(first, second);
 }
 
-CNode* CGraphTranslator::NewNoneStatement()
-{
-	return allocator.New<CNode>(CNodeKind::STAT_NONE);
-}
 
 
 
@@ -1090,7 +1077,7 @@ CNode* CGraphTranslator::TranslateBody()
 	NodeSet N = CAnalysis(this->graph->GetFullSet());
 	if (N.Count() != 1)  // 也可能只有一个基本块
 	{
-		DumpCurrentCFG(N);
+		//DumpCurrentCFG(N);
 		Sprintf<> s;
 		s.Format(_T("翻译 %04X 时，控制树无法归约到单一根节点"), GetTACFunction()->GetStartAddress());
 		throw Exception(s.ToString());

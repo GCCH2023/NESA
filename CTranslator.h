@@ -40,6 +40,11 @@ protected:
 	void PatchLabels();
 	// 添加地址语句映射
 	void AddAddressMapStatement(uint32_t address, CNode* statement);
+	// 创建一条空语句
+	CNode* NewNoneStatement();
+	// 创建一条列表语句
+	CNode* NewStatementList(CNode* head, CNode* tail);
+
 protected:
 	Allocator& allocator;
 private:

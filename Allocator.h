@@ -1,5 +1,6 @@
 #pragma once
 
+// 内存分配器
 class Allocator
 {
 public:
@@ -53,20 +54,36 @@ public:
 	}
 
 	// 重置内存
-	void Reset()
+	// clear: 是否清零内存
+	void Reset(bool clear = 0)
 	{
 		memset(baseAddress, 0, current - baseAddress);
 		current = baseAddress;
+	}
+
+	// 获取当前分配点
+	size_t Mark() const
+	{
+		return static_cast<size_t>(current - baseAddress);
+	}
+
+	// 回滚到指定分配点（释放后续分配的内存）
+	void Rollback(size_t mark) {
+		if (mark > static_cast<size_t>(endAddress - baseAddress))
+		{
+			throw std::out_of_range("Invalid mark: beyond committed memory");
+		}
+		current = baseAddress + mark;
 	}
 private:
 	// 提交新的内存块
 	void Expand()
 	{
-		if ((uint32_t)(current - baseAddress) > capacity)
+		if ((size_t)(current - baseAddress) > capacity)
 			throw std::bad_alloc();
 
-		uint32_t mask = 16 * 1024 - 1;
-		uint32_t size = 16 * 1024;
+		size_t mask = 16 * 1024 - 1;
+		size_t size = 16 * 1024;
 		size = (current - endAddress + mask) & ~mask;
 		if (!VirtualAlloc(endAddress, size, MEM_COMMIT, PAGE_READWRITE))
 			throw std::bad_alloc();
@@ -76,5 +93,5 @@ private:
 	uint8_t* baseAddress;  // 内存基地址
 	uint8_t* current;  // 当前分配位置
 	uint8_t* endAddress;  // 已提交内存的末尾位置
-	uint32_t capacity;  // 保留的内存的容量
+	size_t capacity;  // 保留的内存的容量
 };

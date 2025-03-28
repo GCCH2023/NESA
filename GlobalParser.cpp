@@ -27,6 +27,8 @@ void GlobalParser::Parse(NesSubroutine* subroutine)
 
 	uint32_t address = 0;
 	Type* type = nullptr;
+	static int count = 0;
+	++count;
 	for (auto& i : instructions)
 	{
 		const OpcodeEntry& entry = GetOpcodeEntry(i.GetOperatorByte());

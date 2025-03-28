@@ -10,6 +10,8 @@ using namespace Nes;
 #include "TACTranslater.h"
 #include "TACTranslater1.h"
 #include "CGraphTranslator.h"
+#include "CDirectTranslator.h"
+#include "CCommonTranslator.h"
 
 #include "ReachingDefinition.h"
 #include "LiveVariableAnalysis.h"
@@ -81,7 +83,7 @@ void ParseNes(const TCHAR* rom)
 		TACTranslater1 ntt(db, allocator);
 		TACPeephole tacPh(db);
 		TACDeadCodeElimination tacDce(db, allocator);
-		CGraphTranslator translater(allocator, db);
+		CCommonTranslator translater(allocator);
 		CTreeOptimizer ctreeOptimizer;
 		GlobalParser globalParser(db);
 
@@ -240,7 +242,9 @@ void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0)
 		COUT << s.ToString();
 
 		TACTranslater1 ntt(db, allocator);
-		CGraphTranslator translater(allocator, db);
+		// CGraphTranslator translater(allocator);
+		// CDirectTranslator translater(allocator);
+		CCommonTranslator translater(allocator);
 		CTreeOptimizer ctreeOptimizer;
 		GlobalParser globalParser(db);
 		TACFunctionParser funcParser(db);
@@ -248,8 +252,8 @@ void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0)
 		// 二. 详细分析一个函数（不包括它调用的函数） 
 		NesSubroutineParser parser(db);
 		if (address == 0)
-			address = 0x8E04;
-		Nes::Address addr = address; // db.GetInterruptNmiAddress();
+			address = db.GetInterruptNmiAddress();
+		Nes::Address addr = address;
 
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
@@ -277,9 +281,9 @@ void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0)
 		//DumpCNodeStructures(COUT, func->GetBody(), 0);
 
 		// 优化C代码结构
-		ctreeOptimizer.Optimize(func->GetBody());
+		//ctreeOptimizer.Optimize(func->GetBody());
 		//COUT << _T("\n优化语法树结构后:\n");
-		//DumpCNodeStructures(COUT, func->GetBody(), 0);
+		// DumpCNodeStructures(COUT, func->GetBody(), 0);
 		COUT << endl;
 		DumpDefinition(func);
 	}
@@ -296,12 +300,14 @@ void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	GetTypeManager();  // 初始化
+
 	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
-	TACFunctionParserTest(_T(R"(D:\FC\miaoliro.nes)"), 0x8182);
+	TACFunctionParserTest(_T(R"(D:\FC\miaoliro.nes)"), 0xF2D1);
 	system("pause");
 	return 0;
 }

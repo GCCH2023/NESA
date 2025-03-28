@@ -203,7 +203,7 @@
     <ClInclude Include="CTranslator.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CStatementTranslator.h">
+    <ClInclude Include="CCommonTranslator.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -343,7 +343,7 @@
     <ClCompile Include="CTranslator.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CStatementTranslator.cpp">
+    <ClCompile Include="CCommonTranslator.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

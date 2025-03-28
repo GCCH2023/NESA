@@ -50,6 +50,12 @@ const Variable* CDataBase::GetGlobalVariable(String* name) const
 const Variable* CDataBase::AddGlobalVariable(CAddress address, Type* type, String* name /*= nullptr*/)
 {
 	// 应该保证地址和名称唯一
+	if (!type)
+	{
+		Sprintf<> s;
+		s.Format(_T("添加全局变量时类型不能为空"), name);
+		throw Exception(s.ToString());
+	}
 	if (name)
 	{
 		const Variable* variable = GetGlobalVariable(name);

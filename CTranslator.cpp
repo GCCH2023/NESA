@@ -30,6 +30,7 @@ Function* CTranslator::Translate(TACFunction* tacFunc)
 
 	Function* func = allocator.New<Function>();
 	this->function = func;
+	func->address = tacFunc->GetStartAddress();
 	// 设置C函数的类型和参数
 	SetFunctionType();
 	// 创建临时变量
@@ -254,4 +255,18 @@ void CTranslator::PatchLabels()
 void CTranslator::AddAddressMapStatement(uint32_t address, CNode* statement)
 {
 	blockStatements[address] = statement;
+}
+
+CNode* CTranslator::NewNoneStatement()
+{
+	return allocator.New<CNode>(CNodeKind::STAT_NONE);
+}
+
+CNode* CTranslator::NewStatementList(CNode* head, CNode* tail)
+{
+	if (!head)
+		return NewNoneStatement();
+	if (head == tail)
+		return head;
+	return allocator.New<CNode>(CNodeKind::STAT_LIST, head, tail);
 }

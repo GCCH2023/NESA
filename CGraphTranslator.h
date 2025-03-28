@@ -54,7 +54,7 @@ class CGraphTranslator:
 	public CTranslator
 {
 public:
-	CGraphTranslator(Allocator& allocator, NesDataBase& db);
+	CGraphTranslator(Allocator& allocator);
 	~CGraphTranslator();
 
 protected:
@@ -117,14 +117,8 @@ protected:
 	CNode* GetNotExpression(CNode* expr);
 	// 创建一个do while 节点
 	CNode* NewDoWhile(CNode* condition, CNode* body);
-	// 创建一个列表语句节点
-	CNode* NewStatementList(CNode* head, CNode* tail);
 	// 创建一个只有两条语句的语句列表节点
 	CNode* NewStatementPair(CNode* first, CNode* second);
-	// 创建一个空语句
-	CNode* NewNoneStatement();
-protected:
-	NesDataBase& db;
 protected:
 	// 调试使用
 	// 输出所有控制树节点构成的控制流图
