@@ -211,7 +211,9 @@ void TACDeadCodeElimination::CorrectJumpAddress()
 			});
 			if (it == tacs.end())
 			{
-				throw Exception(_T("错误: 跳转地址丢失"));
+				Sprintf<> s;
+				s.Format(_T("错误: 指令 %04X 的跳转地址 %04X 丢失"), tac->address, tac->z.GetValue());
+				throw Exception(s.ToString());
 			}
 			tac->z.SetValue((*it)->address);
 		}
