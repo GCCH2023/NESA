@@ -180,6 +180,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="String.h" />
     <ClInclude Include="StringJoiner.h" />
+    <ClInclude Include="SubroutineRangeParser.h" />
     <ClInclude Include="TAC.h" />
     <ClInclude Include="TACDeadCodeElimination.h" />
     <ClInclude Include="TACFlagRegisterOptimizer.h" />
@@ -234,6 +235,7 @@
     </ClCompile>
     <ClCompile Include="String.cpp" />
     <ClCompile Include="StringJoiner.cpp" />
+    <ClCompile Include="SubroutineRangeParser.cpp" />
     <ClCompile Include="TAC.cpp" />
     <ClCompile Include="TACDeadCodeElimination.cpp" />
     <ClCompile Include="TACFlagRegisterOptimizer.cpp" />

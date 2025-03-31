@@ -60,9 +60,15 @@ public:
 	// 获取AXY返回值标志
 	uint32_t GetReturnFlag() const { return (flag >> 3) & 7; }
 
+	// 是否是内联函数
+	bool IsInline() const { return isInline; }
+	// 设置内联函数标志
+	void SetInline(bool isInline) { this->isInline = isInline; }
+
 	uint32_t flag;  // 低3
 protected:
 	BasicBlockList blocks;  // 子程序包括的基本块列表，按地址从小到大排列
 	std::vector<Nes::Address> calls;  // 调用的子程序地址，如果为空，则此子程序没有调用其他子程序，从小到大排列
+	bool isInline = false;  // 是否是内联函数
 };
 

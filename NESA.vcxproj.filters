@@ -206,6 +206,9 @@
     <ClInclude Include="StringJoiner.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="SubroutineRangeParser.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -345,6 +348,9 @@
     </ClCompile>
     <ClCompile Include="StringJoiner.cpp">
       <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SubroutineRangeParser.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

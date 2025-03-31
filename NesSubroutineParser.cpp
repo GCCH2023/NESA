@@ -55,6 +55,20 @@ NesSubroutineParser::~NesSubroutineParser()
 // 第二步：构建基本块网络
 NesSubroutine* NesSubroutineParser::Parse(Nes::Address address)
 {
+	subroutineAddress = address;
+
+	uint32_t maxAddress = UINT32_MAX;  // 分析范围的上限
+	auto dbSub = db.GetSubroutineOrNext(address);
+	if (dbSub)
+	{
+		if (dbSub->GetStartAddress() == address)
+			return dbSub;  // 已经分析过了
+		if (dbSub->GetStartAddress() > address)
+			maxAddress = dbSub->GetStartAddress();  // 最多到后面一个函数的开始地址
+		else if (dbSub->GetEndAddress() > address)
+			maxAddress = dbSub->GetEndAddress();  // 当前函数内联在另一个函数中
+	}
+
 	blockStartAddrs.clear();
 	blockStartAddrs.push_back(address);  // 最开始的时候只有函数开始地址
 
@@ -64,7 +78,7 @@ NesSubroutine* NesSubroutineParser::Parse(Nes::Address address)
 	Nes::Address current = address;  // 当前分析的指令地址
 	int bytes;
 	// 首先划分基本块
-	for (;; p += bytes)
+	for (; current < maxAddress; p += bytes)
 	{
 		instruction.Set(current, p);  // 构造指令对象
 		bytes = instruction.GetLength();
@@ -95,6 +109,11 @@ NesSubroutine* NesSubroutineParser::Parse(Nes::Address address)
 		auto callRelation = db.allocator.New<CallRelation>(this->subroutine->GetStartAddress(), called);
 		db.AddCallRelation(callRelation);
 	}
+
+	// 判断这个函数是否内联在其他函数中
+	if (this->isInline || db.GetSubroutine(address) != nullptr)
+		this->subroutine->SetInline(true);
+
 	return this->subroutine;
 }
 
@@ -103,6 +122,8 @@ void NesSubroutineParser::Reset()
 	blockStartAddrs.clear();
 	this->subroutine = nullptr;
 	this->calls.clear();
+	subroutineAddress = 0;
+	isInline = false;
 }
 
 void NesSubroutineParser::Dump()
@@ -147,7 +168,15 @@ bool NesSubroutineParser::ParseInstruction(const Instruction& instruction)
 													AddBasicBlockStartAddress(address);
 													// 处理条件为真的情况
 													address += (char)instruction.GetByte();
-													AddBasicBlockStartAddress(address);
+													// 跳转到子程序前面，说明子程序是内联函数
+													if (IsBackAddress(address))
+													{
+														isInline = true;
+													}
+													else
+													{
+														AddBasicBlockStartAddress(address);
+													}
 													return true;
 	}
 	case BlockInstructionKind::UnconditionalJump:
@@ -155,7 +184,14 @@ bool NesSubroutineParser::ParseInstruction(const Instruction& instruction)
 												  auto& entry = instruction.GetEntry();
 												  Nes::Address jumpAddr;
 												  if (entry.addrMode == AddrMode::Absolute)
+												  {
 													  jumpAddr = instruction.GetOperandAddress();
+													  if (IsBackAddress(jumpAddr))
+													  {
+														  isInline = true;
+														  return false;
+													  }
+												  }
 												  else
 												  {
 													  // 间接寻址相当于尾函数调用
@@ -308,6 +344,8 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 												  }
 												  // 处理条件为真的情况
 												  address += (char)instruction.GetByte();
+												  if (IsBackAddress(address))  // 如果跳转到外部，则不管
+													  break;
 												  next = this->subroutine->FindBasicBlock(address);
 												  if (!next)
 												  {

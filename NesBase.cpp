@@ -255,7 +255,8 @@ static const OpcodeEntry opentrys[] =
 	OpcodeEntry(Opcode::Slo, am_zpx, 6), // 17
 	OpcodeEntry(Opcode::Clc, am_def, 2), // 18
 	OpcodeEntry(Opcode::Ora, am_aby, 4, true), // 19
-	OpcodeEntry(Opcode::Nop, am_def, 2), // 1A
+	OpcodeEntry::None,  // 1A
+	//OpcodeEntry(Opcode::Nop, am_def, 2), // 1A
 	OpcodeEntry(Opcode::Slo, am_aby, 7), // 1B
 	OpcodeEntry(Opcode::Nop, am_abx, 4, true), // 1C
 	OpcodeEntry(Opcode::Ora, am_abx, 4, true), // 1D

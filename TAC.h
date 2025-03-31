@@ -226,3 +226,6 @@ inline int GetAxyNvzcTempIndex(TACOperand& operand)
 {
 	return operand.IsTemp() ? operand.GetValue() + TAC_ANALIZE_REG_COUNT : operand.GetValue();
 }
+
+// 取反条件操作符的
+TACOperator GetNotOperator(TACOperator op);

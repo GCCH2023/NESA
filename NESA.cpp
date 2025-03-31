@@ -23,6 +23,7 @@ using namespace Nes;
 #include "CDataBase.h"
 #include "GlobalParser.h"
 #include "TACFunctionParser.h"
+#include "SubroutineRangeParser.h"
 
 // 全局变量测试
 void GlobalTest()
@@ -297,17 +298,45 @@ void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0)
 	}
 }
 
+// 保存ROM的代码到 .prg 文件
+void SavePRG(const TCHAR* rom)
+{
+	Cartridge cartridge;
+	cartridge.LoadRom(rom);
+
+	FILE* fp;
+	Sprintf<> s;
+	s.Format(_T("%s.prg"), rom);
+	_tfopen_s(&fp, s.ToString(), _T("wb"));
+	fwrite(cartridge.RawGetData(16), cartridge.GetPRGCount() * 16 * 1024, 1, fp);
+	fclose(fp);
+	COUT << _T("写入文件 ") << s.ToString() << _T(" 成功\n");
+}
+
+void SubroutineRangeParserTest(const TCHAR* rom)
+{
+	NesDataBase db(rom);
+	SubroutineRangeParser srp(db);
+
+	srp.Parse();
+
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	GetTypeManager();  // 初始化
+	const TCHAR* rom = _T(R"(D:\FC\miaoliro.nes)");
+	
+	// GetTypeManager();  // 初始化
 
-	// ParseNes(_T(R"(D:\FC\miaoliro.nes)"));
+	//SavePRG(rom);
+
+	// ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
-	TACFunctionParserTest(_T(R"(D:\FC\miaoliro.nes)"), 62845);
+	// TACFunctionParserTest(rom, 0x8E19);
+	SubroutineRangeParserTest(rom);
 	system("pause");
 	return 0;
 }

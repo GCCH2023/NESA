@@ -77,7 +77,34 @@ NesSubroutine* NesDataBase::FindSubroutine(Nes::Address address)
 	return FindNesObject(subroutines, address);
 }
 
+NesSubroutine* NesDataBase::GetSubroutine(Nes::Address address)
+{
+	// 查找第一个结束地址大于指定地址的子程序
+	auto it = std::lower_bound(subroutines.begin(), subroutines.end(), address,
+		[](NesSubroutine* a, Nes::Address address){
+		return a->GetEndAddress() <= address;
+	});
+	// 如果该子程序包含指定地址，则返回它，否则返回空
+	if (it != subroutines.end() && (*it)->GetStartAddress() <= address)
+		return *it;
+	return nullptr;
+}
+
+NesSubroutine* NesDataBase::GetSubroutineOrNext(Nes::Address address)
+{
+	// 查找第一个结束地址大于指定地址的子程序
+	auto it = std::lower_bound(subroutines.begin(), subroutines.end(), address,
+		[](NesSubroutine* a, Nes::Address address){
+		return a->GetEndAddress() <= address;
+	});
+	// 如果该子程序包含指定地址，则返回它，否则返回空
+	if (it == subroutines.end())
+		return nullptr;
+	return *it;
+}
+
 void NesDataBase::AddCallRelation(CallRelation* call)
 {
 	AddNesObject(calls, call);
 }
+

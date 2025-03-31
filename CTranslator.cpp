@@ -223,6 +223,10 @@ CNode* CTranslator::TranslateBody()
 
 String* CTranslator::GetLabelName(uint32_t jumpAddr)
 {
+	if (jumpAddr == 0xF5E3)
+	{
+		int a = 0;
+	}
 	auto it = labels.find(jumpAddr);
 	if (it == labels.end())
 	{

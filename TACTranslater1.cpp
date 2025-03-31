@@ -119,7 +119,7 @@ TAC* TACTranslater1::TranslateCall(Nes::Address callAddr, Nes::Address addr)
 	return tac;
 }
 
-TAC* TACTranslater1::TranslateReturn(const Instruction& instruction)
+TAC* TACTranslater1::TranslateReturn(Nes::Address address)
 {
 	// 没有返回值的话，直接返回
 	if ((this->tacSub->flag & SUBF_RETURN) == 0)
@@ -131,21 +131,40 @@ TAC* TACTranslater1::TranslateReturn(const Instruction& instruction)
 	{
 		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterA,
 			TACOperand(TACOperand::TEMP | GetAxy()), 0);
-		AddTAC(tac, instruction.GetAddress());
+		AddTAC(tac, address);
 	}
 	if (returns & (1 << Nes::NesRegisters::X))
 	{
 		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterX,
 			TACOperand(TACOperand::TEMP | GetAxy()), 1);
-		AddTAC(tac, instruction.GetAddress());
+		AddTAC(tac, address);
 	}
 	if (returns & (1 << Nes::NesRegisters::Y))
 	{
 		auto tac = allocator.New<TAC>(TACOperator::ARRAY_SET, RegisterY,
 			TACOperand(TACOperand::TEMP | GetAxy()), 2);
-		AddTAC(tac, instruction.GetAddress());
+		AddTAC(tac, address);
 	}
 	return allocator.New<TAC>(TACOperator::RETURN, 0, TACOperand(TACOperand::TEMP | GetAxy()));
+}
+
+
+TAC* TACTranslater1::TranslateJump(TACOperator op, const Instruction& instruction, TACOperand flag)
+{
+	TACOperand target = GetOperand(instruction);
+	// 如果是跳转到函数外的地址，翻译为尾函数调用
+	// if xxx goto A  =>
+	// if! xxx goto L
+	// CALL x
+	// return
+	// L: 
+	if (target.GetValue() < nesSub->GetStartAddress() || target.GetValue() >= nesSub->GetEndAddress())
+	{
+		Nes::Address nextAddr = instruction.GetAddress() + instruction.GetLength();
+		AddTAC(allocator.New<TAC>(GetNotOperator(op), TACOperand(TACOperand::ADDRESS | nextAddr), flag, 0), instruction.GetAddress());
+		return GenerateTailCall(target, instruction.GetAddress());
+	}
+	return allocator.New<TAC>(op, target, flag);
 }
 
 int TACTranslater1::GetAxy()
@@ -197,6 +216,12 @@ TACOperand TACTranslater1::GetSharedTemp()
 		this->temp = NewTemp(TypeManager::Value);
 	}
 	return this->temp;
+}
+
+TAC* TACTranslater1::GenerateTailCall(TACOperand target, Nes::Address address)
+{
+	AddTAC(TranslateCall(target.GetValue(), address), address);  // target 必定是地址常数
+	return TranslateReturn(address);
 }
 
 TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
@@ -253,28 +278,28 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 			tac = allocator.New<TAC>(TACOperator::ROR, GetOperand(i), GetOperand(i), TACOperand(1));
 			break;
 		case Nes::Opcode::Bpl:
-			tac = allocator.New<TAC>(TACOperator::IFFALSE, GetOperand(i), RegisterN);
+			tac = TranslateJump(TACOperator::IFFALSE, i, RegisterN);
 			break;
 		case Nes::Opcode::Bmi:
-			tac = allocator.New<TAC>(TACOperator::IFTRUE, GetOperand(i), RegisterN);
+			tac = TranslateJump(TACOperator::IFTRUE, i, RegisterN);
 			break;
 		case Nes::Opcode::Bne:
-			tac = allocator.New<TAC>(TACOperator::IFFALSE, GetOperand(i), RegisterZ);
+			tac = TranslateJump(TACOperator::IFFALSE, i, RegisterZ);
 			break;
 		case Nes::Opcode::Beq:
-			tac = allocator.New<TAC>(TACOperator::IFTRUE, GetOperand(i), RegisterZ);
+			tac = TranslateJump(TACOperator::IFTRUE, i, RegisterZ);
 			break;
 		case Nes::Opcode::Bcc:
-			tac = allocator.New<TAC>(TACOperator::IFFALSE, GetOperand(i), RegisterC);
+			tac = TranslateJump(TACOperator::IFFALSE, i, RegisterC);
 			break;
 		case Nes::Opcode::Bcs:
-			tac = allocator.New<TAC>(TACOperator::IFTRUE, GetOperand(i), RegisterC);
+			tac = TranslateJump(TACOperator::IFTRUE, i, RegisterC);
 			break;
 		case Nes::Opcode::Bvc:
-			tac = allocator.New<TAC>(TACOperator::IFFALSE, GetOperand(i), RegisterV);
+			tac = TranslateJump(TACOperator::IFFALSE, i, RegisterV);
 			break;
 		case Nes::Opcode::Bvs:
-			tac = allocator.New<TAC>(TACOperator::IFTRUE, GetOperand(i), RegisterV);
+			tac = TranslateJump(TACOperator::IFTRUE, i, RegisterV);
 			break;
 		case Nes::Opcode::Cli:
 			tac = allocator.New<TAC>(TACOperator::CLI);
@@ -339,9 +364,7 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 										 jumpAddr >= this->nesSub->GetEndAddress())
 									 {
 										 // 认为是尾调用
-										 tac = TranslateCall(i.GetOperandAddress(), i.GetAddress());
-										 AddTAC(tac, i.GetAddress());
-										 tac = allocator.New<TAC>(TACOperator::RETURN);
+										 tac = GenerateTailCall(i.GetOperandAddress(), i.GetAddress());
 										 break;
 									 }
 								 }
@@ -356,11 +379,8 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 									 // 函数返回值和参数目前还没实现，先当作没有处理
 									 // 1. 先生成一条解引用指令
 									 // tac = allocator.New<TAC>(TACOperator::DEREF, NewTemp(pfType->pa.type), GetOperand(i));
-									 // 2. 生成函数调用指令
-									 tac = allocator.New<TAC>(TACOperator::CALL, 0, GetOperand(i), 0);
-									 AddTAC(tac, i.GetAddress());
-									 // 3. 尾调用需要添加 return
-									 tac = allocator.New<TAC>(TACOperator::RETURN);
+									 // 2. 生成尾函数调用指令
+									 tac = GenerateTailCall(GetOperand(i), i.GetAddress());
 									 break;
 								 }
 								 tac = allocator.New<TAC>(TACOperator::GOTO, GetOperand(i));
@@ -369,7 +389,7 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 		}
 		case Nes::Opcode::Rts:
 		case Nes::Opcode::Rti:
-			tac = TranslateReturn(i);
+			tac = TranslateReturn(i.GetAddress());
 			break;
 		case Nes::Opcode::Txa:
 			tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterA, RegisterX);

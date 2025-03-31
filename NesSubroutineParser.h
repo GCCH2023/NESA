@@ -41,10 +41,14 @@ protected:
 	void SetBasickBlockJumpFlag(NesBasicBlock* block, bool isCond, Nes::Address jumpAddr);
 	// 保存被调用子程序的地址
 	inline void AddCalledAddress(Nes::Address calledAddr) { calls.push_back(calledAddr); }
+	// 判断指定地址是否在子程序前面
+	inline bool IsBackAddress(Nes::Address address) const { return address < subroutineAddress; }
 protected:
 	NesDataBase& db;
 	std::vector<Nes::Address> blockStartAddrs;  // 基本块开始地址列表
 	NesSubroutine* subroutine;
 	std::vector<Nes::Address> calls;
+	Nes::Address subroutineAddress;  // 当前分析的子程序的开始地址
+	bool isInline;
 };
 

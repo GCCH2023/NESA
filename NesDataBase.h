@@ -40,10 +40,14 @@ public:
 
 	// 有序地添加子程序
 	void AddSubroutine(NesSubroutine* subroutine);
-	// 根据地址查找子程序
+	// 根据子程序开始地址查找子程序
 	NesSubroutine* FindSubroutine(Nes::Address address);
 	// 获取子程序列表
 	SubroutineList& GetSubroutines() { return subroutines; }
+	// 根据地址获取获取包含这个地址的子程序
+	NesSubroutine* GetSubroutine(Nes::Address address);
+	// 根据地址获取获取包含这个地址的子程序或者这个地址后面的第一个子程序
+	NesSubroutine* GetSubroutineOrNext(Nes::Address address);
 
 	// 有序地添加子程序调用关系
 	void AddCallRelation(CallRelation* call);

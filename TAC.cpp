@@ -380,6 +380,27 @@ OStream& DumpAddressTAC(OStream& os, const TAC* tac)
 	return os;
 }
 
+TACOperator GetNotOperator(TACOperator op)
+{
+	switch (op)
+	{
+	case TACOperator::IFTRUE:return TACOperator::IFFALSE;
+	case TACOperator::IFFALSE:return TACOperator::IFTRUE;
+	case TACOperator::IFGREAT:return TACOperator::IFLEQ;
+	case TACOperator::IFGEQ:return TACOperator::IFLESS;
+	case TACOperator::IFLESS:return TACOperator::IFGEQ;
+	case TACOperator::IFLEQ:return TACOperator::IFGREAT;
+	case TACOperator::IFEQ:return TACOperator::IFNEQ;
+	case TACOperator::IFNEQ:return TACOperator::IFEQ;
+	default:
+	{
+			   Sprintf<> s;
+			   s.Format(_T("三地址码操作符取反: 未实现的操作符 %s"), ToString(op));
+			   throw Exception(s.ToString());
+	}
+	}
+}
+
 TACOperand::TACOperand(uint32_t value) :
 data(value)
 {

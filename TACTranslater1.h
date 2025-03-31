@@ -35,7 +35,10 @@ protected:
 	// 翻译函数调用指令
 	TAC* TranslateCall(Nes::Address callAddr, Nes::Address addr);
 	// 翻译函数返回指令
-	TAC* TranslateReturn(const Instruction& instruction);
+	// address: 返回指令的地址
+	TAC* TranslateReturn(Nes::Address address);
+	// 翻译条件跳转指令
+	TAC* TranslateJump(TACOperator op, const Instruction& instruction, TACOperand flag);
 	// 获取AXY结构体变量的索引
 	int GetAxy();
 	// 翻译NES指令影响的标志位NC，其他标志位需要特殊处理
@@ -44,6 +47,9 @@ protected:
 	void TranslateFlag(const Instruction& intruction, TAC* tac);
 	// 获取共享的临时变量
 	TACOperand GetSharedTemp();
+	// 生成尾函数调用
+	// target: 要调用的函数操作数
+	TAC* GenerateTailCall(TACOperand target, Nes::Address address);
 protected:
 	NesDataBase& db;
 	Allocator& allocator;
