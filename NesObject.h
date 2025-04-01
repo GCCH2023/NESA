@@ -12,6 +12,7 @@ public:
 	inline void SetStartAddress(Nes::Address addr) { startAddress = addr; }
 	inline Nes::Address GetEndAddress() const { return endAddress; }
 	inline void SetEndAddress(Nes::Address addr) { endAddress = addr; }
+	inline bool Contains(Nes::Address addr) { return addr >= startAddress && addr < endAddress; }
 private:
 	Nes::Address startAddress;  // 开始地址
 	Nes::Address endAddress;  // 结束地址

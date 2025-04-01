@@ -50,7 +50,7 @@ protected:
 private:
 	TACFunction* tacFunc;
 	Function* function;
-	String* registers[7];  // AXYPNVZC 7个寄存器
+	String* registers[9];  // AXY NVZC P SP 9个寄存器
 	std::unordered_map<Nes::Address, String*> labels;  // 地址到标签语句的映射
 	std::unordered_map<Nes::Address, CNode*> blockStatements;  // 地址到基本块对应的语句的映射
 };

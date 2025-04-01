@@ -345,23 +345,31 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 												  // 处理条件为假的情况, 条件为假则下一条指令是新的基本块
 												  int length = instruction.GetLength();
 												  Nes::Address address = instruction.address + length;
-												  NesBasicBlock* next = this->subroutine->FindBasicBlock(address);
-												  if (!next)
+												  if (this->subroutine->Contains(address))
 												  {
-													  COUT << s.Format(_T("无法在子程序 %04X 中找到地址为 %04X 的基本块\n"),
-														  this->subroutine->GetStartAddress(), address);
-													  s.Clear();
+													  NesBasicBlock* next = this->subroutine->FindBasicBlock(address);
+													  if (!next)
+													  {
+														  COUT << s.Format(_T("无法在子程序 %04X 中找到地址为 %04X 的基本块\n"),
+															  this->subroutine->GetStartAddress(), address);
+														  s.Clear();
+													  }
+													  else
+													  {
+														  block->nexts[0] = next;
+														  next->AddPrev(block);
+													  }
 												  }
 												  else
 												  {
-													  block->nexts[0] = next;
-													  next->AddPrev(block);
+													  // 当作函数调用处理
+													  this->subroutine->AddCall(instruction.GetOperandAddress());
 												  }
 												  // 处理条件为真的情况
 												  address += (char)instruction.GetByte();
 												  if (IsBackAddress(address))  // 如果跳转到外部，则不管
 													  break;
-												  next = this->subroutine->FindBasicBlock(address);
+												  auto next = this->subroutine->FindBasicBlock(address);
 												  if (!next)
 												  {
 													  COUT << s.Format(_T("无法在子程序 %04X 中找到地址为 %04X 的基本块\n"),
@@ -390,17 +398,25 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 														_stprintf_s(buffer, 128, _T("地址为 %04X 的无条件跳转指令的非绝对寻址模式未实现"), instruction.address);
 														throw Exception(buffer);*/
 													}
-													NesBasicBlock* next = this->subroutine->FindBasicBlock(jumpAddr);
-													if (!next)
+													if (this->subroutine->Contains(jumpAddr))
 													{
-														/*printf("无法在子程序 %04X 中找到地址为 %04X 的基本块\n",
-															this->subroutine->GetStartAddress(), jumpAddr);*/
-														// 说明是跳转到子程序外的尾调用 JMP，忽略
+														NesBasicBlock* next = this->subroutine->FindBasicBlock(jumpAddr);
+														if (!next)
+														{
+															/*printf("无法在子程序 %04X 中找到地址为 %04X 的基本块\n",
+																this->subroutine->GetStartAddress(), jumpAddr);*/
+															// 说明是跳转到子程序外的尾调用 JMP，忽略
+														}
+														else
+														{
+															block->nexts[0] = next;
+															next->AddPrev(block);
+														}
 													}
 													else
 													{
-														block->nexts[0] = next;
-														next->AddPrev(block);
+														// 当作函数调用处理
+														this->subroutine->AddCall(instruction.GetOperandAddress());
 													}
 													SetBasickBlockJumpFlag(block, false, jumpAddr);
 													break;
@@ -408,20 +424,20 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 	}
 }
 
-void NesSubroutineParser::BindBlock(NesBasicBlock* prev, Nes::Address nextAddr)
-{
-	if (!prev)
-		return;
-
-	NesBasicBlock* next = this->subroutine->FindBasicBlock(nextAddr);
-	if (!next)
-	{
-		Sprintf<> s;
-		COUT << s.Format(_T("无法在子程序 %04X 中找到地址为 %04X 的基本块\n"),
-			this->subroutine->GetStartAddress(), nextAddr);
-		return;
-	}
-}
+//void NesSubroutineParser::BindBlock(NesBasicBlock* prev, Nes::Address nextAddr)
+//{
+//	if (!prev)
+//		return;
+//
+//	NesBasicBlock* next = this->subroutine->FindBasicBlock(nextAddr);
+//	if (!next)
+//	{
+//		Sprintf<> s;
+//		COUT << s.Format(_T("无法在子程序 %04X 中找到地址为 %04X 的基本块\n"),
+//			this->subroutine->GetStartAddress(), nextAddr);
+//		return;
+//	}
+//}
 
 void NesSubroutineParser::SetBasickBlockJumpFlag(NesBasicBlock* block, bool isCond, Nes::Address jumpAddr)
 {

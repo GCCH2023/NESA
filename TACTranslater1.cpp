@@ -158,7 +158,7 @@ TAC* TACTranslater1::TranslateJump(TACOperator op, const Instruction& instructio
 	// CALL x
 	// return
 	// L: 
-	if (target.GetValue() < nesSub->GetStartAddress() || target.GetValue() >= nesSub->GetEndAddress())
+	if (!nesSub->Contains(target.GetValue()))
 	{
 		Nes::Address nextAddr = instruction.GetAddress() + instruction.GetLength();
 		AddTAC(allocator.New<TAC>(GetNotOperator(op), TACOperand(TACOperand::ADDRESS | nextAddr), flag, 0), instruction.GetAddress());
@@ -360,8 +360,7 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 								 if (entry.addrMode == AddrMode::Absolute)
 								 {
 									 auto jumpAddr = i.GetOperandAddress();
-									 if (jumpAddr < this->nesSub->GetStartAddress() ||
-										 jumpAddr >= this->nesSub->GetEndAddress())
+									 if (!this->nesSub->Contains(jumpAddr))
 									 {
 										 // 认为是尾调用
 										 tac = GenerateTailCall(i.GetOperandAddress(), i.GetAddress());

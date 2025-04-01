@@ -1,6 +1,6 @@
 #pragma once
 
-// 有序添加 NES 对象
+// 有序且不重复地添加 NES 对象
 template<typename T>
 void AddNesObject(std::vector<T*>& list, T* obj)
 {

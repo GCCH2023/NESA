@@ -9,7 +9,7 @@ allocator(allocator_),
 tacFunc(nullptr),
 function(nullptr)
 {
-	for (int i = 0; i < TAC_ANALIZE_REG_COUNT; ++i)
+	for (int i = 0; i < 9; ++i)
 	{
 		registers[i] = GetCDB().AddString(ToString((TACRegister)i));
 	}

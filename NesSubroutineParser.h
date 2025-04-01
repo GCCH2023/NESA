@@ -38,7 +38,7 @@ protected:
 	// nextAddr 是后面一条指令的地址
 	void ParseBasicBlockInstruction(NesBasicBlock* block, const Instruction& instruction, Nes::Address nextAddr);
 	// 设置两个基本块的前后关系
-	void BindBlock(NesBasicBlock* prev, Nes::Address nextAddr);
+	// void BindBlock(NesBasicBlock* prev, Nes::Address nextAddr);
 	// 设置基本块的跳转相关标志
 	void SetBasickBlockJumpFlag(NesBasicBlock* block, bool isCond, Nes::Address jumpAddr);
 	// 保存被调用子程序的地址
