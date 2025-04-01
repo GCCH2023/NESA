@@ -37,6 +37,12 @@ NesBasicBlock* NesSubroutine::FindBasicBlock(Nes::Address addr)
 	return nullptr;
 }
 
+void NesSubroutine::Clear()
+{
+	this->blocks.clear();
+	this->calls.clear();
+}
+
 void NesSubroutine::AddCall(Nes::Address addr)
 {
 	auto it = std::lower_bound(calls.begin(), calls.end(), addr);

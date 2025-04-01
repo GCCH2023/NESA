@@ -28,6 +28,17 @@ NesAnalyzer::~NesAnalyzer()
 // ·ÖÎö×Ó³ÌÐò
 NesSubroutine* NesAnalyzer::AnalyzeSubroutine(NesSubroutineParser& parser, Nes::Address addr)
 {
+	static int count = 0;
+	++count;
+	if (count > 20)
+	{
+		int a = 0;
+	}
+	if (addr == 36582)
+	{
+		int a = 0;
+	}
+	COUT << _T("analyze ") << addr << std::endl;
 	parser.Reset();
 	NesSubroutine* subroutine = parser.Parse(addr);
 

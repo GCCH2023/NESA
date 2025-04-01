@@ -326,17 +326,17 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	const TCHAR* rom = _T(R"(D:\FC\miaoliro.nes)");
 	
-	// GetTypeManager();  // 初始化
+	GetTypeManager();  // 初始化
 
 	//SavePRG(rom);
 
-	// ParseNes(rom);
+	ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
 	// TACFunctionParserTest(rom, 0x8E19);
-	SubroutineRangeParserTest(rom);
+	// SubroutineRangeParserTest(rom);
 	system("pause");
 	return 0;
 }

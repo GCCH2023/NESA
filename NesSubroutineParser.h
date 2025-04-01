@@ -19,6 +19,8 @@ public:
 	// 输出子程序的信息
 	void Dump();
 protected:
+	// 解析指定地址的子程序的范围
+	void ParseSubroutine(NesSubroutine* subroutine, uint32_t start, uint32_t end);
 	// 当需要分析一条指令的时候调用，返回值表示是否继续分析下一条指令
 	virtual bool ParseInstruction(const Instruction& instruction);
 	// 添加指定地址作为基本块开始地址 （从小到大排列并且去重）
@@ -45,8 +47,8 @@ protected:
 	inline bool IsBackAddress(Nes::Address address) const { return address < subroutineAddress; }
 protected:
 	NesDataBase& db;
-	std::vector<Nes::Address> blockStartAddrs;  // 基本块开始地址列表
 	NesSubroutine* subroutine;
+	std::vector<Nes::Address> blockStartAddrs;  // 基本块开始地址列表
 	std::vector<Nes::Address> calls;
 	Nes::Address subroutineAddress;  // 当前分析的子程序的开始地址
 	bool isInline;

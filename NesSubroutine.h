@@ -46,6 +46,8 @@ public:
 	const BasicBlockList& GetBasicBlocks() const { return blocks; }
 	// 根据地址查找基本块
 	NesBasicBlock* FindBasicBlock(Nes::Address addr);
+	// 清空基本块和调用信息
+	void Clear();
 
 	// 获取调用的子程序列表
 	inline std::vector<Nes::Address>& GetCalls() { return calls; }

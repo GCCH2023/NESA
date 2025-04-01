@@ -57,64 +57,28 @@ NesSubroutine* NesSubroutineParser::Parse(Nes::Address address)
 {
 	subroutineAddress = address;
 
-	uint32_t maxAddress = UINT32_MAX;  // 分析范围的上限
+	uint32_t maxAddress = 0x10000;  // 分析范围的上限
 	auto dbSub = db.GetSubroutineOrNext(address);
 	if (dbSub)
 	{
-		if (dbSub->GetStartAddress() == address)
+		if (address == dbSub->GetStartAddress())
 			return dbSub;  // 已经分析过了
-		if (dbSub->GetStartAddress() > address)
+		if (address < dbSub->GetStartAddress())
 			maxAddress = dbSub->GetStartAddress();  // 最多到后面一个函数的开始地址
-		else if (dbSub->GetEndAddress() > address)
-			maxAddress = dbSub->GetEndAddress();  // 当前函数内联在另一个函数中
-	}
-
-	blockStartAddrs.clear();
-	blockStartAddrs.push_back(address);  // 最开始的时候只有函数开始地址
-
-	Instruction instruction;
-	// 从卡带中获取函数开头指针
-	const uint8_t* p = db.GetCartridge().GetData(address);
-	Nes::Address current = address;  // 当前分析的指令地址
-	int bytes;
-	// 首先划分基本块
-	for (; current < maxAddress; p += bytes)
-	{
-		instruction.Set(current, p);  // 构造指令对象
-		bytes = instruction.GetLength();
-		current += bytes;  // 计算下一条指令的地址
-		if (!ParseInstruction(instruction))  // 分析指令
+		else if (address < dbSub->GetEndAddress())
 		{
-			// 遇到结束指令的时候，如果下一条指令是基本块开始的话，仍然继续分析
-			if (!IsBlockStartAddress(current))
-				break;
+			// 当前函数内联在另一个函数中，拆分后重新分析，因为可能有指令从
+			// 拆分后的一个子程序跳转到另一个子程序
+			maxAddress = dbSub->GetEndAddress();
+			dbSub->SetEndAddress(address);
+			dbSub->Clear();
+			ParseSubroutine(dbSub, dbSub->GetStartAddress(), dbSub->GetEndAddress());
 		}
 	}
-
-	this->subroutine = db.allocator.New<NesSubroutine>(address, current);
-
-	if (!CheckBlocksAddress(address, current))
-	{
-		TCHAR buffer[64];
-		_stprintf_s(buffer, _T("子程序 %04X, 基本块超出函数范围"), address);
-		throw Exception(buffer);
-	}
-
-	// 连接基本块，构成控制流图
-	ParseBasicBlocks();
-
-	db.AddSubroutine(this->subroutine);
-	for (auto called : calls)
-	{
-		auto callRelation = db.allocator.New<CallRelation>(this->subroutine->GetStartAddress(), called);
-		db.AddCallRelation(callRelation);
-	}
-
-	// 判断这个函数是否内联在其他函数中
-	if (this->isInline || db.GetSubroutine(address) != nullptr)
-		this->subroutine->SetInline(true);
-
-	return this->subroutine;
+	subroutine = db.allocator.New<NesSubroutine>(address, maxAddress);
+	ParseSubroutine(subroutine, address, maxAddress);
+	db.AddSubroutine(subroutine);
+	return subroutine;
 }
 
 void NesSubroutineParser::Reset()
@@ -148,6 +112,57 @@ void NesSubroutineParser::Dump()
 			addr += bytes;
 		}
 	}
+}
+
+void NesSubroutineParser::ParseSubroutine(NesSubroutine* subroutine, uint32_t start, uint32_t end)
+{
+	Reset();
+	this->subroutine = subroutine;
+	blockStartAddrs.push_back(start);  // 最开始的时候只有函数开始地址
+
+	Instruction instruction;
+	// 从卡带中获取函数开头指针
+	const uint8_t* p = db.GetCartridge().GetData(start);
+	Nes::Address current = start;  // 当前分析的指令地址
+	int bytes;
+	// 首先划分基本块
+	for (; current < end; p += bytes)
+	{
+		instruction.Set(current, p);  // 构造指令对象
+		bytes = instruction.GetLength();
+		current += bytes;  // 计算下一条指令的地址
+		if (!ParseInstruction(instruction))  // 分析指令
+		{
+			// 遇到结束指令的时候，如果下一条指令是基本块开始的话，仍然继续分析
+			if (!IsBlockStartAddress(current))
+			{
+				if (instruction.GetOpcode() == Opcode::None)
+					current -= bytes;  // 非法指令不计入函数中
+				break;
+			}
+		}
+	}
+
+	subroutine->SetEndAddress(current);
+	if (!CheckBlocksAddress(start, current))
+	{
+		TCHAR buffer[64];
+		_stprintf_s(buffer, _T("子程序 %04X, 基本块超出函数范围"), start);
+		throw Exception(buffer);
+	}
+
+	// 连接基本块，构成控制流图
+	ParseBasicBlocks();
+
+	for (auto called : calls)
+	{
+		auto callRelation = db.allocator.New<CallRelation>(subroutine->GetStartAddress(), called);
+		db.AddCallRelation(callRelation);
+	}
+
+	// 判断这个函数是否内联在其他函数中
+	if (this->isInline || db.GetSubroutine(start) != nullptr)
+		subroutine->SetInline(true);
 }
 
 bool NesSubroutineParser::ParseInstruction(const Instruction& instruction)
@@ -257,28 +272,28 @@ bool NesSubroutineParser::CheckBlocksAddress(Nes::Address start, Nes::Address en
 void NesSubroutineParser::ParseBasicBlocks()
 {
 	NesBasicBlock* lastBlock = nullptr;
-	NesBasicBlock* entryBlock = nullptr;
 	// 每一个地址创建一个基本块对象
 	// 不要在这里设置基本块的后继基本块，因为一个基本块可能以RTS结尾
 	// 它后面紧跟的基本块不是它的后继基本块
 	for (auto addr : blockStartAddrs)
 	{
+		if (addr < this->subroutine->GetStartAddress() || addr >= this->subroutine->GetEndAddress())
+			continue;  // 跳转到函数外的地址不计入函数基本块
 		NesBasicBlock* block = db.allocator.New<NesBasicBlock>();
 		block->SetStartAddress(addr);
 		if (lastBlock)
 			lastBlock->SetEndAddress(block->GetStartAddress());
 		lastBlock = block;
-		if (!entryBlock)  // 第一个基本块作为入口基本块
-			entryBlock = block;
 
-		subroutine->AddBasicBlock(block);
+		this->subroutine->AddBasicBlock(block);
 		db.AddBasicBlock(block);
 	}
 	lastBlock->SetEndAddress(this->subroutine->GetEndAddress());
 
 	// 设置入口基本块
-	if (!blockStartAddrs.empty())
-		entryBlock->flag |= BBF_ENTRY;
+	auto& blocks = this->subroutine->GetBasicBlocks();
+	if (!blocks.empty())
+		this->subroutine->GetBasicBlocks()[0]->flag |= BBF_ENTRY;
 
 	for (auto block : this->subroutine->GetBasicBlocks())
 	{
