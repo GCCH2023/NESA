@@ -36,7 +36,7 @@ void NesAnalyzer::AnalyzeSubroutine()
 		db.GetInterruptNmiAddress(),
 		//db.GetInterruptIrqAddress(),
 	};
-
+	Sprintf<> s;
 	// 循环分析所有函数
 	while (!queue.empty())
 	{
@@ -49,7 +49,14 @@ void NesAnalyzer::AnalyzeSubroutine()
 		AddSubroutine(subroutine);
 
 		// 将子程序调用的子程序添加到队列
-		queue.insert(queue.end(), subroutine->GetCalls().begin(), subroutine->GetCalls().end());
+		for (auto call : subroutine->GetCalls())
+		{
+			if (subMap.find(call) == subMap.end())
+			{
+				// 没有分析过才添加到队列
+				queue.push_back(call);
+			}
+		}
 	}
 }
 

@@ -19,9 +19,9 @@ SubroutineRangeParser::~SubroutineRangeParser()
 void SubroutineRangeParser::Parse()
 {
 	// 依次识别3个中断处理程序
-	AddSubroutineAddress(db.GetInterruptResetAddress());
+	//AddSubroutineAddress(db.GetInterruptResetAddress());
 	AddSubroutineAddress(db.GetInterruptNmiAddress());
-	AddSubroutineAddress(db.GetInterruptIrqAddress());
+	//AddSubroutineAddress(db.GetInterruptIrqAddress());
 
 	while (!subAddrs.empty())
 	{

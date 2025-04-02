@@ -196,26 +196,28 @@ void TACDeadCodeElimination::CorrectJumpAddress()
 	// 修正跳转地址
 	for (auto block : tacFunc->GetBasicBlocks())
 	{
+		// 本来只需要看基本块最后一条指令是不是跳转指令的
+		// 现在一些无无条件跳转指令被翻译为 函数调用指令后就需要判断前面的了
 		auto& codes = block->GetCodes();
-		if (codes.empty())
-			continue;
-		auto tac = *codes.rbegin();
-		if (tac->IsConditionalJump())
+		for (auto tac : codes)
 		{
-			// 本来是跳转到基本块的第一条指令的地址的，
-			// 前面 n 条指令可能被删除了，现在跳转到删除指令的后面指令
-			// 查找第一条地址大于原来的跳转地址的指令
-			auto it = std::lower_bound(tacs.begin(), tacs.end(), tac->z.GetValue(),
-				[](const TAC* tac, Nes::Address address) {
-				return tac->address < address;
-			});
-			if (it == tacs.end())
+			if (tac->IsConditionalJump())
 			{
-				Sprintf<> s;
-				s.Format(_T("错误: 指令 %04X 的跳转地址 %04X 丢失"), tac->address, tac->z.GetValue());
-				throw Exception(s.ToString());
+				// 本来是跳转到基本块的第一条指令的地址的，
+				// 前面 n 条指令可能被删除了，现在跳转到删除指令的后面指令
+				// 查找第一条地址大于原来的跳转地址的指令
+				auto it = std::lower_bound(tacs.begin(), tacs.end(), tac->z.GetValue(),
+					[](const TAC* tac, Nes::Address address) {
+					return tac->address < address;
+				});
+				if (it == tacs.end())
+				{
+					Sprintf<> s;
+					s.Format(_T("错误: 指令 %04X 的跳转地址 %04X 丢失"), tac->address, tac->z.GetValue());
+					throw Exception(s.ToString());
+				}
+				tac->z.SetValue((*it)->address);
 			}
-			tac->z.SetValue((*it)->address);
 		}
 	}
 }

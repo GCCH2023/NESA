@@ -330,12 +330,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//SavePRG(rom);
 
-	// ParseNes(rom);
+	ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
-	TACFunctionParserTest(rom, 0xF695);
+	//TACFunctionParserTest(rom, 0xF5C9);
 	//SubroutineRangeParserTest(rom);
 	system("pause");
 	return 0;

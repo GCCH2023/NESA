@@ -55,8 +55,6 @@ NesSubroutineParser::~NesSubroutineParser()
 // 第二步：构建基本块网络
 NesSubroutine* NesSubroutineParser::Parse(Nes::Address address)
 {
-	subroutineAddress = address;
-
 	uint32_t maxAddress = 0x10000;  // 分析范围的上限
 	auto dbSub = db.GetSubroutineOrNext(address);
 	if (dbSub)
@@ -86,7 +84,6 @@ void NesSubroutineParser::Reset()
 	blockStartAddrs.clear();
 	this->subroutine = nullptr;
 	this->calls.clear();
-	subroutineAddress = 0;
 	isInline = false;
 }
 
@@ -117,6 +114,7 @@ void NesSubroutineParser::Dump()
 void NesSubroutineParser::ParseSubroutine(NesSubroutine* subroutine, uint32_t start, uint32_t end)
 {
 	Reset();
+
 	this->subroutine = subroutine;
 	blockStartAddrs.push_back(start);  // 最开始的时候只有函数开始地址
 
@@ -125,6 +123,7 @@ void NesSubroutineParser::ParseSubroutine(NesSubroutine* subroutine, uint32_t st
 	const uint8_t* p = db.GetCartridge().GetData(start);
 	Nes::Address current = start;  // 当前分析的指令地址
 	int bytes;
+
 	// 首先划分基本块
 	for (; current < end; p += bytes)
 	{
@@ -137,7 +136,11 @@ void NesSubroutineParser::ParseSubroutine(NesSubroutine* subroutine, uint32_t st
 			if (!IsBlockStartAddress(current))
 			{
 				if (instruction.GetOpcode() == Opcode::None)
-					current -= bytes;  // 非法指令不计入函数中
+				{
+					// 非法指令不计入基本块开始，不包含在函数中
+					current -= bytes;
+					blockStartAddrs.erase(std::remove(blockStartAddrs.begin(), blockStartAddrs.end(), current), blockStartAddrs.end());
+				}
 				break;
 			}
 		}
@@ -171,53 +174,42 @@ bool NesSubroutineParser::ParseInstruction(const Instruction& instruction)
 	switch (kind)
 	{
 	case BlockInstructionKind::Normal:
+		return true;
 	case BlockInstructionKind::Call:
+		this->subroutine->AddCall(instruction.GetOperandAddress());
 		return true;
 	case BlockInstructionKind::End:
 		return false;  // 子程序结束指令
 	case BlockInstructionKind::ConditionalJump:
 	{
-													// 处理条件为假的情况, 条件为假则下一条指令是新的基本块
-													int length = instruction.GetLength();
-													Nes::Address address = instruction.address + length;
-													AddBasicBlockStartAddress(address);
-													// 处理条件为真的情况
-													address += (char)instruction.GetByte();
-													// 跳转到子程序前面，说明子程序是内联函数
-													if (IsBackAddress(address))
-													{
-														isInline = true;
-													}
-													else
-													{
-														AddBasicBlockStartAddress(address);
-													}
-													return true;
+												  // 处理条件为假的情况, 条件为假则下一条指令是新的基本块
+												  int length = instruction.GetLength();
+												  Nes::Address address = instruction.address + length;
+												  AddBasicBlockStartAddress(address);
+												  // 处理条件为真的情况
+												  address += (char)instruction.GetByte();
+												  AddBasicBlockStartAddress(address);
+												  return true;
 	}
 	case BlockInstructionKind::UnconditionalJump:
 	{
-												  auto& entry = instruction.GetEntry();
-												  Nes::Address jumpAddr;
-												  if (entry.addrMode == AddrMode::Absolute)
-												  {
-													  jumpAddr = instruction.GetOperandAddress();
-													  if (IsBackAddress(jumpAddr))
-													  {
-														  isInline = true;
-														  return false;
-													  }
-												  }
-												  else
-												  {
-													  // 间接寻址相当于尾函数调用
-													  return false;
-													/*  TCHAR buffer[128];
-													  _stprintf_s(buffer, 128, _T("地址为 %04X 的无条件跳转指令的非绝对寻址模式未实现"), instruction.address);
-													  throw Exception(buffer);*/
-												  }
+													auto& entry = instruction.GetEntry();
+													Nes::Address jumpAddr;
+													if (entry.addrMode == AddrMode::Absolute)
+													{
+														jumpAddr = instruction.GetOperandAddress();
+													}
+													else
+													{
+														// 间接寻址相当于尾函数调用
+														return false;
+														/*  TCHAR buffer[128];
+														  _stprintf_s(buffer, 128, _T("地址为 %04X 的无条件跳转指令的非绝对寻址模式未实现"), instruction.address);
+														  throw Exception(buffer);*/
+													}
 
-												  AddBasicBlockStartAddress(jumpAddr);
-												  return false;  // 无条件跳转后面的指令不会被执行到了，所以不必继续分析
+													AddBasicBlockStartAddress(jumpAddr);
+													return false;  // 无条件跳转后面的指令不会被执行到了，所以不必继续分析
 	}
 	}
 	return true;
@@ -252,20 +244,14 @@ bool NesSubroutineParser::CheckBlocksAddress(Nes::Address start, Nes::Address en
 		Nes::Address lastAddr = *blockStartAddrs.rbegin();
 		return firstAddr >= start && lastAddr < end;*/
 
-	// 如果是尾调用的话，就把 JMP 当作调用指令来处理
 	// 移除所有函数范围外的地址，把这些地址当作函数调用处理
-	for (int i = (int)blockStartAddrs.size() - 1; i > 0; --i)
-	{
-		if (blockStartAddrs[i] > this->subroutine->GetEndAddress())
-		{
-			this->subroutine->AddCall(blockStartAddrs[i]);
-			blockStartAddrs.pop_back();
-		}
-		else
-		{
-			break;
-		}
-	}
+	blockStartAddrs.erase(std::remove_if(blockStartAddrs.begin(), blockStartAddrs.end(),
+		[this](Nes::Address addr) {
+		if (this->subroutine->Contains(addr))
+			return false;
+		this->subroutine->AddCall(addr);
+		return true;
+	}), blockStartAddrs.end());
 	return true;
 }
 
@@ -277,7 +263,7 @@ void NesSubroutineParser::ParseBasicBlocks()
 	// 它后面紧跟的基本块不是它的后继基本块
 	for (auto addr : blockStartAddrs)
 	{
-		if (addr < this->subroutine->GetStartAddress() || addr >= this->subroutine->GetEndAddress())
+		if (!this->subroutine->Contains(addr))
 			continue;  // 跳转到函数外的地址不计入函数基本块
 		NesBasicBlock* block = db.allocator.New<NesBasicBlock>();
 		block->SetStartAddress(addr);
@@ -321,7 +307,6 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 	switch (kind)
 	{
 	case BlockInstructionKind::Call:
-		this->subroutine->AddCall(instruction.GetOperandAddress());
 		// 继续执行
 	case BlockInstructionKind::Normal:
 	{
@@ -360,28 +345,25 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 														  next->AddPrev(block);
 													  }
 												  }
-												  else
-												  {
-													  // 当作函数调用处理
-													  this->subroutine->AddCall(instruction.GetOperandAddress());
-												  }
 												  // 处理条件为真的情况
 												  address += (char)instruction.GetByte();
-												  if (IsBackAddress(address))  // 如果跳转到外部，则不管
-													  break;
-												  auto next = this->subroutine->FindBasicBlock(address);
-												  if (!next)
+												  if (this->subroutine->Contains(address))
 												  {
-													  COUT << s.Format(_T("无法在子程序 %04X 中找到地址为 %04X 的基本块\n"),
-														  this->subroutine->GetStartAddress(), address);
+													  auto next = this->subroutine->FindBasicBlock(address);
+													  if (!next)
+													  {
+														  COUT << s.Format(_T("无法在子程序 %04X 中找到地址为 %04X 的基本块\n"),
+															  this->subroutine->GetStartAddress(), address);
+													  }
+													  else
+													  {
+														  block->nexts[1] = next;
+														  next->AddPrev(block);
+													  }
 												  }
-												  else
-												  {
-													  block->nexts[1] = next;
-													  next->AddPrev(block);
-												  }
+
 												  SetBasickBlockJumpFlag(block, true, address);
-												 break;
+												  break;
 	}
 	case BlockInstructionKind::UnconditionalJump:
 	{
@@ -394,9 +376,9 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 														// 间接寻址相当于尾函数调用
 														block->flag |= BBF_END_RETURN;
 														break;
-													/*	TCHAR buffer[128];
-														_stprintf_s(buffer, 128, _T("地址为 %04X 的无条件跳转指令的非绝对寻址模式未实现"), instruction.address);
-														throw Exception(buffer);*/
+														/*	TCHAR buffer[128];
+															_stprintf_s(buffer, 128, _T("地址为 %04X 的无条件跳转指令的非绝对寻址模式未实现"), instruction.address);
+															throw Exception(buffer);*/
 													}
 													if (this->subroutine->Contains(jumpAddr))
 													{
@@ -412,11 +394,6 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 															block->nexts[0] = next;
 															next->AddPrev(block);
 														}
-													}
-													else
-													{
-														// 当作函数调用处理
-														this->subroutine->AddCall(instruction.GetOperandAddress());
 													}
 													SetBasickBlockJumpFlag(block, false, jumpAddr);
 													break;
