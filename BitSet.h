@@ -1,6 +1,7 @@
 #pragma once
 
-// 任意 位 的位集
+// 使用指定类型来表示任意 位 的位集
+// 最多可以包含指定类型包含的位数
 template<typename T>
 class BitSet
 {
