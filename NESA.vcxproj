@@ -169,10 +169,12 @@
     <ClInclude Include="NesAnalyzer.h" />
     <ClInclude Include="NesBase.h" />
     <ClInclude Include="NesBasicBlock.h" />
+    <ClInclude Include="NesBasicBlockParser.h" />
     <ClInclude Include="NesDataBase.h" />
     <ClInclude Include="NesObject.h" />
     <ClInclude Include="NesSubroutine.h" />
     <ClInclude Include="NesSubroutineParser.h" />
+    <ClInclude Include="NesSubroutinesParser.h" />
     <ClInclude Include="NesUtil.h" />
     <ClInclude Include="NodeSet.h" />
     <ClInclude Include="ReachingDefinition.h" />
@@ -181,7 +183,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="String.h" />
     <ClInclude Include="StringJoiner.h" />
-    <ClInclude Include="SubroutineRangeParser.h" />
+    <ClInclude Include="NesSubroutineRangeParser.h" />
     <ClInclude Include="TAC.h" />
     <ClInclude Include="TACDeadCodeElimination.h" />
     <ClInclude Include="TACFlagRegisterOptimizer.h" />
@@ -222,10 +224,12 @@
     <ClCompile Include="NesAnalyzer.cpp" />
     <ClCompile Include="NesBase.cpp" />
     <ClCompile Include="NesBasicBlock.cpp" />
+    <ClCompile Include="NesBasicBlockParser.cpp" />
     <ClCompile Include="NesDataBase.cpp" />
     <ClCompile Include="NesObject.cpp" />
     <ClCompile Include="NesSubroutine.cpp" />
     <ClCompile Include="NesSubroutineParser.cpp" />
+    <ClCompile Include="NesSubroutinesParser.cpp" />
     <ClCompile Include="NodeSet.cpp" />
     <ClCompile Include="ReachingDefinition.cpp" />
     <ClCompile Include="CCommonTranslator.cpp" />
@@ -237,7 +241,7 @@
     </ClCompile>
     <ClCompile Include="String.cpp" />
     <ClCompile Include="StringJoiner.cpp" />
-    <ClCompile Include="SubroutineRangeParser.cpp" />
+    <ClCompile Include="NesSubroutineRangeParser.cpp" />
     <ClCompile Include="TAC.cpp" />
     <ClCompile Include="TACDeadCodeElimination.cpp" />
     <ClCompile Include="TACFlagRegisterOptimizer.cpp" />

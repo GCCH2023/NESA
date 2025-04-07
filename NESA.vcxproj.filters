@@ -206,10 +206,16 @@
     <ClInclude Include="StringJoiner.h">
       <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="SubroutineRangeParser.h">
+    <ClInclude Include="BitTable.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="BitTable.h">
+    <ClInclude Include="NesSubroutineRangeParser.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="NesBasicBlockParser.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="NesSubroutinesParser.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -352,10 +358,16 @@
     <ClCompile Include="StringJoiner.cpp">
       <Filter>Common</Filter>
     </ClCompile>
-    <ClCompile Include="SubroutineRangeParser.cpp">
+    <ClCompile Include="BitTable.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="BitTable.cpp">
+    <ClCompile Include="NesSubroutineRangeParser.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NesBasicBlockParser.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NesSubroutinesParser.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

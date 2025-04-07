@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include <assert.h>
 #include <stack>
+#include <map>
 #define NOMINMAX
 #include <windows.h>
 

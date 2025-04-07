@@ -12,15 +12,15 @@ public:
 	NesSubroutineParser(NesDataBase& db);
 	~NesSubroutineParser();
 
-	// 将指定地址解析为子程序
-	virtual NesSubroutine* Parse(Nes::Address address);
+	// 解析指定地址范围的子程序
+	virtual void Parse(NesSubroutine* subroutine);
+	// 解析指定开始地址的子程序
+	NesSubroutine* Parse(uint32_t address);
 	// 重置解析器，这样就可以用一个解析器对象来多次解析子程序了
 	void Reset();
 	// 输出子程序的信息
 	void Dump();
 protected:
-	// 解析指定地址的子程序的范围
-	void ParseSubroutine(NesSubroutine* subroutine, uint32_t start, uint32_t end);
 	// 当需要分析一条指令的时候调用，返回值表示是否继续分析下一条指令
 	virtual bool ParseInstruction(const Instruction& instruction);
 	// 添加指定地址作为基本块开始地址 （从小到大排列并且去重）

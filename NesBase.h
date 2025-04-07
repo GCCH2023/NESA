@@ -3,7 +3,7 @@
 namespace Nes
 {
 	// 地址类型
-	using Address = uint16_t;
+	using Address = uint32_t;
 
 
 	// 游戏的排列方式

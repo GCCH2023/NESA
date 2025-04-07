@@ -53,69 +53,13 @@ NesSubroutineParser::~NesSubroutineParser()
 // 在遇到结束指令时，判断下一条指令是否是基本块开始指令，如果是
 // 就继续分析，不是则结束子程序的分析
 // 第二步：构建基本块网络
-NesSubroutine* NesSubroutineParser::Parse(Nes::Address address)
-{
-	uint32_t maxAddress = 0x10000;  // 分析范围的上限
-	auto dbSub = db.GetSubroutineOrNext(address);
-	if (dbSub)
-	{
-		if (address == dbSub->GetStartAddress())
-			return dbSub;  // 已经分析过了
-		if (address < dbSub->GetStartAddress())
-			maxAddress = dbSub->GetStartAddress();  // 最多到后面一个函数的开始地址
-		else if (address < dbSub->GetEndAddress())
-		{
-			// 当前函数内联在另一个函数中，拆分后重新分析，因为可能有指令从
-			// 拆分后的一个子程序跳转到另一个子程序
-			maxAddress = dbSub->GetEndAddress();
-			dbSub->SetEndAddress(address);
-			dbSub->Clear();
-			ParseSubroutine(dbSub, dbSub->GetStartAddress(), dbSub->GetEndAddress());
-		}
-	}
-	subroutine = db.allocator.New<NesSubroutine>(address, maxAddress);
-	ParseSubroutine(subroutine, address, maxAddress);
-	db.AddSubroutine(subroutine);
-	return subroutine;
-}
-
-void NesSubroutineParser::Reset()
-{
-	blockStartAddrs.clear();
-	this->subroutine = nullptr;
-	this->calls.clear();
-	isInline = false;
-}
-
-void NesSubroutineParser::Dump()
-{
-	Sprintf<> s;
-	COUT << s.Format(_T("函数 %04X 的结束地址为: %04X\n"), subroutine->GetStartAddress(), subroutine->GetEndAddress());
-	s.Clear();
-	Instruction instruction;
-	for (auto block : subroutine->GetBasicBlocks())
-	{
-		block->Dump();
-		for (auto addr = block->GetStartAddress(); addr < block->GetEndAddress();)
-		{
-			auto p = db.GetCartridge().GetData(addr);
-			instruction.Set(addr, p);
-
-
-			COUT << s.Format(_T("%04X    %s\n"), instruction.GetAddress(), FormatInstruction(instruction));
-			s.Clear();
-			int bytes = instruction.GetLength();
-			p += bytes;
-			addr += bytes;
-		}
-	}
-}
-
-void NesSubroutineParser::ParseSubroutine(NesSubroutine* subroutine, uint32_t start, uint32_t end)
+void NesSubroutineParser::Parse(NesSubroutine* subroutine)
 {
 	Reset();
 
 	this->subroutine = subroutine;
+	uint32_t start = subroutine->GetStartAddress();
+	uint32_t end = subroutine->GetEndAddress();
 	blockStartAddrs.push_back(start);  // 最开始的时候只有函数开始地址
 
 	Instruction instruction;
@@ -130,6 +74,7 @@ void NesSubroutineParser::ParseSubroutine(NesSubroutine* subroutine, uint32_t st
 		instruction.Set(current, p);  // 构造指令对象
 		bytes = instruction.GetLength();
 		current += bytes;  // 计算下一条指令的地址
+
 		if (!ParseInstruction(instruction))  // 分析指令
 		{
 			// 遇到结束指令的时候，如果下一条指令是基本块开始的话，仍然继续分析
@@ -166,6 +111,45 @@ void NesSubroutineParser::ParseSubroutine(NesSubroutine* subroutine, uint32_t st
 	// 判断这个函数是否内联在其他函数中
 	if (this->isInline || db.GetSubroutine(start) != nullptr)
 		subroutine->SetInline(true);
+}
+
+NesSubroutine* NesSubroutineParser::Parse(uint32_t address)
+{
+	auto sub = db.allocator.New<NesSubroutine>(address, 0xFFFF);
+	Parse(sub);
+	return sub;
+}
+
+void NesSubroutineParser::Reset()
+{
+	blockStartAddrs.clear();
+	this->subroutine = nullptr;
+	this->calls.clear();
+	isInline = false;
+}
+
+void NesSubroutineParser::Dump()
+{
+	Sprintf<> s;
+	COUT << s.Format(_T("函数 %04X 的结束地址为: %04X\n"), subroutine->GetStartAddress(), subroutine->GetEndAddress());
+	s.Clear();
+	Instruction instruction;
+	for (auto block : subroutine->GetBasicBlocks())
+	{
+		block->Dump();
+		for (auto addr = block->GetStartAddress(); addr < block->GetEndAddress();)
+		{
+			auto p = db.GetCartridge().GetData(addr);
+			instruction.Set(addr, p);
+
+
+			COUT << s.Format(_T("%04X    %s\n"), instruction.GetAddress(), FormatInstruction(instruction));
+			s.Clear();
+			int bytes = instruction.GetLength();
+			p += bytes;
+			addr += bytes;
+		}
+	}
 }
 
 bool NesSubroutineParser::ParseInstruction(const Instruction& instruction)

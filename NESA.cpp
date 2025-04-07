@@ -23,7 +23,7 @@ using namespace Nes;
 #include "CDataBase.h"
 #include "GlobalParser.h"
 #include "TACFunctionParser.h"
-#include "SubroutineRangeParser.h"
+#include "NesSubroutineRangeParser.h"
 
 // 全局变量测试
 void GlobalTest()
@@ -316,7 +316,7 @@ void SavePRG(const TCHAR* rom)
 void SubroutineRangeParserTest(const TCHAR* rom)
 {
 	NesDataBase db(rom);
-	SubroutineRangeParser srp(db);
+	NesSubroutineRangeParser srp(db);
 
 	srp.Parse();
 
@@ -327,11 +327,11 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	const TCHAR* rom = _T(R"(D:\FC\miaoliro.nes)");
 	
-	//GetTypeManager();  // 初始化
+	GetTypeManager();  // 初始化
 
 	//SavePRG(rom);
 
-	//ParseNes(rom);
+	ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();

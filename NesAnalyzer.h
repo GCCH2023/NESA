@@ -3,7 +3,6 @@ class NesDataBase;
 class NesSubroutine;
 class TACFunction;
 
-using SubroutineMap = std::unordered_map<Nes::Address, NesSubroutine*>;
 
 // 解析 NES 卡带，保存信息到数据库中
 class NesAnalyzer
@@ -14,12 +13,8 @@ public:
 
 	void Analyze();
 protected:
-	// 添加一个子程序到子程序表
-	void AddSubroutine(NesSubroutine* subroutine);
 	// 根据地址查找子程序
 	NesSubroutine* FindSubroutine(Nes::Address address);
-	// 判断指定地址是否分析过
-	bool IsSubroutineAnalyzed(Nes::Address addr);
 
 	// 分析所有的子程序
 	void AnalyzeSubroutine();
@@ -34,7 +29,6 @@ protected:
 protected:
 	NesDataBase& db;
 	Allocator allocator;
-	SubroutineMap subMap;  // 当前分析的所有函数 地址-> 函数 表
 	std::vector<NesSubroutine*> subroutines;  // 当前分析的所有函数
 };
 

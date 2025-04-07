@@ -9,12 +9,15 @@ struct SubroutineRange
 };
 
 // 尽可能多的识别NES子程序的范围，考虑内联函数的情况
-class SubroutineRangeParser
+// 不会将子程序信息写入数据库
+class NesSubroutineRangeParser
 {
 public:
-	SubroutineRangeParser(NesDataBase& db);
-	~SubroutineRangeParser();
-	void Parse();
+	NesSubroutineRangeParser(NesDataBase& db);
+	~NesSubroutineRangeParser();
+	// 从给定地址开始，递归地解析子程序的范围，返回解析出来的所有子程序范围
+	// 子程序按地址从小到大排列
+	std::vector<SubroutineRange>& Parse();
 protected:
 	// 解析指定地址的子程序的范围
 	void ParseSubroutine(Nes::Address address);
@@ -28,6 +31,7 @@ protected:
 	SubroutineRange* GetSubroutineOrNext(Nes::Address address);
 	// 根据给定范围分析子程序范围
 	SubroutineRange ParseSubroutineRange(uint32_t start, uint32_t end);
+	void Reset();
 private:
 	NesDataBase& db;
 

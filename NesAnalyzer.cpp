@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "NesAnalyzer.h"
-#include "NesSubroutineParser.h"
+#include "NesSubroutinesParser.h"
 #include "NesDataBase.h"
 #include "TACTranslater1.h"
 #include "GlobalParser.h"
@@ -28,36 +28,8 @@ NesAnalyzer::~NesAnalyzer()
 // 分析子程序
 void NesAnalyzer::AnalyzeSubroutine()
 {
-	NesSubroutineParser parser(db);
-	// 构建初始的待分析子程地址序队列
-	std::vector<Nes::Address> queue =
-	{
-		// db.GetInterruptResetAddress(),
-		db.GetInterruptNmiAddress(),
-		//db.GetInterruptIrqAddress(),
-	};
-	Sprintf<> s;
-	// 循环分析所有函数
-	while (!queue.empty())
-	{
-		// 取出一个函数地址进行分析
-		auto addr = *queue.rbegin();
-		queue.pop_back();
-
-		// parser 会判断子程序是否分析过，所以这里不需要判断
-		NesSubroutine* subroutine = parser.Parse(addr);
-		AddSubroutine(subroutine);
-
-		// 将子程序调用的子程序添加到队列
-		for (auto call : subroutine->GetCalls())
-		{
-			if (subMap.find(call) == subMap.end())
-			{
-				// 没有分析过才添加到队列
-				queue.push_back(call);
-			}
-		}
-	}
+	NesSubroutinesParser parser(db);
+	this->subroutines = parser.Parse(db.GetInterruptResetAddress());
 }
 
 // 输出函数集
@@ -157,12 +129,12 @@ bool CanAnalyzeCycle(NodeSet analyzed, NodeSet cycle, const SubroutineList& subr
 void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 {
 	// 首先给所有子程序编号
-	if (GetSubroutines().size() > MAX_NODE)
-	{
-		Sprintf<> s;
-		s.Format(_T("位集无法表示 %d 个以上的子程序"), MAX_NODE);
-		throw Exception(s.ToString());  // 需要自定义类来实现
-	}
+	//if (GetSubroutines().size() > MAX_NODE)
+	//{
+	//	Sprintf<> s;
+	//	s.Format(_T("位集无法表示 %d 个以上的子程序"), MAX_NODE);
+	//	throw Exception(s.ToString());  // 需要自定义类来实现
+	//}
 
 	int index = 0;
 	// 创建附加数据用于分析
@@ -293,22 +265,8 @@ void NesAnalyzer::Analyze()
 	AnalyzeSubroutineRegisterAXY();
 }
 
-void NesAnalyzer::AddSubroutine(NesSubroutine* subroutine)
-{
-	subMap.insert({ subroutine->GetStartAddress(), subroutine });
-	AddNesObject(subroutines, subroutine);
-}
 
 NesSubroutine* NesAnalyzer::FindSubroutine(Nes::Address address)
 {
-	auto it = subMap.find(address);
-	if (it != subMap.end())
-		return it->second;
-	return nullptr;
-}
-
-bool NesAnalyzer::IsSubroutineAnalyzed(Nes::Address addr)
-{
-	auto it = subMap.find(addr);
-	return it != subMap.end();
+	return db.FindSubroutine(address);
 }
