@@ -39,7 +39,7 @@ template<typename T>
 class DirectedGraph
 {
 public:
-	DirectedGraph::DirectedGraph(const DirectedGraphEdgeList& edges):
+	DirectedGraph(const DirectedGraphEdgeList& edges):
 		nodes(MAX_NODE),
 		nodesCount(0)
 	{

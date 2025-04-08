@@ -44,7 +44,7 @@ ReachingDefinition::~ReachingDefinition()
 // 输出AXY的所有定值三地址码
 void DumpAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub)
 {
-	auto& codes = tacSub->GetCodes();
+	auto codes = tacSub->GetCodes();
 	COUT << _T("获取AXY的所有定值点：\n");
 	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
 	{
@@ -217,7 +217,7 @@ void TacAxyDefinition::CheckDefinitionLimit(TACFunction* tacSub)
 void TacAxyDefinition::GetDefinitionTACList(std::vector<TAC*>& result, AXYSet& set, TACFunction* tacSub)
 {
 	result.clear();
-	auto& codes = tacSub->GetCodes();
+	auto codes = tacSub->GetCodes();
 	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
 	{
 		auto list = set.set[i].ToVector();

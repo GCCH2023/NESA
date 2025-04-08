@@ -4,15 +4,166 @@
 #include "NesDataBase.h"
 #include "TACTranslater1.h"
 #include "GlobalParser.h"
-#include "DirectedGraph.h"
 #include "TACFunctionParser.h"
 #include "NesUtil.h"
 
-struct SubroutineData
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/graph_traits.hpp>
+#include <boost/graph/topological_sort.hpp>
+#include <boost/graph/strong_components.hpp>
+
+using namespace boost;
+
+// 自定义节点属性
+struct NodeProperty
 {
-	int index;  // 在列表中的索引
-	NodeSet calls;  // 调用的函数，需要先分析
+	NesSubroutine* subroutine;
+	bool analyzed;
 };
+
+// 图类型定义
+typedef adjacency_list<vecS, vecS, directedS, NodeProperty> Graph;
+typedef graph_traits<Graph>::vertex_descriptor Vertex;
+typedef graph_traits<Graph>::edge_descriptor Edge;
+typedef adjacency_list<boost::vecS, boost::vecS, boost::directedS> ComponentGraph;
+
+// NES 子程序原型分析
+// 即分析子程序的参数和返回值
+class NesSubroutineProtoAnalyzer
+{
+	NesDataBase& db;
+	Graph graph;
+	SubroutineList& subroutines;
+	Allocator tempAllocator;
+	TACTranslater1 tacTranslater;
+	TACFunctionParser tacFuncParser;
+
+	void analyzeFunction(Vertex v)
+	{
+		if (graph[v].analyzed)
+			return;
+
+		auto sub = graph[v].subroutine;
+		auto tacSub = tacTranslater.Translate(sub);
+		tacFuncParser.Parse(tacSub);
+		sub->flag = tacSub->flag;
+
+		graph[v].analyzed = true;
+	}
+
+	void analyzeSCC(const std::vector<Vertex>& scc)
+	{
+		std::vector<TACFunction*> funcs(num_vertices(graph), nullptr);
+		// 分析整个环的所有函数
+		for (auto index : scc)
+		{
+			auto sub = subroutines[index];
+			auto tacSub = tacTranslater.Translate(sub);
+			tacFuncParser.Parse(tacSub);
+			funcs[index] = tacSub;
+		}
+		// 迭代分析，直到所有函数的返回值和参数保持不变
+		bool cycleEnd = false;
+		while (!cycleEnd)
+		{
+			cycleEnd = true;
+			for (auto i : scc)
+			{
+				auto func = funcs[i];
+				auto oldFlag = func->flag;
+				func->flag = 0;
+				tacFuncParser.Parse(func);
+				if (func->flag != oldFlag)
+					cycleEnd = false;
+			}
+		}
+		// 保存结果，标记函数分析完毕
+		for (auto index : scc)
+		{
+			auto tacSub = funcs[index];
+			subroutines[index]->flag = tacSub->flag;
+			graph[index].analyzed = true;  // 标记为已分析
+		}
+	}
+
+public:
+	NesSubroutineProtoAnalyzer(NesDataBase& db_, SubroutineList& subroutines_):
+		db(db_),
+		subroutines(subroutines_),
+		graph(subroutines_.size()),
+		tacTranslater(db, tempAllocator),
+		tacFuncParser(db)
+	{
+	}
+
+	void Analyze()
+	{
+		// 绑定节点和函数
+		for (size_t i = 0; i < subroutines.size(); ++i)
+		{
+			graph[i].subroutine = subroutines[i];
+			subroutines[i]->tag = (void*)i;
+		}
+
+		// 函数调用关系构成边
+		for (size_t i = 0; i < subroutines.size(); ++i)
+		{
+			for (auto call : subroutines[i]->GetCalls())
+			{
+				auto callSub = db.FindSubroutine(call);
+				add_edge(i, (Vertex)callSub->tag, graph);
+			}
+		}
+
+		// 检测强连通分量
+		std::vector<int> component(num_vertices(graph));
+		int num_scc = strong_components(graph,
+			make_iterator_property_map(component.begin(), get(vertex_index, graph)));
+
+		// 按组件分组
+		std::vector<std::vector<Vertex>> scc_groups(num_scc);
+		for (size_t i = 0; i < component.size(); ++i)
+		{
+			scc_groups[component[i]].push_back(vertex(i, graph));
+		}
+
+		// 构建组件图（将每个SCC视为一个顶点）
+		ComponentGraph component_graph(num_scc);
+		for (auto edge_it = edges(graph); edge_it.first != edge_it.second; ++edge_it.first)
+		{
+			Vertex u = source(*edge_it.first, graph);
+			Vertex v = target(*edge_it.first, graph);
+			if (component[u] != component[v])
+			{
+				add_edge(component[u], component[v], component_graph);
+			}
+		}
+
+		// 对组件进行拓扑排序
+		std::vector<ComponentGraph::vertex_descriptor> component_order;
+		topological_sort(component_graph, std::back_inserter(component_order));
+		std::reverse(component_order.begin(), component_order.end());
+
+		// 存储分析结果
+		for (int comp_id : component_order)
+		{
+			const auto& scc = scc_groups[comp_id];
+
+			if (scc.size() == 1)
+			{
+				// 单个函数，无循环依赖
+				Vertex v = scc[0];
+				analyzeFunction(v);
+			}
+			else
+			{
+				// 循环依赖组，需要迭代分析
+				analyzeSCC(scc);
+			}
+		}
+	}
+};
+
 
 NesAnalyzer::NesAnalyzer(NesDataBase& db_):
 db(db_)
@@ -30,27 +181,6 @@ void NesAnalyzer::AnalyzeSubroutine()
 {
 	NesSubroutinesParser parser(db);
 	this->subroutines = parser.Parse(db.GetInterruptResetAddress());
-}
-
-// 输出函数集
-void DumpSubroutineSet(SubroutineList& suroutines, NodeSet& set)
-{
-	Sprintf<> s;
-	auto vec = set.ToVector();
-	if (vec.empty())
-	{
-		s.Format(_T("空"));
-	}
-	else
-	{
-		for (auto i : vec)
-		{
-			s.Append(_T("%04X, "), suroutines[i]->GetStartAddress());
-		}
-		s.Erase(2);
-		s.Append(_T("\n"));
-		COUT << s.ToString();
-	}
 }
 
 void NesAnalyzer::DumpCallRelation(NesSubroutine* subroutine)
@@ -78,172 +208,10 @@ void NesAnalyzer::DumpAllCallRelation()
 		DumpCallRelation(sub);
 }
 
-
-
-std::vector<NodeSet> GetStrongConnect(const SubroutineList& suroutines)
-{
-	//COUT << _T("获取强连通集:\n");
-	Sprintf<> s;
-	// 首先构造边集
-	DirectedGraphEdgeList edges(32);
-	edges.clear();
-	for (auto sub : suroutines)
-	{
-		auto sd = (SubroutineData*)sub->tag;
-		//s.Format(_T("%04X: "), sub->GetStartAddress());
-		//COUT << s.ToString();
-		//DumpSubroutineSet(suroutines, sd->calls);
-		for (auto called : Nodes(sd->calls))
-		{
-			edges.push_back({ sd->index, called });
-		}
-	}
-	DirectedGraph<int> graph(edges);
-	auto vec = graph.Tarjan();
-	// 删除大小为1的强连通分量列表
-	auto it = std::remove_if(vec.begin(), vec.end(), [](const NodeSet& nodeSet) {
-		return nodeSet.Count() == 1; // 删除条件：大小为 1
-	});
-	vec.erase(it, vec.end());
-
-	//for (auto v : vec)
-	//	DumpSubroutineSet(suroutines, v);
-	return vec;
-}
-
-
-// 处理环形调用关系，返回是否成功处理
-bool CanAnalyzeCycle(NodeSet analyzed, NodeSet cycle, const SubroutineList& subroutines)
-{
-	analyzed |= cycle;  // 对于环，将构成环的所有节点当作已分析处理
-	for (auto index : cycle.ToVector())
-	{
-		auto sub = subroutines[index];
-		SubroutineData* sd = (SubroutineData*)sub->tag;
-		if ((sd->calls & analyzed) != sd->calls)
-			return false;  // 它调用的函数没分析完毕，那么这个环还不能够分析
-	}
-	return true;
-}
-
 void NesAnalyzer::AnalyzeSubroutineRegisterAXY()
 {
-	// 首先给所有子程序编号
-	//if (GetSubroutines().size() > MAX_NODE)
-	//{
-	//	Sprintf<> s;
-	//	s.Format(_T("位集无法表示 %d 个以上的子程序"), MAX_NODE);
-	//	throw Exception(s.ToString());  // 需要自定义类来实现
-	//}
-
-	int index = 0;
-	// 创建附加数据用于分析
-	for (auto sub : GetSubroutines())
-	{
-		auto sd = allocator.New<SubroutineData>();
-		sd->index = index++;
-		sub->tag = sd;
-	}
-	// 初始化子程序调用集
-	for (auto sub : GetSubroutines())
-	{
-		SubroutineData* sd = (SubroutineData*)sub->tag;
-		for (auto addr : sub->GetCalls())
-		{
-			auto callSub = FindSubroutine(addr);
-			auto index = ((SubroutineData*)callSub->tag)->index;
-			sd->calls += index;  // 设置子程序的调用集
-		}
-	}
-	// 迭代分析所有子程序
-	Allocator tempAllocator;
-
-	TACTranslater1 tacTranslater(db, tempAllocator);
-	TACFunctionParser tacFuncParser(db);
-
-	// 首先计算强连通分量
-	auto strongConnect = GetStrongConnect(GetSubroutines());
-
-	int iter = 0;
-	NodeSet analyzeSubs = 0;  // 已经分析过了的子程序集
-	NodeSet full = NodeSet::FullSet(GetSubroutines().size());
-	int count = 0;
-	while (true)
-	{
-		while (true)
-		{
-			NodeSet oldState = analyzeSubs;
-			// 遍历每个子程序，分析满足条件的
-			for (auto sub : GetSubroutines())
-			{
-				auto sd = (SubroutineData*)sub->tag;
-				if (!analyzeSubs.Contains(sd->index) && (sd->calls & analyzeSubs) == sd->calls)
-				{
-					// 没有分析过并且它调用的子程序都分析过了，那么可以分析这个子程序了
-					auto tacSub = tacTranslater.Translate(sub);
-					COUT << count++ << _T(" ");
-					tacFuncParser.Parse(tacSub);
-					sub->flag = tacSub->flag;
-					analyzeSubs += sd->index;  // 标记此子程序已经分析
-				}
-			}
-			if (analyzeSubs == oldState)
-			{
-				if (analyzeSubs == full)
-					return;    // 全部函数分析完毕
-				break;  // 遇到环形调用
-			}
-		}
-
-		// 存在环状调用的情况
-		// 从后往前遍历强连通分量列表
-		auto it = strongConnect.rbegin();
-		for (; it != strongConnect.rend(); ++it)
-		{
-			if (!CanAnalyzeCycle(analyzeSubs, *it, GetSubroutines()))
-				continue;
-
-			auto indexVec = it->ToVector();
-			std::vector<TACFunction*> funcs(indexVec.size());
-			// 分析整个环的所有函数
-			for (auto index : indexVec)
-			{
-				auto sub = GetSubroutines()[index];
-				auto tacSub = tacTranslater.Translate(sub);
-				tacFuncParser.Parse(tacSub);
-				funcs[index] = tacSub;
-			}
-			// 迭代分析，直到所有函数的返回值和参数保持不变
-			bool cycleEnd = false;
-			while (!cycleEnd)
-			{
-				cycleEnd = true;
-				for (auto func : funcs)
-				{
-					auto oldFlag = func->flag;
-					func->flag = 0;
-					COUT << count++ << _T(" ");
-					tacFuncParser.Parse(func);
-					if (func->flag != oldFlag)
-						cycleEnd = false;
-				}
-			}
-			// 保存结果，标记函数分析完毕
-			for (auto index : indexVec)
-			{
-				auto tacSub = funcs[index];
-				GetSubroutines()[index]->flag = tacSub->flag;
-				analyzeSubs += index;
-			}
-			// 分析完毕后从强连通列表删除它
-			strongConnect.erase((it + 1).base());
-			break;  // 环处理完毕，继续单个分析
-		}
-		if (it == strongConnect.rend())
-		{
-			throw Exception(_T("函数原型分析失败：未知的错误"));
-		}
-	}
+	NesSubroutineProtoAnalyzer analyzer(db, GetSubroutines());
+	analyzer.Analyze();
 }
 
 // 主要是解析 NES 中的三个中断处理程序，根据它们调用的子程序地址，

@@ -25,7 +25,7 @@ protected:
 	// 分析子程序是否使用了AXY作为参数，是否使用AXY返回值
 	void AnalyzeSubroutineRegisterAXY();
 	
-	inline const std::vector<NesSubroutine*>& GetSubroutines() const { return subroutines; }
+	inline std::vector<NesSubroutine*>& GetSubroutines() { return subroutines; }
 protected:
 	NesDataBase& db;
 	Allocator allocator;

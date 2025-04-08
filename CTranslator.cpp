@@ -94,7 +94,7 @@ String* CTranslator::GetLocalVariableName(int index)
 }
 
 
-CNode* CTranslator::GetExpression(TACOperand& operand)
+CNode* CTranslator::GetExpression(const TACOperand& operand)
 {
 	switch (operand.GetKind())
 	{

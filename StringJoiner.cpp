@@ -4,23 +4,23 @@
 
 
 StringJoiner::StringJoiner(size_t capacity /*= 256*/) :
-buffer(capacity)
+	buffer(capacity)
 {
 	pFront = &buffer[0];
 	pBack = &buffer[0] + buffer.size();
 }
 
 StringJoiner::StringJoiner(const StringJoiner& other) :
-buffer(other.buffer)
+	buffer(other.buffer)
 {
 	pFront = &buffer[0] + (other.pFront - &other.buffer[0]);
 	pBack = pFront + (other.pBack - other.pFront);
 }
 
 StringJoiner::StringJoiner(StringJoiner&& other) :
-buffer(std::move(other.buffer)),
-pFront(other.pFront),
-pBack(other.pBack)
+	buffer(std::move(other.buffer)),
+	pFront(other.pFront),
+	pBack(other.pBack)
 {
 
 }
@@ -35,8 +35,8 @@ std::basic_string<TCHAR> StringJoiner::ToString() const
 	size_t size = GetLength();
 	std::basic_string<TCHAR> result;
 	result.reserve(size + 1);
-	result.append(pBack, &buffer[0] + buffer.size());
-	result.append(&buffer[0], pFront);
+	result.append(pBack, (TCHAR*)&buffer[0] + buffer.size());
+	result.append((TCHAR*)&buffer[0], pFront);
 	return result;
 }
 

@@ -185,9 +185,6 @@
     <ClInclude Include="DominatorAnalyzer.h">
       <Filter>DataFlow</Filter>
     </ClInclude>
-    <ClInclude Include="DirectedGraph.h">
-      <Filter>Common</Filter>
-    </ClInclude>
     <ClInclude Include="TACFunctionParser.h">
       <Filter>IR</Filter>
     </ClInclude>
@@ -217,6 +214,9 @@
     </ClInclude>
     <ClInclude Include="NesSubroutinesParser.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectedGraph.h">
+      <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
