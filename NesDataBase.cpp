@@ -49,6 +49,11 @@ void NesDataBase::AddBasicBlock(NesBasicBlock* block)
 	AddNesObject(basicBlocks, block);
 }
 
+NesBasicBlock* NesDataBase::GetBasicBlock(Nes::Address address)
+{
+	return FindNesObject(basicBlocks, address);
+}
+
 NesBasicBlock* NesDataBase::FindBasicBlock(Nes::Address address)
 {
 	return FindNesObject(basicBlocks, address);

@@ -21,11 +21,15 @@ TACFunction* TACTranslater1::Translate(NesSubroutine* subroutine)
 {
 	if (!subroutine)
 		return nullptr;
+	if (subroutine->GetStartAddress() == 62400)
+	{
+		int a = 0;
+	}
 	Reset();
 
 	this->nesSub = subroutine;
 
-	std::unordered_map<NesBasicBlock*, TACBasicBlock*> blockMap;
+	std::unordered_map<Nes::Address, TACBasicBlock*> blockMap;
 	this->tacSub = allocator.New<TACFunction>(subroutine->GetStartAddress(), subroutine->GetEndAddress());
 	this->tacSub->flag = subroutine->flag;
 
@@ -35,22 +39,18 @@ TACFunction* TACTranslater1::Translate(NesSubroutine* subroutine)
 		//TACFlagRegisterOptimizer opt(allocator);
 		//tacBlock->SetCodes(opt.Optimize(tacBlock->GetCodes()));
 		this->tacSub->AddBasicBlock(tacBlock);
-		blockMap[block] = tacBlock;
+		blockMap[block->GetStartAddress()] = tacBlock;
 	}
 
 	// 重构基本块的边
 	for (auto block : subroutine->GetBasicBlocks())
 	{
-		auto tacBlock = blockMap[block];
+		auto tacBlock = blockMap[block->GetStartAddress()];
 
-		for (auto prev : block->prevs)
+		for (auto prev : block->GetPreds())
 			tacBlock->prevs.push_back(blockMap[prev]);
-		if (block->nexts[0])
-		{
-			tacBlock->nexts.push_back(blockMap[block->nexts[0]]);
-			if (block->nexts[1])
-				tacBlock->nexts.push_back(blockMap[block->nexts[1]]);
-		}
+		for (auto succ : block->GetSuccs())
+			tacBlock->nexts.push_back(blockMap[succ]);
 		tacBlock->flag = block->flag;
 	}
 	return this->tacSub;
@@ -244,6 +244,10 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 		auto& i = instructions[index];
 		const OpcodeEntry& entry = GetOpcodeEntry(i.GetOperatorByte());
 		this->SaveTACStart();  // 记录这条指令对应的三地址码开始索引
+		if (i.address == 0xF3CC)
+		{
+			int a = 0;
+		}
 		switch (entry.opcode)
 		{
 		case Nes::Opcode::None:

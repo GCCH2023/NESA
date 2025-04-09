@@ -229,7 +229,7 @@ void TACBasicBlockOptimizerTest()
 }
 
 // 三地址码函数分析
-void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0)
+void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0, Nes::Address end = 0xFFFF)
 {
 	Allocator allocator;
 	try
@@ -256,7 +256,7 @@ void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0)
 			address = db.GetInterruptNmiAddress();
 		Nes::Address addr = address;
 
-		NesSubroutine* subroutine = parser.Parse(addr);
+		NesSubroutine* subroutine = parser.Parse(addr, end);
 		COUT << _T("\n基本块:\n");
 		// 输出 FC 指令
 		parser.Dump();
@@ -331,12 +331,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//SavePRG(rom);
 
-	ParseNes(rom);
+	//ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
-	//TACFunctionParserTest(rom, 0xF5C9);
+	TACFunctionParserTest(rom, 62400, 62414);
 	//SubroutineRangeParserTest(rom);
 	system("pause");
 	return 0;

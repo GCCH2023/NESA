@@ -23,7 +23,7 @@ TACFunction* TACTranslater::Translate(NesSubroutine* subroutine)
 
 	this->nesSub = subroutine;
 
-	std::unordered_map<NesBasicBlock*, TACBasicBlock*> blockMap;
+	std::unordered_map<Nes::Address, TACBasicBlock*> blockMap;
 	this->tacSub = allocator.New<TACFunction>(subroutine->GetStartAddress(), subroutine->GetEndAddress());
 	this->tacSub->flag = subroutine->flag;
 
@@ -31,22 +31,19 @@ TACFunction* TACTranslater::Translate(NesSubroutine* subroutine)
 	{
 		auto tacBlock = TranslateBasickBlock(block);
 		this->tacSub->AddBasicBlock(tacBlock);
-		blockMap[block] = tacBlock;
+		blockMap[block->GetStartAddress()] = tacBlock;
 	}
 
 	// 重构基本块的边
 	for (auto block : subroutine->GetBasicBlocks())
 	{
-		auto tacBlock = blockMap[block];
+		auto tacBlock = blockMap[block->GetStartAddress()];
 
-		for (auto prev : block->prevs)
+		for (auto prev : block->GetPreds())
 			tacBlock->prevs.push_back(blockMap[prev]);
-		if (block->nexts[0])
-		{
-			tacBlock->nexts.push_back(blockMap[block->nexts[0]]);
-			if (block->nexts[1])
-				tacBlock->nexts.push_back(blockMap[block->nexts[1]]);
-		}
+
+		for (auto succ : block->GetSuccs())
+			tacBlock->nexts.push_back(blockMap[succ]);
 		tacBlock->flag = block->flag;
 	}
 	return this->tacSub;

@@ -28,20 +28,26 @@ enum BasicBlockFlag
 class NesBasicBlock : public NesRegion
 {
 public:
+	using BlockList = std::vector<Nes::Address>;
+
 	NesBasicBlock();
 	NesBasicBlock(Nes::Address startAddr, Nes::Address endAddr);
 	NesBasicBlock(const NesBasicBlock& other);
 
-	void AddPrev(NesBasicBlock* block);
+	inline void AddPred(Nes::Address addr) { preds.push_back(addr); }
+	void AddSucc(Nes::Address addr) { succs.push_back(addr); }
+	inline const BlockList& GetPreds() { return preds; }
+	inline const BlockList& GetSuccs() { return succs; }
 	// 获取后继的数量
-	size_t GetNextCount() const;
+	inline size_t GetSuccsCount() const { return succs.size(); }
 	// 获取前驱的数量
-	size_t GetPrevCount() const { return prevs.size(); }
+	inline size_t GetPredsCount() const { return preds.size(); }
 	// 输出信息
 	void Dump();
-public:
-	std::list<NesBasicBlock*> prevs; // 前驱块
-	NesBasicBlock* nexts[2];  // 后继块
+
 	uint32_t flag;  // 一些标志
+private:
+	BlockList preds; // 前驱列表
+	BlockList succs;  // 后继列表
 };
 

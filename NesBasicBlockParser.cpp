@@ -106,8 +106,8 @@ std::vector<NesBasicBlock*> NesBasicBlockParser::Parse(Nes::Address start, Nes::
 					if (jumpAddr >= start && jumpAddr < end)
 					{
 						auto next = addrBlockMap[jumpAddr];
-						block->nexts[0] = next;
-						next->AddPrev(block);
+						block->AddSucc(jumpAddr);
+						next->AddPred(block->GetStartAddress());
 					}
 					block->flag |= BBF_END_UNCOND;
 					if (jumpAddr <= block->GetStartAddress())
@@ -136,14 +136,14 @@ std::vector<NesBasicBlock*> NesBasicBlockParser::Parse(Nes::Address start, Nes::
 				if (jumpAddr >= start && jumpAddr < end)
 				{
 					auto next = addrBlockMap[jumpAddr];
-					block->nexts[0] = next;
-					next->AddPrev(block);
+					block->AddSucc(jumpAddr);
+					next->AddPred(block->GetStartAddress());
 				}
 				if (current < end)
 				{
 					auto next = addrBlockMap[jumpAddr];
-					block->nexts[1] = next;
-					next->AddPrev(block);
+					block->AddSucc(jumpAddr);
+					next->AddPred(block->GetStartAddress());
 				}
 				break;
 			case Opcode::Rti:
@@ -156,8 +156,8 @@ std::vector<NesBasicBlock*> NesBasicBlockParser::Parse(Nes::Address start, Nes::
 					NesBasicBlock* next = addrBlockMap[current];
 					if (next)
 					{
-						block->nexts[0] = next;
-						next->AddPrev(block);
+						block->AddSucc(current);
+						next->AddPred(block->GetStartAddress());
 						block->flag |= BBF_END_NORMAL;
 					}
 				}

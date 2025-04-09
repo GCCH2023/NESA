@@ -6,6 +6,7 @@ class NesBasicBlock;
 struct CallRelation;
 
 // 解析 NES 子程序
+// 顺序解析子程序，范围外的跳转当作函数调用处理
 class NesSubroutineParser
 {
 public:
@@ -15,7 +16,7 @@ public:
 	// 解析指定地址范围的子程序
 	virtual void Parse(NesSubroutine* subroutine);
 	// 解析指定开始地址的子程序
-	NesSubroutine* Parse(uint32_t address);
+	NesSubroutine* Parse(uint32_t start, uint32_t end = 0xFFFF);
 	// 重置解析器，这样就可以用一个解析器对象来多次解析子程序了
 	void Reset();
 	// 输出子程序的信息

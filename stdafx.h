@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <stack>
 #include <map>
+#include <set>
 #define NOMINMAX
 #include <windows.h>
 

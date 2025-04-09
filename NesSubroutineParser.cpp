@@ -113,9 +113,9 @@ void NesSubroutineParser::Parse(NesSubroutine* subroutine)
 		subroutine->SetInline(true);
 }
 
-NesSubroutine* NesSubroutineParser::Parse(uint32_t address)
+NesSubroutine* NesSubroutineParser::Parse(uint32_t start, uint32_t end)
 {
-	auto sub = db.allocator.New<NesSubroutine>(address, 0xFFFF);
+	auto sub = db.allocator.New<NesSubroutine>(start, end);
 	Parse(sub);
 	return sub;
 }
@@ -299,8 +299,8 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 										 NesBasicBlock* next = this->subroutine->FindBasicBlock(nextAddr);
 										 if (next)
 										 {
-											 block->nexts[0] = next;
-											 next->AddPrev(block);
+											 block->AddSucc(nextAddr);
+											 next->AddPred(block->GetStartAddress());
 											 block->flag |= BBF_END_NORMAL;
 										 }
 										 break;
@@ -325,8 +325,8 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 													  }
 													  else
 													  {
-														  block->nexts[0] = next;
-														  next->AddPrev(block);
+														  block->AddSucc(address);
+														  next->AddPred(block->GetStartAddress());
 													  }
 												  }
 												  // 处理条件为真的情况
@@ -341,8 +341,8 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 													  }
 													  else
 													  {
-														  block->nexts[1] = next;
-														  next->AddPrev(block);
+														  block->AddSucc(address);
+														  next->AddPred(block->GetStartAddress());
 													  }
 												  }
 
@@ -375,8 +375,8 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 														}
 														else
 														{
-															block->nexts[0] = next;
-															next->AddPrev(block);
+															block->AddSucc(jumpAddr);
+															next->AddPred(block->GetStartAddress());
 														}
 													}
 													SetBasickBlockJumpFlag(block, false, jumpAddr);

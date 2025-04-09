@@ -33,6 +33,8 @@ public:
 
 	// 有序地添加基本块
 	void AddBasicBlock(NesBasicBlock* block);
+	// 获取开始地址为指定地址的基本块
+	NesBasicBlock* GetBasicBlock(Nes::Address startAddress);
 	// 根据地址查找基本块，该基本块包含指定地址
 	NesBasicBlock* FindBasicBlock(Nes::Address address);
 	// 获取指定地址区间内的基本块列表
@@ -51,6 +53,9 @@ public:
 
 	// 有序地添加子程序调用关系
 	void AddCallRelation(CallRelation* call);
+
+	// 获取分配器
+	inline Allocator& GetAllocator() { return allocator; }
 
 	Allocator allocator;
 
