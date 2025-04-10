@@ -1058,10 +1058,20 @@ CNode* CGraphTranslator::TranslateBody()
 {
 	BuildCFG();
 
-	NodeSet N = CAnalysis(this->graph->GetFullSet());
+	NodeSet N;
+	try
+	{
+		N = this->graph->GetFullSet();
+		//DumpCurrentCFG(N);
+		N = CAnalysis(N);
+	}
+	catch (Exception& e)
+	{
+		COUT << e.Message() << std::endl;
+	}
 	if (N.Count() != 1)  // 也可能只有一个基本块
 	{
-		//DumpCurrentCFG(N);
+		// DumpCurrentCFG(N);
 		Sprintf<> s;
 		s.Format(_T("翻译 %04X 时，控制树无法归约到单一根节点"), GetTACFunction()->GetStartAddress());
 		throw Exception(s.ToString());

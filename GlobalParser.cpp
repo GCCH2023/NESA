@@ -21,9 +21,10 @@ void GlobalParser::Parse(NesSubroutine* subroutine)
 		return;
 	Reset();
 
-	std::vector<Instruction> instructions(256);
-	instructions.clear();
-	db.GetInstructions(instructions, subroutine->GetStartAddress(), subroutine->GetEndAddress());
+	std::vector<Instruction> instructions;
+	instructions.reserve(256);
+
+	db.GetInstructions(instructions, subroutine);
 
 	uint32_t address = 0;
 	Type* type = nullptr;

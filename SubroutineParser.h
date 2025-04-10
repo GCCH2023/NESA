@@ -1,6 +1,8 @@
 #pragma once
 class NesSubroutine;
 class NesDataBase;
+class NesBasicBlock;
+struct Instruction;
 
 namespace NesDB
 {
@@ -12,9 +14,13 @@ namespace NesDB
 		SubroutineParser(NesDataBase& db);
 		NesSubroutine* Parse(Nes::Address start);
 		void Reset();
-
+	protected:
+		// 分析完一个基本块时调用
+		// instruction: 基本块的最后一条指令
+		virtual void OnEndBasicBlock(NesBasicBlock* block, const Instruction& instruction);
 	protected:
 		NesDataBase& db;
+		NesSubroutine* subroutine;  // 当前分析的子程序
 	};
 }
 

@@ -128,29 +128,6 @@ void NesSubroutineParser::Reset()
 	isInline = false;
 }
 
-void NesSubroutineParser::Dump()
-{
-	Sprintf<> s;
-	COUT << s.Format(_T("函数 %04X 的结束地址为: %04X\n"), subroutine->GetStartAddress(), subroutine->GetEndAddress());
-	s.Clear();
-	Instruction instruction;
-	for (auto block : subroutine->GetBasicBlocks())
-	{
-		block->Dump();
-		for (auto addr = block->GetStartAddress(); addr < block->GetEndAddress();)
-		{
-			auto p = db.GetCartridge().GetData(addr);
-			instruction.Set(addr, p);
-
-
-			COUT << s.Format(_T("%04X    %s\n"), instruction.GetAddress(), FormatInstruction(instruction));
-			s.Clear();
-			int bytes = instruction.GetLength();
-			p += bytes;
-			addr += bytes;
-		}
-	}
-}
 
 bool NesSubroutineParser::ParseInstruction(const Instruction& instruction)
 {
@@ -260,11 +237,6 @@ void NesSubroutineParser::ParseBasicBlocks()
 	}
 	lastBlock->SetEndAddress(this->subroutine->GetEndAddress());
 
-	// 设置入口基本块
-	auto& blocks = this->subroutine->GetBasicBlocks();
-	if (!blocks.empty())
-		this->subroutine->GetBasicBlocks()[0]->flag |= BBF_ENTRY;
-
 	for (auto block : this->subroutine->GetBasicBlocks())
 	{
 		ParseBasicBlockInstructions(block);
@@ -296,7 +268,7 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 	{
 										 // 后面一条指令属于下一个基本块
 										 // 那么这条指令就是这个基本块的末尾
-										 NesBasicBlock* next = this->subroutine->FindBasicBlock(nextAddr);
+										 NesBasicBlock* next = this->subroutine->GetBasicBlock(nextAddr);
 										 if (next)
 										 {
 											 block->AddSucc(nextAddr);
@@ -316,7 +288,7 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 												  Nes::Address address = instruction.address + length;
 												  if (this->subroutine->Contains(address))
 												  {
-													  NesBasicBlock* next = this->subroutine->FindBasicBlock(address);
+													  NesBasicBlock* next = this->subroutine->GetBasicBlock(address);
 													  if (!next)
 													  {
 														  COUT << s.Format(_T("无法在子程序 %04X 中找到地址为 %04X 的基本块\n"),
@@ -333,7 +305,7 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 												  address += (char)instruction.GetByte();
 												  if (this->subroutine->Contains(address))
 												  {
-													  auto next = this->subroutine->FindBasicBlock(address);
+													  auto next = this->subroutine->GetBasicBlock(address);
 													  if (!next)
 													  {
 														  COUT << s.Format(_T("无法在子程序 %04X 中找到地址为 %04X 的基本块\n"),
@@ -366,7 +338,7 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 													}
 													if (this->subroutine->Contains(jumpAddr))
 													{
-														NesBasicBlock* next = this->subroutine->FindBasicBlock(jumpAddr);
+														NesBasicBlock* next = this->subroutine->GetBasicBlock(jumpAddr);
 														if (!next)
 														{
 															/*printf("无法在子程序 %04X 中找到地址为 %04X 的基本块\n",

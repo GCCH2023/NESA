@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "NesSubroutine.h"
 #include "NesBasicBlock.h"
+#include "NesUtil.h"
 
 NesSubroutine::NesSubroutine()
 {
@@ -16,18 +17,10 @@ void NesSubroutine::AddBasicBlock(NesBasicBlock* block)
 {
 	if (!block)
 		return;
-	// 使用 std::lower_bound 查找插入位置
-	auto it = std::lower_bound(blocks.begin(), blocks.end(), block, [](NesBasicBlock* a, NesBasicBlock* b) {
-		return a->GetStartAddress() < b->GetStartAddress();
-	});
-
-	// 检查该位置是否已经存在相同的值
-	if (it == blocks.end() || (*it)->GetStartAddress() != block->GetStartAddress())
-		// 如果不存在相同的值，则插入新值
-		blocks.insert(it, block);
+	AddNesObject(blocks, block);
 }
 
-NesBasicBlock* NesSubroutine::FindBasicBlock(Nes::Address addr)
+NesBasicBlock* NesSubroutine::GetBasicBlock(Nes::Address addr)
 {
 	auto it = std::lower_bound(blocks.begin(), blocks.end(), addr, [](NesBasicBlock* a, Nes::Address addr) {
 		return a->GetStartAddress() < addr;
@@ -35,6 +28,15 @@ NesBasicBlock* NesSubroutine::FindBasicBlock(Nes::Address addr)
 	if (it != blocks.end() && (*it)->GetStartAddress() == addr)
 		return *it;
 	return nullptr;
+}
+
+// 获取入口基本块
+
+NesBasicBlock* NesSubroutine::GetEntryBasicBlock()
+{
+	if (blocks.empty())
+		return nullptr;
+	return GetBasicBlock(GetStartAddress());
 }
 
 void NesSubroutine::Clear()
@@ -55,6 +57,16 @@ void NesSubroutine::AddCall(Nes::Address addr)
 void NesSubroutine::Dump()
 {
 
+}
+
+bool NesSubroutine::Contains(Nes::Address addr)
+{
+	for (auto block : GetBasicBlocks())
+	{
+		if (block->Contains(addr))
+			return true;
+	}
+	return false;
 }
 
 CallRelation::CallRelation():

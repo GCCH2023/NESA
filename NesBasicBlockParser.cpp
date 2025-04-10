@@ -83,10 +83,6 @@ std::vector<NesBasicBlock*> NesBasicBlockParser::Parse(Nes::Address start, Nes::
 	}
 
 	// 3. 设置基本块的前驱和后继
-	// 设置入口基本块
-	if (!blocks.empty())
-		blocks[0]->flag |= BBF_ENTRY;
-
 	p = db.GetCartridge().GetData(start);
 	for (auto block : blocks)
 	{

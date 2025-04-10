@@ -35,6 +35,8 @@ enum SubroutineFlag
 	SUBF_LOCAL = 0x1C0,  // 使用了 AXY 寄存器作为局部变量
 };
 
+// 子程序的指令不一定连续存放，所以结束地址没有太大意义
+// 只能根据包含的所有基本块来获取包含的所有指令
 class NesSubroutine : public NesRegion
 {
 public:
@@ -45,7 +47,9 @@ public:
 	void AddBasicBlock(NesBasicBlock* block);
 	const BasicBlockList& GetBasicBlocks() const { return blocks; }
 	// 根据地址查找基本块
-	NesBasicBlock* FindBasicBlock(Nes::Address addr);
+	NesBasicBlock* GetBasicBlock(Nes::Address startAddr);
+	// 获取入口基本块
+	NesBasicBlock* GetEntryBasicBlock();
 	// 清空基本块和调用信息
 	void Clear();
 
@@ -66,6 +70,9 @@ public:
 	bool IsInline() const { return isInline; }
 	// 设置内联函数标志
 	void SetInline(bool isInline) { this->isInline = isInline; }
+
+	// 如果地址包含在某个基本块内，则包含在子程序内
+	virtual bool Contains(Nes::Address addr) override;
 
 	uint32_t flag;  // 低3
 protected:

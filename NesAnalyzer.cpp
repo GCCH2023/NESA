@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "NesAnalyzer.h"
-#include "NesSubroutinesParser.h"
+#include "SubroutineParser.h"
 #include "NesDataBase.h"
 #include "TACTranslater1.h"
 #include "GlobalParser.h"
@@ -179,8 +179,35 @@ NesAnalyzer::~NesAnalyzer()
 // 分析子程序
 void NesAnalyzer::AnalyzeSubroutine()
 {
-	NesSubroutinesParser parser(db);
-	this->subroutines = parser.Parse(db.GetInterruptResetAddress());
+	//NesSubroutinesParser parser(db);
+	//this->subroutines = parser.Parse(db.GetInterruptResetAddress());
+
+	NesDB::SubroutineParser parser(db);
+	// 构建初始的待分析子程地址序队列
+	std::vector<Nes::Address> queue =
+	{
+		db.GetInterruptResetAddress(),
+		//db.GetInterruptNmiAddress(),
+		//db.GetInterruptIrqAddress(),
+	};
+
+	// 循环分析所有函数
+	while (!queue.empty())
+	{
+		// 取出一个函数地址进行分析
+		auto addr = *queue.rbegin();
+		queue.pop_back();
+
+		// parser 会判断子程序是否分析过，所以这里不需要判断
+		NesSubroutine* subroutine = parser.Parse(addr);
+
+		// 将子程序调用的子程序添加到队列
+		for (auto call : subroutine->GetCalls())
+		{
+			queue.push_back(call);
+		}
+	}
+	this->subroutines = db.GetSubroutines();
 }
 
 void NesAnalyzer::DumpCallRelation(NesSubroutine* subroutine)

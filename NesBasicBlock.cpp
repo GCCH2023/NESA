@@ -21,10 +21,25 @@ succs(other.succs)
 {
 }
 
+void NesBasicBlock::Split(Nes::Address addr, NesBasicBlock* succ)
+{
+	if (addr <= GetStartAddress() || addr >= GetEndAddress())
+		return;
+	succ->SetStartAddress(addr);
+	succ->SetEndAddress(GetEndAddress());
+	succ->succs = succs;
+	succ->preds.clear();
+	succ->preds.push_back(GetStartAddress());
+
+	SetEndAddress(addr);
+	succs.clear();
+	succs.push_back(succ->GetStartAddress());
+}
+
 void NesBasicBlock::Dump()
 {
 	Sprintf<> s;
-	s.Format(_T("\n==== 基本块 %04X:"), this->GetStartAddress());
+	s.Format(_T("==== 基本块 %04X:"), this->GetStartAddress());
 	s.Append(_T("前驱 = "));
 	if (this->preds.empty())
 		s.Append(_T("null"));

@@ -219,7 +219,7 @@
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="SubroutineParser.h">
-      <Filter>头文件</Filter>
+      <Filter>NesDB</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -374,7 +374,7 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="SubroutineParser.cpp">
-      <Filter>源文件</Filter>
+      <Filter>NesDB</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -14,3 +14,8 @@ endAddress(endAddr)
 {
 
 }
+
+bool NesRegion::Contains(Nes::Address addr)
+{
+	return addr >= startAddress && addr < endAddress;
+}

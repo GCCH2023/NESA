@@ -44,6 +44,16 @@ TACList TACFunction::GetCodes()
 	return tacs;
 }
 
+TACBasicBlock* TACFunction::GetEntryBasicBlock()
+{
+	for (auto block : GetBasicBlocks())
+	{
+		if (block->GetStartAddress() == GetStartAddress())
+			return block;
+	}
+	return nullptr;
+}
+
 int TACFunction::NewTemp(Type* type)
 {
 	assert(type);

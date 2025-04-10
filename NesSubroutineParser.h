@@ -19,8 +19,6 @@ public:
 	NesSubroutine* Parse(uint32_t start, uint32_t end = 0xFFFF);
 	// 重置解析器，这样就可以用一个解析器对象来多次解析子程序了
 	void Reset();
-	// 输出子程序的信息
-	void Dump();
 protected:
 	// 当需要分析一条指令的时候调用，返回值表示是否继续分析下一条指令
 	virtual bool ParseInstruction(const Instruction& instruction);

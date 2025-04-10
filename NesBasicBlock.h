@@ -13,8 +13,6 @@ enum BasicBlockFlag
 	BBF_JUMP_BEFOER = 4,  // 条件跳转到低地址，没有此标志则是跳转到高地址
 
 	BBF_JUMP_SELF = 8,  // 跳转到自己
-
-	BBF_ENTRY = 16,  // 函数入口基本块
 };
 
 // 基本块的一些特性
@@ -42,6 +40,14 @@ public:
 	inline size_t GetSuccsCount() const { return succs.size(); }
 	// 获取前驱的数量
 	inline size_t GetPredsCount() const { return preds.size(); }
+	// 从指定地址分割，后半部分设置为指定基本块
+	// 指定地址必须位于此基本块中间(大于开始地址且小于结束地址)
+	void Split(Nes::Address addr, NesBasicBlock* succ);
+	// 设置结束标志
+	void SetEndFlag(BasicBlockFlag endFlag)
+	{
+		flag = (flag & ~BBF_END_MASK) | (endFlag & BBF_END_MASK);
+	}
 	// 输出信息
 	void Dump();
 

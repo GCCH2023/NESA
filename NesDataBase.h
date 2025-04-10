@@ -30,6 +30,8 @@ public:
 	const Instruction* GetInstruction(Nes::Address address);
 	// 获取指定地址范围内的指令
 	void GetInstructions(InstructionList& list, Nes::Address begin, Nes::Address end);
+	// 获取子程序包含的所有指令
+	void GetInstructions(InstructionList& list, NesSubroutine* subroutine);
 
 	// 有序地添加基本块
 	void AddBasicBlock(NesBasicBlock* block);
@@ -39,6 +41,8 @@ public:
 	NesBasicBlock* FindBasicBlock(Nes::Address address);
 	// 获取指定地址区间内的基本块列表
 	BasicBlockList GetBasicBlocks(Nes::Address start, Nes::Address end);
+	// 根据地址获取获取包含这个地址的基本块或者这个地址后面的第一个基本块
+	NesBasicBlock* GetBasicBlockOrNext(Nes::Address address);
 
 	// 有序地添加子程序
 	void AddSubroutine(NesSubroutine* subroutine);

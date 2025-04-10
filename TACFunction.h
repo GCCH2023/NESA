@@ -44,6 +44,8 @@ public:
 	// 添加一个基本块
 	inline void AddBasicBlock(TACBasicBlock* block) { blocks.push_back(block); }
 	inline TACBasicBlockList& GetBasicBlocks() { return blocks; }
+	// 获取入口基本块
+	TACBasicBlock* GetEntryBasicBlock();
 
 	// 添加一个新的临时变量，返回其编号
 	// bytes 是它占用的字节数 (目前没用到）

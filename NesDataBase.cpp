@@ -44,6 +44,14 @@ void NesDataBase::GetInstructions(InstructionList& list, Nes::Address begin, Nes
 	}
 }
 
+void NesDataBase::GetInstructions(InstructionList& list, NesSubroutine* subroutine)
+{
+	for (auto block : subroutine->GetBasicBlocks())
+	{
+		GetInstructions(list, block->GetStartAddress(), block->GetEndAddress());
+	}
+}
+
 void NesDataBase::AddBasicBlock(NesBasicBlock* block)
 {
 	AddNesObject(basicBlocks, block);
@@ -56,7 +64,19 @@ NesBasicBlock* NesDataBase::GetBasicBlock(Nes::Address address)
 
 NesBasicBlock* NesDataBase::FindBasicBlock(Nes::Address address)
 {
-	return FindNesObject(basicBlocks, address);
+	// 使用二分查找快速定位
+	auto it = std::upper_bound(basicBlocks.begin(), basicBlocks.end(), address,
+		[](Nes::Address addr, const NesBasicBlock* block) {
+			return addr < block->GetStartAddress();
+		});
+
+	if (it != basicBlocks.begin()) {
+		--it; // 回退到可能包含该地址的块
+		if ((*it)->Contains(address))
+			return *it;
+	}
+
+	return nullptr; // 没有找到包含该地址的块
 }
 
 BasicBlockList NesDataBase::GetBasicBlocks(Nes::Address start, Nes::Address end)
@@ -70,6 +90,19 @@ BasicBlockList NesDataBase::GetBasicBlocks(Nes::Address start, Nes::Address end)
 		}
 	}
 	return list;
+}
+
+NesBasicBlock* NesDataBase::GetBasicBlockOrNext(Nes::Address address)
+{
+	// 查找第一个结束地址大于指定地址的子程序
+	auto it = std::lower_bound(basicBlocks.begin(), basicBlocks.end(), address,
+		[](const NesBasicBlock* a, Nes::Address address) {
+			return a->GetEndAddress() <= address;
+		});
+	// 如果该子程序包含指定地址，则返回它，否则返回空
+	if (it == basicBlocks.end())
+		return nullptr;
+	return *it;
 }
 
 void NesDataBase::AddSubroutine(NesSubroutine* subroutine)

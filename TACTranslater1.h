@@ -7,6 +7,7 @@ struct Type;
 // 将 NES 代码转换为 NES 三地址码
 // TAC 子程序，基本块，指令都在分配器上分配
 // 翻译一条指令时，该指令影响的标志位也会翻译
+// ! 跳转到函数范围外的指令翻译为函数调用
 class TACTranslater1
 {
 public:

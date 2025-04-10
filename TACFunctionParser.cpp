@@ -52,7 +52,7 @@ void TACFunctionParser::Parse(TACFunction* func)
 	//func->Dump();
 
 	// 4. 如果入口基本块中使用了AXY，则AXY作为参数
-	auto entry = *func->GetBasicBlocks().begin();
+	auto entry = func->GetEntryBasicBlock();
 	auto lives = (BasicBlockLiveVariableSet*)entry->tag;
 	func->flag |= (uint32_t)lives->in.ToInteger();
 

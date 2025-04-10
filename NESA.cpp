@@ -7,6 +7,7 @@ using namespace std;
 using namespace Nes;
 
 #include "NesSubroutineParser.h"
+#include "SubroutineParser.h"
 #include "TACTranslater.h"
 #include "TACTranslater1.h"
 #include "CGraphTranslator.h"
@@ -67,6 +68,32 @@ void GlobalTest()
 		COUT << _T("找不到全局变量 ") << endl;
 	}
 }
+
+void DumpNesSubroutine(NesDataBase& db, NesSubroutine* subroutine)
+{
+	Sprintf<> s;
+	COUT << s.Format(_T("函数 %04X 的结束地址为: %04X\n"), subroutine->GetStartAddress(), subroutine->GetEndAddress());
+	s.Clear();
+	Instruction instruction;
+	for (auto block : subroutine->GetBasicBlocks())
+	{
+		block->Dump();
+		for (auto addr = block->GetStartAddress(); addr < block->GetEndAddress();)
+		{
+			auto p = db.GetCartridge().GetData(addr);
+			instruction.Set(addr, p);
+
+
+			COUT << s.Format(_T("%04X    %s\n"), instruction.GetAddress(), FormatInstruction(instruction));
+			s.Clear();
+			int bytes = instruction.GetLength();
+			p += bytes;
+			addr += bytes;
+		}
+		COUT << std::endl;
+	}
+}
+
 
 void ParseNes(const TCHAR* rom)
 {
@@ -129,7 +156,7 @@ void ParseNes(const TCHAR* rom)
 		NesSubroutine* subroutine = parser.Parse(addr);
 		COUT << _T("\n基本块:\n");
 		// 输出 FC 指令
-		parser.Dump();
+		DumpNesSubroutine(db, subroutine);
 
 		// 解析全局变量
 		globalParser.Parse(subroutine);
@@ -259,7 +286,7 @@ void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0, Nes::Addr
 		NesSubroutine* subroutine = parser.Parse(addr, end);
 		COUT << _T("\n基本块:\n");
 		// 输出 FC 指令
-		parser.Dump();
+		DumpNesSubroutine(db, subroutine);
 
 		// 解析全局变量
 		globalParser.Parse(subroutine);
@@ -287,6 +314,75 @@ void TACFunctionParserTest(const TCHAR* rom, Nes::Address address = 0, Nes::Addr
 		// DumpCNodeStructures(COUT, func->GetBody(), 0);
 		COUT << endl;
 		DumpDefinition(func);
+	}
+	catch (Exception& e)
+	{
+		COUT << e.Message() << endl;
+	}
+	catch (std::exception& e)
+	{
+		cout << e.what() << endl;
+	}
+}
+
+void NesDBSubroutineParserTest(const TCHAR* rom, Nes::Address address = 0, Nes::Address end = 0xFFFF)
+{
+	Allocator allocator;
+	try
+	{
+		NesDataBase db(rom);
+		Sprintf<> s;
+		s.Format(_T("成功加载ROM: %s\n"), rom);
+		s.Append(_T("中断向量处理程序 NMI : 0x%04X\n"), db.GetInterruptNmiAddress());
+		s.Append(_T("中断向量处理程序 RESET : 0x%04X\n"), db.GetInterruptResetAddress());
+		s.Append(_T("中断向量处理程序 IRQ : 0x%04X\n"), db.GetInterruptIrqAddress());
+		COUT << s.ToString();
+
+		NesDB::SubroutineParser parser(db);
+		if (address == 0)
+			address = db.GetInterruptNmiAddress();
+		Nes::Address addr = address;
+
+		NesSubroutine* subroutine = parser.Parse(addr);
+		COUT << _T("\n基本块:\n");
+		// 输出 FC 指令
+		DumpNesSubroutine(db, subroutine);
+
+		TACTranslater1 ntt(db, allocator);
+		// CGraphTranslator translater(allocator);
+		// CDirectTranslator translater(allocator);
+		CCommonTranslator translater(allocator);
+		CTreeOptimizer ctreeOptimizer;
+		GlobalParser globalParser(db);
+		TACFunctionParser funcParser(db);
+
+		// 解析全局变量
+		globalParser.Parse(subroutine);
+
+		// 生成三地址码
+		TACFunction* tacSub = ntt.Translate(subroutine);
+		COUT << _T("\n三地址码:\n");
+		tacSub->Dump();
+
+		// 分析函数
+		funcParser.Parse(tacSub);
+		COUT << _T("\n分析函数后:\n");
+		tacSub->Dump();
+
+		// 生成C代码
+		auto func = translater.Translate(tacSub);
+		//COUT << func->GetBody();
+
+		//COUT << _T("\n语法树结构:\n");
+		//DumpCNodeStructures(COUT, func->GetBody(), 0);
+
+		// 优化C代码结构
+		//ctreeOptimizer.Optimize(func->GetBody());
+		//COUT << _T("\n优化语法树结构后:\n");
+		// DumpCNodeStructures(COUT, func->GetBody(), 0);
+		COUT << endl;
+		DumpDefinition(func);
+
 	}
 	catch (Exception& e)
 	{
@@ -331,13 +427,14 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//SavePRG(rom);
 
-	//ParseNes(rom);
+	// ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
-	TACFunctionParserTest(rom, 62400, 62414);
+	//TACFunctionParserTest(rom, 62400, 62414);
 	//SubroutineRangeParserTest(rom);
+	NesDBSubroutineParserTest(rom, 0x8000);
 	system("pause");
 	return 0;
 }
