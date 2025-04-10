@@ -26,7 +26,7 @@ T* FindNesObject(std::vector<T*>& list, Nes::Address address)
 		return a->GetStartAddress() < address;
 	});
 	// 检查该位置是否已经存在相同的值
-	if (it != list.end())
+	if (it != list.end() && (*it)->GetStartAddress() == address)
 		return *it;
 	return nullptr;
 }

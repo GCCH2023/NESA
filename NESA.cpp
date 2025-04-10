@@ -123,10 +123,14 @@ void ParseNes(const TCHAR* rom)
 		// 生成C代码
 		for (auto sub : db.GetSubroutines())
 		{
+			if (sub->GetStartAddress() == 0x8E19)
+			{
+				int a = 0;
+			}
 			// 生成三地址码
 			TACFunction* tacSub = ntt.Translate(sub);
-			/*if (sub->GetStartAddress() == 0x8220)
-				COUT << _T("\n三地址码:\n");*/
+			if (sub->GetStartAddress() == 0x8E19)
+				COUT << _T("\n三地址码:\n");
 			// tacSub->Dump();
 
 			// 1. 进行窥孔优化
@@ -427,14 +431,14 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//SavePRG(rom);
 
-	// ParseNes(rom);
+	ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
 	//TACFunctionParserTest(rom, 62400, 62414);
 	//SubroutineRangeParserTest(rom);
-	NesDBSubroutineParserTest(rom, 0x8000);
+	//NesDBSubroutineParserTest(rom, 0x8E19);
 	system("pause");
 	return 0;
 }

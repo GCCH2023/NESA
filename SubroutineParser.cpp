@@ -11,6 +11,10 @@ NesDB::SubroutineParser::SubroutineParser(NesDataBase& db_):
 
 NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 {
+	if (start == 0x8E19)
+	{
+		int a = 0;
+	}
 	subroutine = db.FindSubroutine(start);
 	if (subroutine)
 		return subroutine;
@@ -163,6 +167,14 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 
 	subroutine->SetEndAddress(current);  // 只有指令是连续存放的时候才有意义
 	db.AddSubroutine(subroutine);
+	if (subroutine->GetStartAddress() == 0x8E19)
+	{
+		for (auto block : subroutine->GetBasicBlocks())
+		{
+			block->Dump();
+		}
+		int a = 0;
+	}
     return subroutine;
 }
 
