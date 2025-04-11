@@ -40,9 +40,15 @@ public:
 	inline size_t GetSuccsCount() const { return succs.size(); }
 	// 获取前驱的数量
 	inline size_t GetPredsCount() const { return preds.size(); }
+	inline void ClearPreds() { preds.clear(); }
+	inline void ClearSuccs() { succs.clear(); }
 	// 从指定地址分割，后半部分设置为指定基本块
 	// 指定地址必须位于此基本块中间(大于开始地址且小于结束地址)
 	void Split(Nes::Address addr, NesBasicBlock* succ);
+	// 判断指定地址是否是前驱
+	bool IsPred(Nes::Address addr) const;
+	// 判断指定地址是否是后继
+	bool IsSucc(Nes::Address addr) const;
 	// 设置结束标志
 	void SetEndFlag(BasicBlockFlag endFlag)
 	{

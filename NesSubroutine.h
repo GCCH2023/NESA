@@ -37,6 +37,7 @@ enum SubroutineFlag
 
 // 子程序的指令不一定连续存放，所以结束地址没有太大意义
 // 只能根据包含的所有基本块来获取包含的所有指令
+// 结束地址存放的是开始地址连续指令的最大地址
 class NesSubroutine : public NesRegion
 {
 public:
@@ -45,7 +46,7 @@ public:
 
 	// 按地址从小到大地添加基本块，重复地址不添加
 	void AddBasicBlock(NesBasicBlock* block);
-	const BasicBlockList& GetBasicBlocks() const { return blocks; }
+	inline const BasicBlockList& GetBasicBlocks() const { return blocks; }
 	// 根据地址查找基本块
 	NesBasicBlock* GetBasicBlock(Nes::Address startAddr);
 	// 获取入口基本块

@@ -11,10 +11,6 @@ NesDB::SubroutineParser::SubroutineParser(NesDataBase& db_):
 
 NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 {
-	if (start == 0x8E19)
-	{
-		int a = 0;
-	}
 	subroutine = db.FindSubroutine(start);
 	if (subroutine)
 		return subroutine;
@@ -26,8 +22,6 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 	Address jumpAddr, current = 0;
 	int bytes;
 
-	std::vector<Address> queue;
-	std::unordered_set<NesBasicBlock*> blocks;  // 需要设置前驱的基本块列表
 	subroutine = db.GetAllocator().New <NesSubroutine>();
 	subroutine->SetStartAddress(start);
 
@@ -37,54 +31,11 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 		current = queue.back();
 		queue.pop_back();
 
-		if (subroutine->GetBasicBlock(current))
+		if ((end = ParseExist(current)) == 0)
 			continue;
-
-		// 在数据库中查找包含当前地址的基本块或下一个基本块
-		auto bb = db.GetBasicBlockOrNext(current);
-		if (bb)
-		{
-			auto block = bb;
-			if (current > bb->GetStartAddress())
-			{
-				// 地址在基本块中间，需要分割为两个基本块
-				block = db.GetAllocator().New<NesBasicBlock>();
-				bb->Split(current, block);
-				db.AddBasicBlock(block);
-				bb->SetEndFlag(BBF_END_NORMAL);
-				subroutine->AddBasicBlock(block);
-				// 将所有后继加入到函数的基本块中
-				for (auto succ : block->GetSuccs())
-					queue.push_back(succ);
-				// 如果bb是需要回填前驱的基本块，那么改为block需要回填
-				if (blocks.find(bb) != blocks.end())
-				{
-					blocks.erase(bb);
-					blocks.insert(block);
-				}
-			/*	COUT << s.Format(_T("\n拆分基本块 %04X - %04X - %04X\n"),
-					bb->GetStartAddress(), block->GetStartAddress(), block->GetEndAddress());
-				bb->Dump();
-				block->Dump();*/
-				
-				continue;
-			}
-			else if (current == bb->GetStartAddress())
-			{
-				// 该地址的基本块已经存在
-				subroutine->AddBasicBlock(block);
-				// 将所有后继加入到函数的基本块中
-				for (auto succ : block->GetSuccs())
-					queue.push_back(succ);
-				continue;
-			}
-			// 当前基本块不能超过下一个基本块的开始地址
-			end = bb->GetStartAddress();
-		}
 
 		NesBasicBlock* block = db.GetAllocator().New<NesBasicBlock>();
 		block->SetStartAddress(current);
-		blocks.insert(block);
 
 		bool blockEnded = false;
 		const uint8_t* p = db.GetCartridge().GetData(current);
@@ -145,46 +96,84 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 			if (current >= end)
 			{
 				// 接触到下一个基本块了
-				queue.push_back(jumpAddr);
 				block->AddSucc(jumpAddr);
 				break;
 			}
 		}
 
 		block->SetEndAddress(current);
-		OnEndBasicBlock(block, instruction);
+		AddBasicBlock(block);
 	}
-
-	// 上面的代码只能添加基本块的后继，还添加前驱
-	for (auto block : blocks)
+	//COUT << _T("准备回填\n");
+	//for (auto it : blocks)
+	//{
+	//	it.second->Dump();
+	//}
+	// 上面的代码只能添加基本块的后继，还需要添加前驱
+	// 同时计算子程序的范围，开始地址到最大连续基本块的末尾地址
+	current = subroutine->GetStartAddress();
+	for (auto it : blocks)
 	{
+		auto block = it.second;
+		if (block->GetStartAddress() == current)
+			current = block->GetEndAddress();
 		for (auto succ : block->GetSuccs())
 		{
-			auto succBlock = db.GetBasicBlock(succ);
+			auto succBlock = GetBasicBlockOrNext(succ);
+			assert(succBlock->GetStartAddress() == succ);
 			succBlock->AddPred(block->GetStartAddress());
 		}
+		subroutine->AddBasicBlock(block);
 	}
 
 	subroutine->SetEndAddress(current);  // 只有指令是连续存放的时候才有意义
 	db.AddSubroutine(subroutine);
-	if (subroutine->GetStartAddress() == 0x8E19)
-	{
-		for (auto block : subroutine->GetBasicBlocks())
-		{
-			block->Dump();
-		}
-		int a = 0;
-	}
     return subroutine;
 }
 
 void SubroutineParser::Reset()
 {
 	subroutine = nullptr;
+	queue.clear();
+	blocks.clear();
 }
 
-void NesDB::SubroutineParser::OnEndBasicBlock(NesBasicBlock* block, const Instruction& instruction)
+NesBasicBlock* NesDB::SubroutineParser::GetBasicBlockOrNext(Nes::Address address)
 {
-	subroutine->AddBasicBlock(block);
-	db.AddBasicBlock(block);
+	// 查找第一个结束地址大于指定地址的子程序
+	auto it = std::lower_bound(blocks.begin(), blocks.end(), address,
+		[](const std::pair<Nes::Address, NesBasicBlock*>& p, Nes::Address address) {
+			return p.second->GetEndAddress() <= address;
+		});
+	// 如果该子程序包含指定地址，则返回它，否则返回空
+	if (it == blocks.end())
+		return nullptr;
+	return it->second;
+}
+
+void NesDB::SubroutineParser::AddBasicBlock(NesBasicBlock* block)
+{
+	blocks.insert({ block->GetStartAddress(), block });
+}
+
+Nes::Address NesDB::SubroutineParser::ParseExist(Nes::Address address)
+{
+	// 查找包含当前地址的基本块或下一个基本块
+	auto bb = GetBasicBlockOrNext(address);
+	if (bb == nullptr)
+		return 0x10000;  // NES 地址上限
+
+	auto block = bb;
+	if (address > bb->GetStartAddress())  // 地址在基本块中间，需要分割为两个基本块
+	{
+		block = db.GetAllocator().New<NesBasicBlock>();
+		bb->Split(address, block);
+		bb->SetEndFlag(BBF_END_NORMAL);
+		block->ClearPreds();  // 避免重复添加
+		AddBasicBlock(block);
+		return 0;
+	}
+	// 如果存在开始地址为address的基本块就返回0，
+	// 否则返回下一个基本块的开始地址
+	return address == bb->GetStartAddress() ? 0 : bb->GetStartAddress();
 }

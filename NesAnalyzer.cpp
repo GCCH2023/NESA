@@ -145,7 +145,7 @@ public:
 		std::reverse(component_order.begin(), component_order.end());
 
 		// ´æ´¢·ÖÎö½á¹û
-		for (int comp_id : component_order)
+		for (size_t comp_id : component_order)
 		{
 			const auto& scc = scc_groups[comp_id];
 

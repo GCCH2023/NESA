@@ -36,6 +36,18 @@ void NesBasicBlock::Split(Nes::Address addr, NesBasicBlock* succ)
 	succs.push_back(succ->GetStartAddress());
 }
 
+bool NesBasicBlock::IsPred(Nes::Address addr) const
+{
+	auto it = std::find(preds.begin(), preds.end(), addr);
+	return it != preds.end();
+}
+
+bool NesBasicBlock::IsSucc(Nes::Address addr) const
+{
+	auto it = std::find(succs.begin(), succs.end(), addr);
+	return it != succs.end();
+}
+
 void NesBasicBlock::Dump()
 {
 	Sprintf<> s;

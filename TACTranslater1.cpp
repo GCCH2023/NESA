@@ -21,10 +21,6 @@ TACFunction* TACTranslater1::Translate(NesSubroutine* subroutine)
 {
 	if (!subroutine)
 		return nullptr;
-	if (subroutine->GetStartAddress() == 62400)
-	{
-		int a = 0;
-	}
 	Reset();
 
 	this->nesSub = subroutine;
@@ -244,10 +240,6 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 		auto& i = instructions[index];
 		const OpcodeEntry& entry = GetOpcodeEntry(i.GetOperatorByte());
 		this->SaveTACStart();  // 记录这条指令对应的三地址码开始索引
-		if (i.address == 0xF3CC)
-		{
-			int a = 0;
-		}
 		switch (entry.opcode)
 		{
 		case Nes::Opcode::None:
