@@ -38,7 +38,7 @@ class NesSubroutineProtoAnalyzer
 	TACTranslater1 tacTranslater;
 	TACFunctionParser tacFuncParser;
 
-	void analyzeFunction(Vertex v)
+	void AnalyzeFunction(Vertex v)
 	{
 		if (graph[v].analyzed)
 			return;
@@ -51,7 +51,7 @@ class NesSubroutineProtoAnalyzer
 		graph[v].analyzed = true;
 	}
 
-	void analyzeSCC(const std::vector<Vertex>& scc)
+	void AnalyzeSCC(const std::vector<Vertex>& scc)
 	{
 		std::vector<TACFunction*> funcs(num_vertices(graph), nullptr);
 		// 分析整个环的所有函数
@@ -102,6 +102,7 @@ public:
 		for (size_t i = 0; i < subroutines.size(); ++i)
 		{
 			graph[i].subroutine = subroutines[i];
+			graph[i].analyzed = false;
 			subroutines[i]->tag = (void*)i;
 		}
 
@@ -153,12 +154,12 @@ public:
 			{
 				// 单个函数，无循环依赖
 				Vertex v = scc[0];
-				analyzeFunction(v);
+				AnalyzeFunction(v);
 			}
 			else
 			{
 				// 循环依赖组，需要迭代分析
-				analyzeSCC(scc);
+				AnalyzeSCC(scc);
 			}
 		}
 	}
@@ -186,10 +187,11 @@ void NesAnalyzer::AnalyzeSubroutine()
 	// 构建初始的待分析子程地址序队列
 	std::vector<Nes::Address> queue =
 	{
-		db.GetInterruptResetAddress(),
-		//db.GetInterruptNmiAddress(),
+		// db.GetInterruptResetAddress(),
+		db.GetInterruptNmiAddress(),
 		//db.GetInterruptIrqAddress(),
 	};
+	std::unordered_set<Nes::Address> visited;
 
 	// 循环分析所有函数
 	while (!queue.empty())
@@ -197,9 +199,12 @@ void NesAnalyzer::AnalyzeSubroutine()
 		// 取出一个函数地址进行分析
 		auto addr = *queue.rbegin();
 		queue.pop_back();
+		if (visited.find(addr) != visited.end())
+			continue;
 
 		// parser 会判断子程序是否分析过，所以这里不需要判断
 		NesSubroutine* subroutine = parser.Parse(addr);
+		visited.insert(addr);
 
 		// 将子程序调用的子程序添加到队列
 		for (auto call : subroutine->GetCalls())

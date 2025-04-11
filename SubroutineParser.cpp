@@ -64,7 +64,7 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 					block->SetEndFlag(BBF_END_UNCOND);
 					break;
 				}
-				throw Exception(_T("未实现"));
+				// 间接寻址相当于尾函数调用，结束基本块
 				break;
 			case Opcode::Bpl:
 			case Opcode::Bmi:
