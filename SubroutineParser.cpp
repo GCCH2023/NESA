@@ -9,6 +9,14 @@ NesDB::SubroutineParser::SubroutineParser(NesDataBase& db_):
 {
 }
 
+// 分析基本块时，当前指令对基本块状态的影响
+enum class BlockState
+{
+	End,  // 结束基本块的分析
+	Continue,  // 继续分析下一条指令
+	Invalid,  // 非法指令
+};
+
 NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 {
 	subroutine = db.FindSubroutine(start);
@@ -37,9 +45,9 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 		NesBasicBlock* block = db.GetAllocator().New<NesBasicBlock>();
 		block->SetStartAddress(current);
 
-		bool blockEnded = false;
+		BlockState state = BlockState::Continue;
 		const uint8_t* p = db.GetCartridge().GetData(current);
-		while (!blockEnded)
+		while (state == BlockState::Continue)
 		{
 			instruction.Set(current, p);  // 构造指令对象
 			const auto& entry = instruction.GetEntry();
@@ -49,8 +57,12 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 
 			switch (entry.opcode)
 			{
+			case Opcode::None:
+				state = BlockState::Invalid;
+				block->SetEndFlag(BBF_END_INVALID);
+				break;
 			case Opcode::Jmp:
-				blockEnded = true;
+				state = BlockState::End;
 				if (entry.addrMode == AddrMode::Absolute)
 				{
 					jumpAddr = instruction.GetOperandAddress();
@@ -74,7 +86,7 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 			case Opcode::Bcs:
 			case Opcode::Bvc:
 			case Opcode::Bvs:
-				blockEnded = true;
+				state = BlockState::End;
 				jumpAddr = instruction.address + entry.length;
 				queue.push_back(jumpAddr);
 				block->AddSucc(jumpAddr);
@@ -86,7 +98,7 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 				break;
 			case Opcode::Rts:
 			case Opcode::Rti:
-				blockEnded = true;
+				state = BlockState::End;
 				block->SetEndFlag(BBF_END_RETURN);
 				break;
 			case Opcode::Jsr:
@@ -96,11 +108,12 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 			if (current >= end)
 			{
 				// 接触到下一个基本块了
-				block->AddSucc(jumpAddr);
+				block->AddSucc(current);
 				break;
 			}
 		}
 
+		// 包含非法指令的基本块不计入子程序中
 		block->SetEndAddress(current);
 		AddBasicBlock(block);
 	}

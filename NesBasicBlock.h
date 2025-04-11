@@ -7,12 +7,13 @@ enum BasicBlockFlag
 	BBF_END_RETURN = 1,  // 以返回指令结束
 	BBF_END_COND = 2,  // 以条件跳转指令结束
 	BBF_END_UNCOND = 3,  // 以无条件跳转指令结束
-	BBF_END_MASK = 3,  // 检索结束标志的掩码
+	BBF_END_INVALID = 4, // 以无效指令结束
+	BBF_END_MASK = 7,  // 检索结束标志的掩码
 
 	// 以跳转指令结束时的标志
-	BBF_JUMP_BEFOER = 4,  // 条件跳转到低地址，没有此标志则是跳转到高地址
+	BBF_JUMP_BEFOER = 8,  // 条件跳转到低地址，没有此标志则是跳转到高地址
 
-	BBF_JUMP_SELF = 8,  // 跳转到自己
+	BBF_JUMP_SELF = 17,  // 跳转到自己
 };
 
 // 基本块的一些特性

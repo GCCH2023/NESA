@@ -560,6 +560,15 @@ TACOperand TACTranslater1::GetOperand(const Instruction& instruction)
 		return TACOperand(TACOperand::ADDRESS | instruction.GetConditionalJumpAddress());
 	case AddrMode::ZeroPage:
 		return TACOperand(TACOperand::GLOBAL | instruction.GetByte());
+	//case AddrMode::ZeroPageX:
+	//{
+	//	// 需要额外添加一条三地址码用于计算地址
+	//	int temp = this->tacSub->NewTemp(TypeManager::pValue);
+	//	TACOperand result(TACOperand::TEMP | temp);  // 创建一个临时变量保存计算结果地址
+	//	TAC* tac = allocator.New<TAC>(TACOperator::ADD, result, RegisterX, instruction.GetOperandAddress());
+	//	AddTAC(tac, instruction.GetAddress());
+	//	return result;
+	//}
 	case AddrMode::Indirect:
 		return TACOperand(TACOperand::GLOBAL | instruction.GetOperandAddress());
 	case AddrMode::IndirectY:
