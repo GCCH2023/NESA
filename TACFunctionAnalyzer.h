@@ -3,6 +3,7 @@
 #include "TACFunction.h"
 #include "NesDataBase.h"
 #include "NodeSet.h"
+#include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
 class Allocator;
 

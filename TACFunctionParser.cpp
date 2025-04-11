@@ -30,11 +30,11 @@ void TACFunctionParser::Parse(TACFunction* func)
 		if ((block->flag & BBF_END_MASK) == BBF_END_RETURN)
 		{
 			auto blockSet = (BasicBlockReachingDefinitionSet*)block->tag;
-			if (blockSet->out.set[TAC_REG_A].Any())
+			if (rd.CanReach(blockSet->out, TAC_REG_A))
 				func->flag |= SUBF_RETURN_A;
-			if (blockSet->out.set[TAC_REG_X].Any())
+			if (rd.CanReach(blockSet->out, TAC_REG_X))
 				func->flag |= SUBF_RETURN_X;
-			if (blockSet->out.set[TAC_REG_Y].Any())
+			if (rd.CanReach(blockSet->out, TAC_REG_Y))
 				func->flag |= SUBF_RETURN_Y;
 		}
 	}

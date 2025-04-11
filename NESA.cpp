@@ -418,6 +418,28 @@ void SubroutineRangeParserTest(const TCHAR* rom)
 
 }
 
+void ReachDefinitionTest(const TCHAR* rom, Nes::Address addr)
+{
+	NesDataBase db(rom);
+	NesDB::SubroutineParser parser(db);
+
+	TACTranslater1 ntt(db, db.GetAllocator());
+	ReachingDefinition rd(db, db.GetAllocator());
+	try
+	{
+		auto sub = parser.Parse(addr);
+		auto func = ntt.Translate(sub);
+		rd.Analyze(func);
+	}
+	catch (Exception& e)
+	{
+		COUT << e.Message() << endl;
+	}
+	catch (std::exception& e)
+	{
+		cout << e.what() << endl;
+	}
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -427,14 +449,15 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//SavePRG(rom);
 
-	ParseNes(rom);
+	// ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
 	//TACFunctionParserTest(rom, 62400, 62414);
 	//SubroutineRangeParserTest(rom);
-	// NesDBSubroutineParserTest(rom, 0xF3A7);
+	NesDBSubroutineParserTest(rom, 0x8000);
+	// ReachDefinitionTest(rom, 0x8000);
 	system("pause");
 	return 0;
 }

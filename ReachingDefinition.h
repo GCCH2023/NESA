@@ -1,18 +1,16 @@
 #pragma once
 #include "TACFunctionAnalyzer.h"
 
-struct AXYSet
-{
-	NodeSet set[TAC_ANALIZE_REG_COUNT];  // AXY NVZC 7个的集合
-
-	AXYSet& operator|=(const AXYSet& other);
-};
+// AXYNVZC的定值点依次排列
+// 如果A有n个定值点，则Set前n个元素对应A的定值点
+using Set = boost::dynamic_bitset<>;
 
 struct BasicBlockReachingDefinitionSet
 {
-	AXYSet genKill;  // 生成杀死集
-	AXYSet in;  // 入口集
-	AXYSet out;  // 出口集
+	Set gen;  // 生成的定值点集合
+	Set kill;  // 杀死的定值点集合
+	Set in;  // 入口集
+	Set out;  // 出口集
 
 	// 计算出口集，返回是否发生变化
 	bool EvalOut();
@@ -26,17 +24,10 @@ struct TacAxyDefinition
 	// AXY NVZC 的定值三地址码索引列表
 	std::vector<int> defs[TAC_ANALIZE_REG_COUNT];
 
-	//// 获取 寄存器 A 的掩码
-	//inline NodeSet GetAMask() const { return (1 << adefs.size()) - 1; }
-	//// 获取 寄存器 X 的掩码
-	//inline NodeSet GetXMask() const { return ((1 << xdefs.size()) - 1) << adefs.size(); }
-	//// 获取 寄存器 Y 的掩码
-	//inline NodeSet GetYMask() const { return ((1 << ydefs.size()) - 1) << (adefs.size() + xdefs.size()); }
-
 	void CheckDefinitionLimit(TACFunction* tacSub);
 
 	// 获取所有定值点的三地址码
-	void GetDefinitionTACList(std::vector<TAC*>& result, AXYSet& set, TACFunction* tacSub);
+	void GetDefinitionTACList(std::vector<TAC*>& result, Set& set, TACFunction* tacSub);
 };
 
 
@@ -48,14 +39,19 @@ class ReachingDefinition:
 public:
 	ReachingDefinition(NesDataBase& db, Allocator& allocator);
 	~ReachingDefinition();
-
+	// 对于基本块的入口集或出口集，判断指定AXYNVZC变量是否可以到达
+	bool CanReach(const Set& set, int var);
 private:
 	TacAxyDefinition axyDefs;
+	Set masks[TAC_ANALIZE_REG_COUNT];  // AXYNVZC 对应位区间的掩码
+	size_t count;  // 变量的定值点总数
 protected:
 	virtual void Initialize() override;
 	virtual bool AnalyzeNode(TACBasicBlock* block) override;
 	virtual void Uninitialize() override;
 
-	void GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub);
+	void GetDefinitions(TacAxyDefinition& axyDefs);
+	void GenerateMask();  // 计算掩码
+	void GetBasickBlockGenKillMap();
 };
 

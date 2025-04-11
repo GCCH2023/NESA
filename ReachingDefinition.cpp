@@ -8,10 +8,9 @@ using namespace std;
 void DumpBasicBlockDefinitions(TACBasicBlock* block, TacAxyDefinition& axyDefs, TACFunction* tacSub)
 {
 	vector<TAC*> codes(32);
-	TCHAR buffer[64];
 	auto blockSet = (BasicBlockReachingDefinitionSet*)block->tag;
-	_stprintf_s(buffer, 64, _T("block %04X:\nIN:\n"), block->GetStartAddress());
-	COUT << buffer;
+	Sprintf<> s;
+	COUT << s.Format(_T("block %04X:\nIN:\n"), block->GetStartAddress());
 	axyDefs.GetDefinitionTACList(codes, blockSet->in, tacSub);
 	for (auto tac : codes)
 		DumpAddressTAC(COUT, tac) << endl;
@@ -40,25 +39,34 @@ ReachingDefinition::~ReachingDefinition()
 {
 }
 
+bool ReachingDefinition::CanReach(const Set& set, int var)
+{
+	assert(var >= TAC_REG_A && var <= TAC_REG_C);
+	return (set & masks[var]).any();
+}
+
 
 // 输出AXY的所有定值三地址码
 void DumpAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub)
 {
 	auto codes = tacSub->GetCodes();
-	COUT << _T("获取AXY的所有定值点：\n");
+	COUT << _T("获取AXYNVZC的所有定值点：\n");
 	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
 	{
 		COUT << ToString((TACRegister)i) << _T(":\n");
-		DumpAddressTAC(COUT, codes[i]) << endl;
+		for (auto d : axyDefs.defs[i])
+		{
+			DumpAddressTAC(COUT, codes[d]) << endl;
+		}
 	}
 }
 
 // 获取三地址码中的所有对A, X, Y, NVZC 寄存器的定值点
-void ReachingDefinition::GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunction* tacSub)
+void ReachingDefinition::GetDefinitions(TacAxyDefinition& axyDefs)
 {
-	// 不用记录所有的定值点，每个基本块，只需要记录某个最后的定值点
+	// 不用记录所有的定值点，每个基本块，只需要记录变量最后的定值点
 	int i = 0;
-	for (auto block : tacSub->GetBasicBlocks())
+	for (auto block : GetFunction()->GetBasicBlocks())
 	{
 		std::vector<int> defsMap(TAC_ANALIZE_REG_COUNT, -1);  // 当前基本块，每个变量的定值点，-1表示未定值
 		for (auto code : block->GetCodes())
@@ -95,12 +103,33 @@ void ReachingDefinition::GetAXYDefinitions(TacAxyDefinition& axyDefs, TACFunctio
 			}
 		}
 	}
-	//DumpAXYDefinitions(axyDefs, tacSub);
+	DumpAXYDefinitions(axyDefs, GetFunction());
+}
+
+void ReachingDefinition::GenerateMask()
+{
+	// 先计算定值点总数
+	count = 0;
+	for (auto& defs : axyDefs.defs)
+	{
+		count += defs.size();
+	}
+
+	int start = 0, end = 0;
+	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
+	{
+		end = start + (int)axyDefs.defs[i].size();
+		masks[i].resize(count);
+		if (start == end)
+			continue;
+		masks[i].set(start, end - start, true); // 构造目标区间的掩码
+		start = end;
+	}
 }
 
 void ReachingDefinition::Uninitialize()
 {
-	// DumpAllBasicBlockDefinitions(axyDefs, GetFunction());
+	DumpAllBasicBlockDefinitions(axyDefs, GetFunction());
 }
 
 TACBasicBlock* GetBasickBlockByAddress(const TACBasicBlockList& blocks, Nes::Address address)
@@ -126,20 +155,22 @@ TACBasicBlock* GetBasickBlockByAddress(const TACBasicBlockList& blocks, Nes::Add
 // 计算各个基本块的生成杀死集
 // 每个变量的定值点，杀死这个变量的其他定值点
 // 对于一个基本块，每个变量最多只有一个定值点可以到达出口
-void GetBasickBlockGenKillMap(TacAxyDefinition& axyDefs, TACFunction* tacSub,
-	const TACBasicBlockList& blocks)
+void ReachingDefinition::GetBasickBlockGenKillMap()
 {
-	auto codes = tacSub->GetCodes();
-	// 依次遍历 AXY 寄存器的定值点，获取对应的基本块来设置它的生成杀死集
+	auto codes = GetFunction()->GetCodes();
+	// 依次遍历 AXYNVZC 寄存器的定值点，获取对应的基本块来设置它的生成杀死集
 	// 每个变量只有最后一次定值可以导出基本块的出口，所以要清除其他定值点
+	size_t index = 0;
 	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
 	{
-		size_t index = 0;
 		for (auto d : axyDefs.defs[i])
 		{
 			auto code = codes[d];
-			TACBasicBlock* block = GetBasickBlockByAddress(blocks, code->address);
-			((BasicBlockReachingDefinitionSet*)block->tag)->genKill.set[i] = NodeSet(1 << index);  // 清空
+			TACBasicBlock* block = GetBasickBlockByAddress(GetFunction()->GetBasicBlocks(), code->address);
+			auto tag = (BasicBlockReachingDefinitionSet*)block->tag;
+			tag->gen[index] = true;  // 生成这个定值点
+			tag->kill |= masks[i];  // 杀死这个变量除此之外的定值点
+			tag->kill[index] = false;
 			++index;
 		}
 	}
@@ -147,18 +178,24 @@ void GetBasickBlockGenKillMap(TacAxyDefinition& axyDefs, TACFunction* tacSub,
 
 void ReachingDefinition::Initialize()
 {
+	// 获取变量的定值点
+	GetDefinitions(axyDefs);
+	GenerateMask();
+
+	// 创建分析对象
 	auto& blocks = GetFunction()->GetBasicBlocks();
 	for (auto block : blocks)
 	{
-		block->tag = allocator.New<BasicBlockReachingDefinitionSet>();
+		auto tag = allocator.New<BasicBlockReachingDefinitionSet>();
+		tag->gen.resize(count);
+		tag->kill.resize(count);
+		tag->in.resize(count);
+		tag->out.resize(count);
+		block->tag = tag;
 	}
 
-	// 只分析寄存器 A, X, Y，其他寄存器和临时变量或者全局变量忽略掉
-	GetAXYDefinitions(axyDefs, GetFunction());
-	axyDefs.CheckDefinitionLimit(GetFunction());
-
 	// 接下来计算各个基本块的生成集和杀死集
-	GetBasickBlockGenKillMap(axyDefs, GetFunction(), blocks);
+	GetBasickBlockGenKillMap();
 }
 
 bool ReachingDefinition::AnalyzeNode(TACBasicBlock* block)
@@ -174,30 +211,12 @@ bool ReachingDefinition::AnalyzeNode(TACBasicBlock* block)
 	return !blockSet->EvalOut();
 }
 
-
-AXYSet& AXYSet::operator|=(const AXYSet& other)
-{
-	for (int i = 0; i < TAC_ANALIZE_REG_COUNT; ++i)
-	{
-		set[i] |= other.set[i];
-	}
-	return *this;
-}
-
 // 有一个集合变化，就认为变化
 bool BasicBlockReachingDefinitionSet::EvalOut()
 {
-	bool ret = false;
-	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
-	{
-		auto value = out.set[i];
-		// 对于每个变量，如果这个基本块有它的定值，则出口集就是这个定值点
-		// 否则，出口集是它的入口集
-		out.set[i] = genKill.set[i].Any() ? genKill.set[i] : in.set[i];
-		if (out.set[i] != value)
-			ret = true;
-	}
-	return ret;
+	auto old = out;
+	out = gen | (in - kill);
+	return out != old;
 }
 
 void TacAxyDefinition::CheckDefinitionLimit(TACFunction* tacSub)
@@ -214,18 +233,18 @@ void TacAxyDefinition::CheckDefinitionLimit(TACFunction* tacSub)
 	}
 }
 
-void TacAxyDefinition::GetDefinitionTACList(std::vector<TAC*>& result, AXYSet& set, TACFunction* tacSub)
+void TacAxyDefinition::GetDefinitionTACList(std::vector<TAC*>& result, Set& set, TACFunction* tacSub)
 {
 	result.clear();
 	auto codes = tacSub->GetCodes();
+	size_t index = 0;
 	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
 	{
-		auto list = set.set[i].ToVector();
-		for (auto d : list)
+		for (auto def : defs[i])
 		{
-			auto& varDefs = defs[i];
-			auto index = varDefs[d];
-			result.push_back(codes[index]);
+			if (set[index])
+				result.push_back(codes[def]);
+			++index;
 		}
 	}
 }
