@@ -17,16 +17,16 @@ void NesSubroutine::AddBasicBlock(NesBasicBlock* block)
 {
 	if (!block)
 		return;
-	AddNesObject(blocks, block);
+	blocks.push_back(block);
 }
 
 NesBasicBlock* NesSubroutine::GetBasicBlock(Nes::Address addr)
 {
-	auto it = std::lower_bound(blocks.begin(), blocks.end(), addr, [](NesBasicBlock* a, Nes::Address addr) {
-		return a->GetStartAddress() < addr;
-	});
-	if (it != blocks.end() && (*it)->GetStartAddress() == addr)
-		return *it;
+	for (auto block : blocks)
+	{
+		if (block->GetStartAddress() == addr)
+			return block;
+	}
 	return nullptr;
 }
 

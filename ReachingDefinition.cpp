@@ -103,7 +103,7 @@ void ReachingDefinition::GetDefinitions(TacAxyDefinition& axyDefs)
 			}
 		}
 	}
-	DumpAXYDefinitions(axyDefs, GetFunction());
+	// DumpAXYDefinitions(axyDefs, GetFunction());
 }
 
 void ReachingDefinition::GenerateMask()
@@ -129,7 +129,7 @@ void ReachingDefinition::GenerateMask()
 
 void ReachingDefinition::Uninitialize()
 {
-	DumpAllBasicBlockDefinitions(axyDefs, GetFunction());
+	// DumpAllBasicBlockDefinitions(axyDefs, GetFunction());
 }
 
 TACBasicBlock* GetBasickBlockByAddress(const TACBasicBlockList& blocks, Nes::Address address)

@@ -17,6 +17,9 @@ enum class BlockState
 	Invalid,  // 非法指令
 };
 
+// 基本块的排列应该满足如下规则:
+// 1. 保证入口基本块排在最前面
+// 2. 如果基本块A可以顺序执行到基本块B，那么B紧跟着A排列
 NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 {
 	subroutine = db.FindSubroutine(start);
@@ -124,7 +127,7 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 	//}
 	// 上面的代码只能添加基本块的后继，还需要添加前驱
 	// 同时计算子程序的范围，开始地址到最大连续基本块的末尾地址
-	current = subroutine->GetStartAddress();
+	current = start;
 	for (auto it : blocks)
 	{
 		auto block = it.second;
@@ -136,10 +139,18 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 			assert(succBlock->GetStartAddress() == succ);
 			succBlock->AddPred(block->GetStartAddress());
 		}
-		subroutine->AddBasicBlock(block);
 	}
 
 	subroutine->SetEndAddress(current);  // 只有指令是连续存放的时候才有意义
+	// 修正基本块的排列顺序，使入口基本块排在最前面
+	auto& subBlocks = subroutine->GetBasicBlocks();
+	subBlocks.reserve(blocks.size());
+	auto it = blocks.find(start);
+	for (auto i = it; i != blocks.end(); ++i)
+		subBlocks.push_back(i->second);
+	for (auto i = blocks.begin(); i != it; ++i)
+		subBlocks.push_back(i->second);
+
 	db.AddSubroutine(subroutine);
     return subroutine;
 }

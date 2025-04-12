@@ -189,6 +189,8 @@ public:
 
 	// 是否条件跳转
 	inline bool IsConditionalJump() const { return op >= TACOperator::IFGEQ && op <= TACOperator::IFFALSE; };
+	// 是否无条件跳转
+	inline bool IsUnconditionalJump() const { return op == TACOperator::GOTO; };
 public:
 	uint32_t address;
 	TACOperator op;

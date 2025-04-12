@@ -35,18 +35,20 @@ enum SubroutineFlag
 	SUBF_LOCAL = 0x1C0,  // 使用了 AXY 寄存器作为局部变量
 };
 
-// 子程序的指令不一定连续存放，所以结束地址没有太大意义
-// 只能根据包含的所有基本块来获取包含的所有指令
+// 1. 子程序的指令不一定连续存放，所以结束地址没有太大意义
+// 2. 只能根据包含的所有基本块来获取包含的所有指令
 // 结束地址存放的是开始地址连续指令的最大地址
+// 3. 应该保证基本块列表中的第一个基本块是入口基本块
 class NesSubroutine : public NesRegion
 {
 public:
 	NesSubroutine();
 	NesSubroutine(Nes::Address startAddr, Nes::Address endAddr);
 
-	// 按地址从小到大地添加基本块，重复地址不添加
+	// 添加基本块，不保证地址不重复
 	void AddBasicBlock(NesBasicBlock* block);
 	inline const BasicBlockList& GetBasicBlocks() const { return blocks; }
+	inline BasicBlockList& GetBasicBlocks() { return blocks; }
 	// 根据地址查找基本块
 	NesBasicBlock* GetBasicBlock(Nes::Address startAddr);
 	// 获取入口基本块
@@ -77,7 +79,7 @@ public:
 
 	uint32_t flag;  // 低3
 protected:
-	BasicBlockList blocks;  // 子程序包括的基本块列表，按地址从小到大排列
+	BasicBlockList blocks;  // 子程序包括的基本块列表，地址无序
 	std::vector<Nes::Address> calls;  // 调用的子程序地址，如果为空，则此子程序没有调用其他子程序，从小到大排列
 	bool isInline = false;  // 是否是内联函数
 };

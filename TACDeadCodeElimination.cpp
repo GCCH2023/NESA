@@ -192,7 +192,8 @@ void TACDeadCodeElimination::Reset()
 
 void TACDeadCodeElimination::CorrectJumpAddress()
 {
-	auto tacs = tacFunc->GetCodes();
+	auto tacs = tacFunc->GetOrderedCodes();
+
 	// 修正跳转地址
 	for (auto block : tacFunc->GetBasicBlocks())
 	{
@@ -201,19 +202,20 @@ void TACDeadCodeElimination::CorrectJumpAddress()
 		auto& codes = block->GetCodes();
 		for (auto tac : codes)
 		{
-			if (tac->IsConditionalJump())
+			if (tac->IsConditionalJump() || tac->IsUnconditionalJump())
 			{
+				Nes::Address jumpAddr = tac->z.GetValue();
 				// 本来是跳转到基本块的第一条指令的地址的，
 				// 前面 n 条指令可能被删除了，现在跳转到删除指令的后面指令
 				// 查找第一条地址大于原来的跳转地址的指令
-				auto it = std::lower_bound(tacs.begin(), tacs.end(), tac->z.GetValue(),
+				auto it = std::lower_bound(tacs.begin(), tacs.end(), jumpAddr,
 					[](const TAC* tac, Nes::Address address) {
 					return tac->address < address;
 				});
 				if (it == tacs.end())
 				{
 					Sprintf<> s;
-					s.Format(_T("错误: 指令 %04X 的跳转地址 %04X 丢失"), tac->address, tac->z.GetValue());
+					s.Format(_T("错误: 指令 %04X 的跳转地址 %04X 丢失"), tac->address, jumpAddr);
 					throw Exception(s.ToString());
 				}
 				tac->z.SetValue((*it)->address);

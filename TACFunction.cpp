@@ -44,6 +44,17 @@ TACList TACFunction::GetCodes()
 	return tacs;
 }
 
+TACList TACFunction::GetOrderedCodes()
+{
+	auto tacs = GetCodes();
+	// 使用 lambda 表达式作为比较函数
+	std::sort(tacs.begin(), tacs.end(), [](TAC* a, TAC* b) {
+		return a->address < b->address; // 从小到大排序
+		});
+
+	return tacs;
+}
+
 TACBasicBlock* TACFunction::GetEntryBasicBlock()
 {
 	for (auto block : GetBasicBlocks())

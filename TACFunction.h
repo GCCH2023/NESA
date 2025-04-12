@@ -40,6 +40,9 @@ public:
 
 	// 获取所有三地址码
 	TACList GetCodes();
+	// 获取按地址从小到大排列后的三地址码
+	TACList GetOrderedCodes();
+
 
 	// 添加一个基本块
 	inline void AddBasicBlock(TACBasicBlock* block) { blocks.push_back(block); }
