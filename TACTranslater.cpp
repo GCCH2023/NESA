@@ -44,7 +44,7 @@ TACFunction* TACTranslater::Translate(NesSubroutine* subroutine)
 
 		for (auto succ : block->GetSuccs())
 			tacBlock->nexts.push_back(blockMap[succ]);
-		tacBlock->flag = block->flag;
+		tacBlock->flag = block->GetFlag();
 	}
 	return this->tacSub;
 }

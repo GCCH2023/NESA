@@ -29,7 +29,8 @@ TACFunction* TACTranslater1::Translate(NesSubroutine* subroutine)
 	this->tacSub = allocator.New<TACFunction>(subroutine->GetStartAddress(), subroutine->GetEndAddress());
 	this->tacSub->flag = subroutine->flag;
 
-	for (auto block : subroutine->GetBasicBlocks())
+	auto& blocks = subroutine->GetBasicBlocks();
+	for (auto block : blocks)
 	{
 		auto tacBlock = TranslateBasickBlock(block);
 		//TACFlagRegisterOptimizer opt(allocator);
@@ -39,7 +40,7 @@ TACFunction* TACTranslater1::Translate(NesSubroutine* subroutine)
 	}
 
 	// 重构基本块的边
-	for (auto block : subroutine->GetBasicBlocks())
+	for (auto block : blocks)
 	{
 		auto tacBlock = blockMap[block->GetStartAddress()];
 
@@ -47,7 +48,18 @@ TACFunction* TACTranslater1::Translate(NesSubroutine* subroutine)
 			tacBlock->prevs.push_back(blockMap[prev]);
 		for (auto succ : block->GetSuccs())
 			tacBlock->nexts.push_back(blockMap[succ]);
-		tacBlock->flag = block->flag;
+		tacBlock->flag = block->GetFlag();
+	}
+
+	// 修正末尾基本块
+	auto tail = blocks.back();
+	if (tail->GetEndFlag() == BBF_END_NORMAL && !tail->GetSuccs().empty())
+	{
+		// 添加一条goto指令
+		auto jumpAddr = tail->GetSuccs().front();
+		auto tac = allocator.New<TAC>(TACOperator::GOTO, TACOperand(TACOperand::ADDRESS | jumpAddr));
+		tac->address = tail->GetEndAddress() - 1;
+		blockMap[tail->GetStartAddress()]->AddTAC(tac);
 	}
 	return this->tacSub;
 }

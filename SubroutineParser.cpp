@@ -57,7 +57,6 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 			bytes = entry.length;
 			current += bytes;  // 计算下一条指令的地址
 			p += bytes;
-
 			switch (entry.opcode)
 			{
 			case Opcode::None:
@@ -108,9 +107,10 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 				subroutine->AddCall(instruction.GetOperandAddress());
 				break;
 			}
-			if (current >= end)
+			if (current >= end && state == BlockState::Continue)
 			{
 				// 接触到下一个基本块了
+				block->SetEndFlag(BBF_END_NORMAL);
 				block->AddSucc(current);
 				break;
 			}

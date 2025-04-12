@@ -273,12 +273,12 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 										 {
 											 block->AddSucc(nextAddr);
 											 next->AddPred(block->GetStartAddress());
-											 block->flag |= BBF_END_NORMAL;
+											 block->SetEndFlag(BBF_END_NORMAL);
 										 }
 										 break;
 	}
 	case BlockInstructionKind::End:
-		block->flag |= BBF_END_RETURN;
+		block->SetEndFlag(BBF_END_RETURN);
 		break;
 	case BlockInstructionKind::ConditionalJump:
 	{
@@ -330,7 +330,7 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 													else
 													{
 														// 间接寻址相当于尾函数调用
-														block->flag |= BBF_END_RETURN;
+														block->SetEndFlag(BBF_END_RETURN);
 														break;
 														/*	TCHAR buffer[128];
 															_stprintf_s(buffer, 128, _T("地址为 %04X 的无条件跳转指令的非绝对寻址模式未实现"), instruction.address);
@@ -375,13 +375,14 @@ void NesSubroutineParser::ParseBasicBlockInstruction(NesBasicBlock* block, const
 void NesSubroutineParser::SetBasickBlockJumpFlag(NesBasicBlock* block, bool isCond, Nes::Address jumpAddr)
 {
 	if (isCond)
-		block->flag |= BBF_END_COND;
+		block->SetEndFlag(BBF_END_COND);
 	else
-		block->flag |= BBF_END_UNCOND;
+		block->SetEndFlag(BBF_END_UNCOND);
+
 	if (jumpAddr <= block->GetStartAddress())
 	{
-		block->flag |= BBF_JUMP_BEFOER;
+		block->SetJumpFlag(BBF_JUMP_BEFOER);
 		if (jumpAddr == block->GetStartAddress())
-			block->flag |= BBF_JUMP_SELF;
+			block->SetJumpFlag(BBF_JUMP_SELF);
 	}
 }

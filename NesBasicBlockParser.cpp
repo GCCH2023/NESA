@@ -105,18 +105,18 @@ std::vector<NesBasicBlock*> NesBasicBlockParser::Parse(Nes::Address start, Nes::
 						block->AddSucc(jumpAddr);
 						next->AddPred(block->GetStartAddress());
 					}
-					block->flag |= BBF_END_UNCOND;
+					block->SetEndFlag(BBF_END_UNCOND);
 					if (jumpAddr <= block->GetStartAddress())
 					{
-						block->flag |= BBF_JUMP_BEFOER;
+						block->SetJumpFlag(BBF_JUMP_BEFOER);
 						if (jumpAddr == block->GetStartAddress())
-							block->flag |= BBF_JUMP_SELF;
+							block->SetJumpFlag(BBF_JUMP_SELF);
 					}
 				}
 				else
 				{
 					// 间接寻址相当于尾函数调用
-					block->flag |= BBF_END_RETURN;
+					block->SetEndFlag(BBF_END_RETURN);
 				}
 				break;
 			case Opcode::Bpl:
@@ -144,7 +144,7 @@ std::vector<NesBasicBlock*> NesBasicBlockParser::Parse(Nes::Address start, Nes::
 				break;
 			case Opcode::Rti:
 			case Opcode::Rts:
-				block->flag |= BBF_END_RETURN;
+				block->SetEndFlag(BBF_END_RETURN);
 				break;
 			default:
 				if (current == block->GetEndAddress())
@@ -154,7 +154,7 @@ std::vector<NesBasicBlock*> NesBasicBlockParser::Parse(Nes::Address start, Nes::
 					{
 						block->AddSucc(current);
 						next->AddPred(block->GetStartAddress());
-						block->flag |= BBF_END_NORMAL;
+						block->SetEndFlag(BBF_END_NORMAL);
 					}
 				}
 			}

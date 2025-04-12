@@ -12,8 +12,8 @@ enum BasicBlockFlag
 
 	// 以跳转指令结束时的标志
 	BBF_JUMP_BEFOER = 8,  // 条件跳转到低地址，没有此标志则是跳转到高地址
-
-	BBF_JUMP_SELF = 17,  // 跳转到自己
+	BBF_JUMP_SELF = 16,  // 跳转到自己
+	BBF_JUMP_MASK = 24,
 };
 
 // 基本块的一些特性
@@ -55,12 +55,21 @@ public:
 	{
 		flag = (flag & ~BBF_END_MASK) | (endFlag & BBF_END_MASK);
 	}
+	// 设置跳转标志
+	void SetJumpFlag(BasicBlockFlag jumpFlag)
+	{
+		flag = (flag & ~BBF_JUMP_MASK) | (jumpFlag & BBF_JUMP_MASK);
+	}
+	// 获取结束标志
+	inline int GetEndFlag() const { return flag & BBF_END_MASK; }
+	// 获取标志
+	inline uint32_t GetFlag() const { return flag; }
 	// 输出信息
 	void Dump();
 
-	uint32_t flag;  // 一些标志
 private:
 	BlockList preds; // 前驱列表
 	BlockList succs;  // 后继列表
+	uint32_t flag;  // 一些标志
 };
 
