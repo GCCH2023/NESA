@@ -221,6 +221,9 @@
     <ClInclude Include="SubroutineParser.h">
       <Filter>NesDB</Filter>
     </ClInclude>
+    <ClInclude Include="DynamicBitSet.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

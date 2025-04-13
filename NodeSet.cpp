@@ -3,20 +3,6 @@
 using namespace std;
 
 
-void DumpNodeSet(NodeSet& bs)
-{
-	auto vec = bs.ToVector();
-	if (vec.empty())
-	{
-		COUT << _T("Пе");
-		return;
-	}
-
-	for (auto i : vec)
-	{
-		COUT << i << _T(", ");
-	}
-}
 
 const TCHAR* ToString(CtrlTreeNodeType region)
 {

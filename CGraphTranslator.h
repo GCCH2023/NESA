@@ -63,27 +63,27 @@ protected:
 	// 重置内部数据
 	virtual void Reset() override;
 	// 将若干节点归约为一个节点，并生成这个节点的C语句
-	Node CReduce(Node parent, std::vector<Node> children, CtrlTreeNodeType type);
+	Node CReduce(Node parent, const std::vector<Node>& children);
 	// 归约两个区域构成的连续区域  a -> b
-	Node ReduceRegionList(NodeSet& N, Node a, Node b);
+	Node ReduceRegionList(VertexSet& N, Node a, Node b);
 	// 归约自循环 a -> a
-	Node ReduceRegionSelfLoop(NodeSet& N, Node a);
+	Node ReduceRegionSelfLoop(VertexSet& N, Node a);
 	// 归约 if else 结构体 a -> b, a -> c, b -> d, c -> d
 	// a 是 if 的条件所在基本块，b 和 c 是满足条件和不满足条件执行的基本块，d 是 if 执行后到达的基本块
-	Node ReduceRegionIfElse(NodeSet& N, Node a, Node b, Node c);
+	Node ReduceRegionIfElse(VertexSet& N, Node a, Node b, Node c);
 	// 归约 if else 结构体 a -> b, a -> c, b -> d, c -> d 的扩展
 	// 多出一条边 b -> c
 	// a 是 if 的条件所在基本块，b 和 c 是满足条件和不满足条件执行的基本块，d 是 if 执行后到达的基本块
-	Node ReduceRegionIfOr(NodeSet& N, Node a, Node b, Node c);
+	Node ReduceRegionIfOr(VertexSet& N, Node a, Node b, Node c);
 	// 归约 if 结构体 a -> b, a -> c, b -> c
 	// a 是 if 的条件所在基本块，b 满足条件执行的基本块，c 是 if 执行后到达的基本块
-	Node ReduceRegionIf(NodeSet& N, Node a, Node b);
+	Node ReduceRegionIf(VertexSet& N, Node a, Node b);
 	// a->b, b->a 且 b 只有一个前驱
 	// a 除了 b之外的后继边，翻译为goto语句
-	Node ReduceRegionPoint2Loop(NodeSet& N, Node a, Node b);
+	Node ReduceRegionPoint2Loop(VertexSet& N, Node a, Node b);
 
 	// 分析控制流图节点集，获取控制树节点集
-	NodeSet CAnalysis(NodeSet N);
+	VertexSet& CAnalysis(VertexSet& N);
 
 
 	virtual CNode* TranslateBody() override;
@@ -124,11 +124,11 @@ protected:
 	// 输出所有控制树节点构成的控制流图
 	void DumpControlTree();
 	// 输出当前分析的节点集
-	void DumpCurrentCFG(NodeSet& N);
+	void DumpCurrentCFG(VertexSet& N);
 private:
 	Allocator tempAllocator;  // 用于创建临时节点
 
-	std::unique_ptr<DirectedGraph<ControlTreeNodeEx>> graph;  // 控制树节点构成的有向图
+	DirectedGraph<ControlTreeNodeEx> graph;  // 控制树节点构成的有向图
 
 	//std::vector<Nes::Address> labels;
 };

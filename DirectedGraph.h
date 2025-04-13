@@ -1,14 +1,15 @@
 #pragma once
 #include "NodeSet.h"
 
+using VertexSet = DynamicBitSet;
+
 // 有向图节点
 template<typename T>
-struct DirectedGraphNode
+struct DirectedGraphNode : public T
 {
 	Node index;
-	NodeSet pred;  // 前驱节点集
-	NodeSet succ;  // 后继节点集
-	T tag;  // 扩展使用
+	VertexSet pred;  // 前驱节点集
+	VertexSet succ;  // 后继节点集
 
 	// 获取后继数量
 	inline int GetSuccCount() const { return succ.Count(); }
@@ -21,8 +22,13 @@ struct DirectedGraphNode
 	// 获取指定节点的相邻（前驱+后继）节点集合
 	inline std::vector<Node> Adjacent() const
 	{
-		NodeSet total = pred | succ;
+		VertexSet total = pred | succ;
 		return total.ToVector();
+	}
+	void Resize(size_t size)
+	{
+		pred.Resize(size);
+		succ.Resize(size);
 	}
 };
 
@@ -39,16 +45,21 @@ template<typename T>
 class DirectedGraph
 {
 public:
-	DirectedGraph(const DirectedGraphEdgeList& edges):
-		nodes(MAX_NODE),
-		nodesCount(0)
+	DirectedGraph() :nodesCount(0) {}
+	DirectedGraph(const DirectedGraphEdgeList& edges)
 	{
-		Build(edges);
+		AddEdges(edges);
 	}
 
 	~DirectedGraph() = default;
-	// 根据边集构建有向图
-	void Build(const DirectedGraphEdgeList& edges)
+	// 清空数据
+	void Clear()
+	{
+		nodes.clear();
+		nodesCount = 0;
+	}
+	// 添加边集
+	void AddEdges(const DirectedGraphEdgeList& edges)
 	{
 		for (auto& edge : edges)
 		{
@@ -56,22 +67,16 @@ public:
 			Node target = edge.target;
 			nodes[source].succ += target;
 			nodes[target].pred += source;
-
-			if (nodesCount < source)
-				nodesCount = source;
-			if (nodesCount < target)
-				nodesCount = target;
 		}
-		++nodesCount;  // 数量 = 最大索引 + 1
 		for (int i = 0; i < nodesCount; ++i)
 		{
 			nodes[i].index = i;
 		}
 	}
 	// 获取所有节点构成的全集
-	inline NodeSet GetFullSet() const
+	inline VertexSet GetFullSet() const
 	{
-		return NodeSet::FullSet(nodesCount);
+		return VertexSet::FullSet(nodesCount);
 	}
 	// 获取指定索引的节点
 	inline DirectedGraphNode<T>& operator[](size_t index)
@@ -85,10 +90,10 @@ public:
 	// 获取节点数量
 	inline int GetNodeCount() const { return nodesCount; }
 	// 使用 Tarjan 算法获取有向图的强连通风量
-	// 每个NodeSet表示一个强连通分量
-	std::vector<NodeSet> Tarjan() const
+	// 每个VertexSet表示一个强连通分量
+	std::vector<VertexSet> Tarjan() const
 	{
-		std::vector<NodeSet> sccs;  // 存储所有强连通分量
+		std::vector<VertexSet> sccs;  // 存储所有强连通分量
 		std::vector<int> dfn(nodesCount, -1);  // DFS 访问顺序
 		std::vector<int> low(nodesCount, -1);  // 最小可达节点
 		std::stack<Node> stack;  // 用于存储当前路径上的节点
@@ -104,13 +109,24 @@ public:
 
 		return sccs;
 	}
+	// 设置节点数量
+	void Resize(size_t size)
+	{
+		nodesCount = size;
+		nodes.resize(nodesCount);
+		for (auto& n : nodes)
+		{
+			n.Resize(nodesCount);
+		}
+	}
 protected:
+	
 	void StrongConnect(Node v, int dfn[],
 		std::vector<int>& low,
 		std::stack<Node>& stack,
 		std::vector<bool>& inStack,
 		int& index,
-		std::vector<NodeSet>& sccs) const
+		std::vector<VertexSet>& sccs) const
 	{
 		dfn[v] = low[v] = index++;
 		stack.push(v);
@@ -129,7 +145,7 @@ protected:
 
 		// 如果 v 是强连通分量的根节点
 		if (low[v] == dfn[v]) {
-			NodeSet scc;
+			VertexSet scc;
 			Node w;
 			do {
 				w = stack.top();
@@ -142,5 +158,5 @@ protected:
 	}
 protected:
 	std::vector<DirectedGraphNode<T>> nodes;
-	int nodesCount;  // 节点数量
+	size_t nodesCount;  // 节点数量
 };

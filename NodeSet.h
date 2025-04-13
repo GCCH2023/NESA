@@ -1,15 +1,32 @@
 #pragma once
 #include "BitSet.h"
+#include "DynamicBitSet.h"
 
 using Node = int;
 using NodeSet = BitSet64;
 #define MAX_NODE (sizeof(NodeSet) * CHAR_BIT)
 
 // 输出节点集的字符串表示
-void DumpNodeSet(NodeSet& bs);
+template<typename T>
+void DumpNodeSet(const T& bs)
+{
+	auto vec = bs.ToVector();
+	if (vec.empty())
+	{
+		COUT << _T("空");
+		return;
+	}
+
+	for (auto i : vec)
+	{
+		COUT << i << _T(", ");
+	}
+}
+
 
 // 获取位集对应的节点列表
-inline std::vector<Node> Nodes(NodeSet& s)
+template<typename T>
+inline std::vector<Node> Nodes(const T& s)
 {
 	return s.ToVector();
 }

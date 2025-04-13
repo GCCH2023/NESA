@@ -99,6 +99,12 @@ public:
 	inline bool Any() const { return data != 0; }
 	// 是否为空
 	inline bool None() const { return data == 0; }
+	// 取反
+	inline BitSet<T>& Flip()
+	{
+		data = ~data;
+		return *this;
+	}
 private:
 	T data;
 };

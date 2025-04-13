@@ -162,6 +162,7 @@
     <ClInclude Include="DirectedGraph.h" />
     <ClInclude Include="DominatorAnalyzer.h" />
     <ClInclude Include="Dump.h" />
+    <ClInclude Include="DynamicBitSet.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="Function.h" />
     <ClInclude Include="GlobalParser.h" />

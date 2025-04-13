@@ -187,9 +187,9 @@ void NesAnalyzer::AnalyzeSubroutine()
 	// 构建初始的待分析子程地址序队列
 	std::vector<Nes::Address> queue =
 	{
-		// db.GetInterruptResetAddress(),
+		db.GetInterruptResetAddress(),
 		db.GetInterruptNmiAddress(),
-		//db.GetInterruptIrqAddress(),
+		db.GetInterruptIrqAddress(),
 	};
 	std::unordered_set<Nes::Address> visited;
 
