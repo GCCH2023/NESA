@@ -294,7 +294,7 @@ CNode* CDirectTranslator::TranslateBody()
 										if (codes[i]->op != TACOperator::CALL)
 											throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
 										// 最后是 CALL 指令
-										current = TranslateCall(codes[i]);
+										current = TranslateCall(codes[i], params);
 										break;
 			}
 			case	TACOperator::CALL:
