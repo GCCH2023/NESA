@@ -23,7 +23,6 @@ using namespace Nes;
 #include "CDataBase.h"
 #include "GlobalParser.h"
 #include "TACFunctionParser.h"
-#include "NesSubroutineRangeParser.h"
 
 // 全局变量测试
 void GlobalTest()
@@ -406,15 +405,6 @@ void SavePRG(const TCHAR* rom)
 	fwrite(cartridge.RawGetData(16), cartridge.GetPRGCount() * 16 * 1024, 1, fp);
 	fclose(fp);
 	COUT << _T("写入文件 ") << s.ToString() << _T(" 成功\n");
-}
-
-void SubroutineRangeParserTest(const TCHAR* rom)
-{
-	NesDataBase db(rom);
-	NesSubroutineRangeParser srp(db);
-
-	srp.Parse();
-
 }
 
 void ReachDefinitionTest(const TCHAR* rom, Nes::Address addr)
