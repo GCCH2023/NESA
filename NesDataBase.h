@@ -9,6 +9,23 @@ class Allocator;
 using InstructionList = std::vector<Instruction>;
 using SubroutineList = std::vector<NesSubroutine*>;
 
+// 交叉引用类型枚举
+enum class XRefType
+{
+	CodeCall,      // 函数调用
+	CodeJump,      // 跳转
+	DataRead,      // 数据读取
+	DataWrite,     // 数据写入
+};
+
+struct XRef
+{
+	Nes::Address address;
+	XRefType type;
+};
+
+using XRefList = std::vector<XRef>;
+
 // NES 数据库
 class NesDataBase
 {
@@ -55,12 +72,24 @@ public:
 	// 根据地址获取获取包含这个地址的子程序或者这个地址后面的第一个子程序
 	NesSubroutine* GetSubroutineOrNext(Nes::Address address);
 
+	// 添加交叉引用
+	void AddXref(XRefType type, Nes::Address from, Nes::Address to);
+	// 获取从指定地址发出的所有引用
+	const XRefList GetXrefsFrom(Nes::Address from) const;
+	// 获取指向指定地址的所有引用
+	const  XRefList GetXrefsTo(Nes::Address to) const;
+	// 获取特定类型的交叉引用
+	XRefList GetXrefsTo(Nes::Address to, XRefType type) const;
+	// 获取交叉引用总数
+	size_t GetXrefsCount() const;
+
+
 	// 获取分配器
 	inline Allocator& GetAllocator() { return allocator; }
 
-	Allocator allocator;
 
 private:
+	Allocator allocator;
 	// 卡带
 	Cartridge cartridge;
 
@@ -71,6 +100,10 @@ private:
 
 	BasicBlockList basicBlocks;  // 基本块表，按地址从小到大排列
 	SubroutineList subroutines;  // 子程序列表
+
+	std::map<Nes::Address, XRefList> xrefsFrom;  // 源地址到目标地址的映射
+	std::map<Nes::Address, XRefList> xrefsTo;    // 目标地址到来源地址的映射
+
 	std::vector<Instruction*> instructions;  // 指令表
 };
 

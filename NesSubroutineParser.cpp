@@ -109,7 +109,7 @@ void NesSubroutineParser::Parse(NesSubroutine* subroutine)
 
 NesSubroutine* NesSubroutineParser::Parse(uint32_t start, uint32_t end)
 {
-	auto sub = db.allocator.New<NesSubroutine>(start, end);
+	auto sub = db.GetAllocator().New<NesSubroutine>(start, end);
 	Parse(sub);
 	return sub;
 }
@@ -220,7 +220,7 @@ void NesSubroutineParser::ParseBasicBlocks()
 	{
 		if (!this->subroutine->Contains(addr))
 			continue;  // 跳转到函数外的地址不计入函数基本块
-		NesBasicBlock* block = db.allocator.New<NesBasicBlock>();
+		NesBasicBlock* block = db.GetAllocator().New<NesBasicBlock>();
 		block->SetStartAddress(addr);
 		if (lastBlock)
 			lastBlock->SetEndAddress(block->GetStartAddress());

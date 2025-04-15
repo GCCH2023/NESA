@@ -140,3 +140,45 @@ NesSubroutine* NesDataBase::GetSubroutineOrNext(Nes::Address address)
 		return nullptr;
 	return *it;
 }
+
+void NesDataBase::AddXref(XRefType type, Nes::Address from, Nes::Address to)
+{
+	xrefsFrom[from].emplace_back(to, type);
+	xrefsTo[to].emplace_back(from, type);
+}
+
+const XRefList NesDataBase::GetXrefsFrom(Nes::Address from) const
+{
+	if (auto it = xrefsFrom.find(from); it != xrefsFrom.end())
+		return it->second;
+	return {};
+}
+
+const XRefList NesDataBase::GetXrefsTo(Nes::Address to) const
+{
+	if (auto it = xrefsTo.find(to); it != xrefsTo.end())
+		return it->second;
+	return {};
+}
+
+XRefList NesDataBase::GetXrefsTo(Nes::Address to, XRefType type) const
+{
+	XRefList result;
+
+	if (auto it = xrefsTo.find(to); it != xrefsTo.end())
+	{
+		result.reserve(it->second.size()); // Ô¤·ÖÅä¿Õ¼ä
+		copy_if(it->second.begin(), it->second.end(), back_inserter(result),
+			[type](const auto& xref) { return xref.type == type; });
+	}
+
+	return result;
+}
+
+size_t NesDataBase::GetXrefsCount() const
+{
+	size_t count = 0;
+	for (const auto& pair : xrefsFrom)
+		count += pair.second.size();
+	return count;
+}
