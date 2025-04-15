@@ -8,7 +8,6 @@ using namespace Nes;
 
 #include "NesSubroutineParser.h"
 #include "SubroutineParser.h"
-#include "TACTranslater.h"
 #include "TACTranslater1.h"
 #include "CGraphTranslator.h"
 #include "CDirectTranslator.h"

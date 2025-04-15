@@ -140,9 +140,3 @@ NesSubroutine* NesDataBase::GetSubroutineOrNext(Nes::Address address)
 		return nullptr;
 	return *it;
 }
-
-void NesDataBase::AddCallRelation(CallRelation* call)
-{
-	AddNesObject(calls, call);
-}
-

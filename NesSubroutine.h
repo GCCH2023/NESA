@@ -5,20 +5,6 @@ class NesBasicBlock;
 
 using BasicBlockList = std::vector<NesBasicBlock*>;
 
-// 子程序的调用关系
-struct CallRelation
-{
-	Nes::Address call;  // 调用方子程序地址
-	Nes::Address called;  // 被调用子程序地址
-
-	CallRelation();
-	CallRelation(Nes::Address call, Nes::Address called);
-	inline Nes::Address GetStartAddress() const { return call; }
-	inline void SetStartAddress(Nes::Address addr) { call = addr; }
-};
-
-using CallList = std::vector<CallRelation*>;
-
 enum SubroutineFlag
 {
 	SUBF_PARAM_A = 1,  // 使用 A 寄存器作为参数

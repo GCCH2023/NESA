@@ -102,12 +102,6 @@ void NesSubroutineParser::Parse(NesSubroutine* subroutine)
 	// 连接基本块，构成控制流图
 	ParseBasicBlocks();
 
-	for (auto called : calls)
-	{
-		auto callRelation = db.allocator.New<CallRelation>(subroutine->GetStartAddress(), called);
-		db.AddCallRelation(callRelation);
-	}
-
 	// 判断这个函数是否内联在其他函数中
 	if (this->isInline || db.GetSubroutine(start) != nullptr)
 		subroutine->SetInline(true);

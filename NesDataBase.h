@@ -55,9 +55,6 @@ public:
 	// 根据地址获取获取包含这个地址的子程序或者这个地址后面的第一个子程序
 	NesSubroutine* GetSubroutineOrNext(Nes::Address address);
 
-	// 有序地添加子程序调用关系
-	void AddCallRelation(CallRelation* call);
-
 	// 获取分配器
 	inline Allocator& GetAllocator() { return allocator; }
 
@@ -73,8 +70,6 @@ private:
 	Nes::Address irq;
 
 	BasicBlockList basicBlocks;  // 基本块表，按地址从小到大排列
-	CallList calls;  // 函数调用关系
-
 	SubroutineList subroutines;  // 子程序列表
 	std::vector<Instruction*> instructions;  // 指令表
 };

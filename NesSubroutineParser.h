@@ -3,7 +3,6 @@ class NesDataBase;
 struct Instruction;
 class NesSubroutine;
 class NesBasicBlock;
-struct CallRelation;
 
 // 解析 NES 子程序
 // 顺序解析子程序，范围外的跳转当作函数调用处理

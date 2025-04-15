@@ -92,9 +92,6 @@
     <ClInclude Include="TAC.h">
       <Filter>IR</Filter>
     </ClInclude>
-    <ClInclude Include="TACTranslater.h">
-      <Filter>IR</Filter>
-    </ClInclude>
     <ClInclude Include="config.h">
       <Filter>Config</Filter>
     </ClInclude>
@@ -263,9 +260,6 @@
       <Filter>Parser</Filter>
     </ClCompile>
     <ClCompile Include="TAC.cpp">
-      <Filter>IR</Filter>
-    </ClCompile>
-    <ClCompile Include="TACTranslater.cpp">
       <Filter>IR</Filter>
     </ClCompile>
     <ClCompile Include="Exception.cpp">

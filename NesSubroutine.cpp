@@ -68,17 +68,3 @@ bool NesSubroutine::Contains(Nes::Address addr)
 	}
 	return false;
 }
-
-CallRelation::CallRelation():
-call(0),
-called(0)
-{
-
-}
-
-CallRelation::CallRelation(Nes::Address call_, Nes::Address called_):
-call(call_),
-called(called_)
-{
-
-}
