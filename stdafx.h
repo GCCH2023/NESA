@@ -27,6 +27,7 @@
 #define NOMINMAX
 #include <windows.h>
 
+
 #include "config.h"
 #include "Exception.h"
 #include "Allocator.h"

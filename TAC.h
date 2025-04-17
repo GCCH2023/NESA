@@ -92,7 +92,7 @@ public:
 	enum OperandKind
 	{
 		INTEGER = 0,  // 整数常量, 值是8位整数值
-		ADDRESS = 0x01000000,  // 内存地址，值是16位地址
+		ADDRESS = 0x01000000,  // 内存地址，值是16位地址，用于跳转指令
 		// 变量类别
 		TEMP = 0x03000000,  // 临时变量，值是它的编号
 		GLOBAL = 0x04000000,  // 全局变量，值是它的16位地址
@@ -136,12 +136,19 @@ public:
 	// 是否是零
 	inline bool IsZero() const { return data == 0; }
 
-	// 获取哈希值
-	inline uint32_t GetHash() const { return data; }
 	// 换取整数表示
 	inline uint32_t ToInteger() const { return data; }
 private:
 	uint32_t data;
+};
+
+// 计算 TACOperand 的哈希值
+struct TACOperandHash
+{
+	size_t operator()(const TACOperand& op) const
+	{
+		return op.ToInteger(); // 直接返回 data 的整数值
+	}
 };
 
 OStream& operator<<(OStream& os, const TACOperand& obj);

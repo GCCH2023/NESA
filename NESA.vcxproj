@@ -143,6 +143,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+    <Text Include="抽象语法树优化.txt" />
     <Text Include="日志.txt" />
     <Text Include="说明.txt" />
   </ItemGroup>

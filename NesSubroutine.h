@@ -63,8 +63,12 @@ public:
 	// 如果地址包含在某个基本块内，则包含在子程序内
 	virtual bool Contains(Nes::Address addr) override;
 
+	//void SetName(const StdString& name);
+	//inline const FlyweightString GetName() const { return name; }
+
 	uint32_t flag;  // 低3
 protected:
+	//FlyweightString name;  // 函数名
 	BasicBlockList blocks;  // 子程序包括的基本块列表，地址无序
 	std::vector<Nes::Address> calls;  // 调用的子程序地址，如果为空，则此子程序没有调用其他子程序，从小到大排列
 	bool isInline = false;  // 是否是内联函数

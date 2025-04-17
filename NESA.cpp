@@ -371,13 +371,13 @@ void NesDBSubroutineParserTest(const TCHAR* rom, Nes::Address address = 0, Nes::
 		auto func = translater.Translate(tacSub);
 		//COUT << func->GetBody();
 
-		//COUT << _T("\n语法树结构:\n");
-		//DumpCNodeStructures(COUT, func->GetBody(), 0);
+		COUT << _T("\n语法树结构:\n");
+		DumpCNodeStructures(COUT, func->GetBody(), 0);
 
 		// 优化C代码结构
-		//ctreeOptimizer.Optimize(func->GetBody());
-		//COUT << _T("\n优化语法树结构后:\n");
-		// DumpCNodeStructures(COUT, func->GetBody(), 0);
+		ctreeOptimizer.Optimize(func->GetBody());
+		COUT << _T("\n优化语法树结构后:\n");
+		 DumpCNodeStructures(COUT, func->GetBody(), 0);
 		COUT << endl;
 		DumpDefinition(func);
 
@@ -438,14 +438,14 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//SavePRG(rom);
 
-	ParseNes(rom);
+	//ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
 	//TACFunctionParserTest(rom, 62400, 62414);
 	//SubroutineRangeParserTest(rom);
-	//NesDBSubroutineParserTest(rom, 0x8082);
+	NesDBSubroutineParserTest(rom, 0x8000);
 	// ReachDefinitionTest(rom, 0x8000);
 	system("pause");
 	return 0;

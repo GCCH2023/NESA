@@ -65,6 +65,7 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 				break;
 			case Opcode::Jmp:
 				state = BlockState::End;
+				block->SetEndFlag(BBF_END_UNCOND);
 				if (entry.addrMode == AddrMode::Absolute)
 				{
 					jumpAddr = instruction.GetOperandAddress();
@@ -75,7 +76,6 @@ NesSubroutine* SubroutineParser::Parse(Nes::Address start)
 					//}
 					queue.push_back(jumpAddr);
 					block->AddSucc(jumpAddr);
-					block->SetEndFlag(BBF_END_UNCOND);
 					break;
 				}
 				// 间接寻址相当于尾函数调用，结束基本块

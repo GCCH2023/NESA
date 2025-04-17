@@ -45,6 +45,7 @@
     <Text Include="ReadMe.txt" />
     <Text Include="说明.txt" />
     <Text Include="日志.txt" />
+    <Text Include="抽象语法树优化.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -200,26 +201,17 @@
     <ClInclude Include="StringJoiner.h">
       <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="BitTable.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="NesSubroutineRangeParser.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="NesBasicBlockParser.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="NesSubroutinesParser.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="DirectedGraph.h">
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="SubroutineParser.h">
       <Filter>NesDB</Filter>
     </ClInclude>
+    <ClInclude Include="BitTable.h">
+      <Filter>Common</Filter>
+    </ClInclude>
     <ClInclude Include="DynamicBitSet.h">
-      <Filter>头文件</Filter>
+      <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -358,20 +350,11 @@
     <ClCompile Include="StringJoiner.cpp">
       <Filter>Common</Filter>
     </ClCompile>
-    <ClCompile Include="BitTable.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="NesSubroutineRangeParser.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="NesBasicBlockParser.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="NesSubroutinesParser.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="SubroutineParser.cpp">
       <Filter>NesDB</Filter>
+    </ClCompile>
+    <ClCompile Include="BitTable.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -68,3 +68,8 @@ bool NesSubroutine::Contains(Nes::Address addr)
 	}
 	return false;
 }
+
+//void NesSubroutine::SetName(const StdString& name)
+//{
+//	this->name = name;
+//}

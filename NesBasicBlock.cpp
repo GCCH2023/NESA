@@ -30,6 +30,7 @@ void NesBasicBlock::Split(Nes::Address addr, NesBasicBlock* succ)
 	succ->succs = succs;
 	succ->preds.clear();
 	succ->preds.push_back(GetStartAddress());
+	succ->flag = flag;
 
 	SetEndAddress(addr);
 	succs.clear();

@@ -28,11 +28,10 @@ void GlobalParser::Parse(NesSubroutine* subroutine)
 
 	uint32_t address = 0;
 	Type* type = nullptr;
-	static int count = 0;
-	++count;
+
 	for (auto& i : instructions)
 	{
-		const OpcodeEntry& entry = GetOpcodeEntry(i.GetOperatorByte());
+		const OpcodeEntry& entry = i.GetEntry();
 		switch (entry.addrMode)
 		{
 		case Nes::ZeroPage:
@@ -100,4 +99,15 @@ void GlobalParser::Parse(NesSubroutine* subroutine)
 void GlobalParser::Reset()
 {
 
+}
+
+void GlobalParser::ParseXRef(const Instruction& instruction)
+{
+	const OpcodeEntry& entry = instruction.GetEntry();
+	switch (entry.opcode)
+	{
+	case Opcode::Jsr:
+		db.AddXref(XRefType::CodeCall, instruction.GetAddress(), instruction.GetOperandAddress());
+		break;
+	}
 }

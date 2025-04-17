@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <string>
+#include <boost/flyweight.hpp>
 
 #ifdef UNICODE
 using OStream = std::wostream;
@@ -13,3 +14,4 @@ using StdString = std::string;
 #endif
 
 using CStr = TCHAR*;
+using FlyweightString = boost::flyweight<StdString>;
