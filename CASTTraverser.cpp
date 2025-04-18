@@ -1,31 +1,15 @@
 #include "stdafx.h"
-#include "CTreeVisitor.h"
+#include "CASTTraverser.h"
 #include "CNode.h"
 
-CTreeVisitor::CTreeVisitor()
+void CASTTraverser::Traverse(CNode* node, CASTVisitor& visitor)
 {
-}
+    if (!node) return;
+	
+    // 前序遍历
+    visitor.PreVisit(node);
 
-
-CTreeVisitor::~CTreeVisitor()
-{
-}
-
-void CTreeVisitor::Visit(CNode* node)
-{
-	if (!node)
-		return;
-
-	OnVisit(node);
-}
-
-void CTreeVisitor::OnVisit(CNode* node)
-{
-
-}
-
-void CTreeVisitor::VisitChildren(CNode* node)
-{
+    // 根据节点类型调用特定的访问方法
 	CNode* child;
 	switch (node->kind)
 	{
@@ -36,40 +20,40 @@ void CTreeVisitor::VisitChildren(CNode* node)
 		break;
 	case CNodeKind::STAT_LIST:
 		for (child = node->list.head; child; child = child->next)
-			OnVisit(child);
+			Traverse(child, visitor);
 		break;
 	case CNodeKind::STAT_EXPR:
-		OnVisit(node->e.x);
+		Traverse(node->e.x, visitor);
 		break;
 	case CNodeKind::EXPR_CALL:
 		for (CNode* param = node->f.params; param; param = param->next)
-			OnVisit(param);
+			Traverse(param, visitor);
 		break;
 	case CNodeKind::STAT_WHILE:
-		OnVisit(node->s.condition);
-		OnVisit(node->s.then);
+		Traverse(node->s.condition, visitor);
+		Traverse(node->s.then, visitor);
 		break;
 	case CNodeKind::STAT_DO_WHILE:
-		OnVisit(node->s.condition);
-		OnVisit(node->s.then);
+		Traverse(node->s.condition, visitor);
+		Traverse(node->s.then, visitor);
 		break;
 	case CNodeKind::STAT_IF:
-		OnVisit(node->s.condition);
-		OnVisit(node->s.then);
+		Traverse(node->s.condition, visitor);
+		Traverse(node->s.then, visitor);
 		if (node->s._else)
-			OnVisit(node->s._else);
+			Traverse(node->s._else, visitor);
 		break;
 	case CNodeKind::STAT_LABEL:
-		OnVisit(node->l.body);
+		Traverse(node->l.body, visitor);
 		break;
 	case CNodeKind::STAT_RETURN:
 		if (node->e.x)
-			OnVisit(node->e.x);
+			Traverse(node->e.x, visitor);
 		break;
 	case CNodeKind::EXPR_DEREF:
 	case CNodeKind::EXPR_ADDR:
 	case CNodeKind::EXPR_NOT:
-		OnVisit(node->e.x);
+		Traverse(node->e.x, visitor);
 		break;
 	case CNodeKind::EXPR_ASSIGN:
 	case CNodeKind::EXPR_ADD:
@@ -90,10 +74,19 @@ void CTreeVisitor::VisitChildren(CNode* node)
 	case CNodeKind::EXPR_BAND_ASSIGN:
 	case CNodeKind::EXPR_AND:
 	case CNodeKind::EXPR_OR:
-		OnVisit(node->e.x);
-		OnVisit(node->e.y);
+		Traverse(node->e.x, visitor);
+		Traverse(node->e.y, visitor);
 		break;
 	default:
+	{
+		Sprintf<> s;
+		s.Format(_T("遍历抽象语法树: 未实现的节点类型"), ToString(node->kind));
+		throw Exception(s.ToString());
 		break;
 	}
+	}
+
+    // 后序遍历
+    visitor.PostVisit(node);
 }
+

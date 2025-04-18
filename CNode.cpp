@@ -2,8 +2,7 @@
 #include "CNode.h"
 
 CNode::CNode(CNodeKind kind_, uint32_t address_) :
-kind(kind_),
-address(address_)
+kind(kind_)
 {
 
 }

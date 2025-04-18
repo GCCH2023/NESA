@@ -64,7 +64,6 @@ const TCHAR* ToString(CNodeKind kind);
 struct CNode
 {
 	CNodeKind kind;  // 节点的类型
-	uint32_t address;  // 对应的NES地址
 
 	union
 	{

@@ -24,6 +24,7 @@
 #include <stack>
 #include <map>
 #include <set>
+#include <variant>
 #define NOMINMAX
 #include <windows.h>
 

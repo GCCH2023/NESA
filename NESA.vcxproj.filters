@@ -40,6 +40,12 @@
     <Filter Include="DataFlow">
       <UniqueIdentifier>{a1e1980a-8e52-47d3-a51e-d7195571779e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="C\Traverser">
+      <UniqueIdentifier>{3a9938e0-b15b-4d06-a3d7-e36e2849caa1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C\Optimizer">
+      <UniqueIdentifier>{618b5349-e0e7-4214-94dd-072b66a96186}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -129,12 +135,6 @@
     <ClInclude Include="TACPeephole.h">
       <Filter>IR</Filter>
     </ClInclude>
-    <ClInclude Include="CTreeOptimizer.h">
-      <Filter>C</Filter>
-    </ClInclude>
-    <ClInclude Include="CTreeVisitor.h">
-      <Filter>C</Filter>
-    </ClInclude>
     <ClInclude Include="ASTManager.h">
       <Filter>C</Filter>
     </ClInclude>
@@ -213,6 +213,18 @@
     <ClInclude Include="DynamicBitSet.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="CASTTraverser.h">
+      <Filter>C\Traverser</Filter>
+    </ClInclude>
+    <ClInclude Include="CASTContextTraverser.h">
+      <Filter>C\Traverser</Filter>
+    </ClInclude>
+    <ClInclude Include="CASTListOptimizer.h">
+      <Filter>C\Optimizer</Filter>
+    </ClInclude>
+    <ClInclude Include="CTreeOptimizer.h">
+      <Filter>C\Optimizer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -278,12 +290,6 @@
     <ClCompile Include="TACPeephole.cpp">
       <Filter>IR</Filter>
     </ClCompile>
-    <ClCompile Include="CTreeOptimizer.cpp">
-      <Filter>C</Filter>
-    </ClCompile>
-    <ClCompile Include="CTreeVisitor.cpp">
-      <Filter>C</Filter>
-    </ClCompile>
     <ClCompile Include="ASTManager.cpp">
       <Filter>C</Filter>
     </ClCompile>
@@ -298,9 +304,6 @@
     </ClCompile>
     <ClCompile Include="NesAnalyzer.cpp">
       <Filter>Parser</Filter>
-    </ClCompile>
-    <ClCompile Include="Dump.cpp">
-      <Filter>C</Filter>
     </ClCompile>
     <ClCompile Include="CDataBase.cpp">
       <Filter>C</Filter>
@@ -355,6 +358,21 @@
     </ClCompile>
     <ClCompile Include="BitTable.cpp">
       <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Dump.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="CASTTraverser.cpp">
+      <Filter>C\Traverser</Filter>
+    </ClCompile>
+    <ClCompile Include="CASTContextTraverser.cpp">
+      <Filter>C\Traverser</Filter>
+    </ClCompile>
+    <ClCompile Include="CASTListOptimizer.cpp">
+      <Filter>C\Optimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="CTreeOptimizer.cpp">
+      <Filter>C\Optimizer</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
