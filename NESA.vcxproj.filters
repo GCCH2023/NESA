@@ -228,6 +228,12 @@
     <ClInclude Include="CASTDoWhileOptimier.h">
       <Filter>C\Optimizer</Filter>
     </ClInclude>
+    <ClInclude Include="StructuralGraphTranslator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CBasicBlockTranslator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -379,6 +385,9 @@
     </ClCompile>
     <ClCompile Include="CASTDoWhileOptimier.cpp">
       <Filter>C\Optimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="CBasicBlockTranslator.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

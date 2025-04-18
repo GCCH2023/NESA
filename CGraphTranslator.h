@@ -96,12 +96,8 @@ protected:
 	void OnReduceIfElse(Node _if, Node then, Node _else);
 	void OnReduceIfOr(Node _if, Node then, Node _else);
 protected:
-	// 条件跳转语句翻译
-	CNode* ConditionalJump(CNode*& condition, CNodeKind kind, TAC* tac, uint32_t& jumpAddr);
 	// 翻译三地址码的操作码为C语言的表达式类型
 	CNodeKind TranslateOperator(TACOperator op);
-	// 翻译 CALL
-	CNode* TranslateCall(TAC* call, CNode* params = nullptr);
 	// 翻译区域代码为抽象语法树节点
 	CNode* TranslateRegion(CNode*& condition, TACBasicBlock* tacBlock, uint32_t& jumpAddr);
 	// 根据跳转地址获取对应的标签语句

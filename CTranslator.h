@@ -17,7 +17,7 @@ public:
 	// 翻译子程序为C函数
 	Function* Translate(TACFunction* tacFunc);
 	virtual void Reset();
-protected:
+
 	inline TACFunction* GetTACFunction() { return tacFunc; }
 	inline Function* GetFunction() { return function; }
 	// 将三地址码操作数转换为C表达式
@@ -44,7 +44,10 @@ protected:
 	CNode* NewNoneStatement();
 	// 创建一条列表语句
 	CNode* NewStatementList(CNode* head, CNode* tail);
+	// 获取寄存器的名称
+	String* GetRegisterName(int index) { return registers[index]; }
 
+	Allocator& GetAllocator() { return allocator; }
 protected:
 	Allocator& allocator;
 private:

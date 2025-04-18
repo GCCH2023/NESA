@@ -157,6 +157,7 @@
     <ClInclude Include="CASTDoWhileOptimier.h" />
     <ClInclude Include="CASTListOptimizer.h" />
     <ClInclude Include="CASTTraverser.h" />
+    <ClInclude Include="CBasicBlockTranslator.h" />
     <ClInclude Include="CDataBase.h" />
     <ClInclude Include="CNode.h" />
     <ClInclude Include="config.h" />
@@ -189,6 +190,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="String.h" />
     <ClInclude Include="StringJoiner.h" />
+    <ClInclude Include="StructuralGraphTranslator.h" />
     <ClInclude Include="SubroutineParser.h" />
     <ClInclude Include="TAC.h" />
     <ClInclude Include="TACDeadCodeElimination.h" />
@@ -215,6 +217,7 @@
     <ClCompile Include="CASTDoWhileOptimier.cpp" />
     <ClCompile Include="CASTListOptimizer.cpp" />
     <ClCompile Include="CASTTraverser.cpp" />
+    <ClCompile Include="CBasicBlockTranslator.cpp" />
     <ClCompile Include="CDataBase.cpp" />
     <ClCompile Include="CNode.cpp" />
     <ClCompile Include="CGraphTranslator.cpp" />
