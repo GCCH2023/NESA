@@ -154,6 +154,7 @@
     <ClInclude Include="BitTable.h" />
     <ClInclude Include="Cartridge.h" />
     <ClInclude Include="CASTContextTraverser.h" />
+    <ClInclude Include="CASTDoWhileOptimier.h" />
     <ClInclude Include="CASTListOptimizer.h" />
     <ClInclude Include="CASTTraverser.h" />
     <ClInclude Include="CDataBase.h" />
@@ -211,6 +212,7 @@
     <ClCompile Include="BitTable.cpp" />
     <ClCompile Include="Cartridge.cpp" />
     <ClCompile Include="CASTContextTraverser.cpp" />
+    <ClCompile Include="CASTDoWhileOptimier.cpp" />
     <ClCompile Include="CASTListOptimizer.cpp" />
     <ClCompile Include="CASTTraverser.cpp" />
     <ClCompile Include="CDataBase.cpp" />

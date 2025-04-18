@@ -225,6 +225,9 @@
     <ClInclude Include="CTreeOptimizer.h">
       <Filter>C\Optimizer</Filter>
     </ClInclude>
+    <ClInclude Include="CASTDoWhileOptimier.h">
+      <Filter>C\Optimizer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -372,6 +375,9 @@
       <Filter>C\Optimizer</Filter>
     </ClCompile>
     <ClCompile Include="CTreeOptimizer.cpp">
+      <Filter>C\Optimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="CASTDoWhileOptimier.cpp">
       <Filter>C\Optimizer</Filter>
     </ClCompile>
   </ItemGroup>

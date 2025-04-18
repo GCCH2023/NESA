@@ -15,9 +15,9 @@ public:
 	CASTContextTraverser* GetTraverser() { return traverser; }
 
 	// 前序遍历方法
-	virtual void PreVisit(CNode* node) {}
+	virtual void PreVisit(CNode* node, int depth) {}
 	// 后序遍历方法
-	virtual void PostVisit(CNode* node) {}
+	virtual void PostVisit(CNode* node, int depth) {}
 private:
 	CASTContextTraverser* traverser = nullptr;
 };
@@ -28,7 +28,10 @@ struct CNodeContext
 	int depth;
 };
 
-// 保存遍历过程的祖先节点和兄弟节点的遍历器
+using CNodeContextList = std::vector<CNodeContext>;
+
+// 保存遍历过程的祖先节点和兄姊节点的遍历器
+// 兄姊栈中也保存着祖先的兄姊节点，需要根据深度来判断是不是当前节点的
 class CASTContextTraverser
 {
 public:
@@ -40,17 +43,19 @@ public:
 	virtual ~CASTContextTraverser() = default;
 	// 开始遍历抽象语法树
 	virtual void Traverse(CNode* node, CASTContextVisitor& visitor);
+	CNodeContextList& GetAncestors() { return ancestors; }
+	CNodeContextList& GetSeniors() { return seniors; }
 protected:
 	// 遍历节点并保存信息
 	void TraverseNode(CNode* node, CASTContextVisitor& visitor);
 	// 重置数据
 	void Reset();
-	void ClearSeniors() { seniors.clear(); }
+	void PopSeniors();
 	void PushSenior(CNode* node) { seniors.push_back({ node, depth }); }
 	void PushAncestor(CNode* node) { ancestors.push_back({ node, depth }); ++depth; }
-	void PopAncestor() { ancestors.pop_back(); --depth; ClearSeniors(); }
+	void PopAncestor() { PopSeniors(); ancestors.pop_back(); --depth;}
 private:
-	std::vector<CNodeContext> ancestors;  // 祖先栈
-	std::vector<CNodeContext> seniors;  // 兄姊栈
+	CNodeContextList ancestors;  // 祖先栈
+	CNodeContextList seniors;  // 兄姊栈
 	int depth;  // 当前遍历的节点的嵌套深度
 };

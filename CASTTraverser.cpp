@@ -19,14 +19,14 @@ void CASTTraverser::Traverse(CNode* node, CASTVisitor& visitor)
 	case CNodeKind::STAT_GOTO:
 		break;
 	case CNodeKind::STAT_LIST:
-		for (child = node->list.head; child; child = child->next)
+		for (child = node->list.head; child; child = child->GetNext())
 			Traverse(child, visitor);
 		break;
 	case CNodeKind::STAT_EXPR:
 		Traverse(node->e.x, visitor);
 		break;
 	case CNodeKind::EXPR_CALL:
-		for (CNode* param = node->f.params; param; param = param->next)
+		for (CNode* param = node->call.params; param; param = param->GetNext())
 			Traverse(param, visitor);
 		break;
 	case CNodeKind::STAT_WHILE:
@@ -80,7 +80,7 @@ void CASTTraverser::Traverse(CNode* node, CASTVisitor& visitor)
 	default:
 	{
 		Sprintf<> s;
-		s.Format(_T("遍历抽象语法树: 未实现的节点类型"), ToString(node->kind));
+		s.Format(_T("遍历抽象语法树: 未实现的节点类型 %s"), ToString(node->kind));
 		throw Exception(s.ToString());
 		break;
 	}

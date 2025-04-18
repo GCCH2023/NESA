@@ -47,14 +47,41 @@ kind(kind_)
 CNode::CNode(String* name, CNode* params /*= nullptr*/) :
 kind(CNodeKind::EXPR_CALL)
 {
-	f.name = name;
-	f.params = params;
+	call.name = name;
+	call.params = params;
 }
 
 CNode::CNode(CNodeKind kind_, String* name) :
 kind(kind_)
 {
 	l.name = name;
+}
+
+CNode::CNode(CNode* init, CNode* condition, CNode* iter, CNode* body):
+	kind(CNodeKind::STAT_FOR)
+{
+	_for.init = init;
+	_for.condition = condition;
+	_for.iter = iter;
+	_for.body = body;
+}
+
+void CNode::RemoveStatement(CNode* statement)
+{
+	assert(kind == CNodeKind::STAT_LIST && statement);
+
+	auto prev = statement->GetPrev();
+	if (prev)
+		prev->next = statement->next;
+	statement->prev = nullptr;
+	auto next = statement->next;
+	if (next)
+		next->prev = prev;
+	statement->next = nullptr;
+	if (list.head == statement)
+		list.head = next;
+	if (list.tail == statement)
+		list.tail = prev;
 }
 
 CNode::CNode()
@@ -72,6 +99,7 @@ const TCHAR* ToString(CNodeKind kind)
 	case CNodeKind::STAT_WHILE: return _T("STAT_WHILE");
 	case CNodeKind::STAT_NONE: return _T("STAT_NONE");
 	case CNodeKind::STAT_DO_WHILE: return _T("STAT_DO_WHILE");
+	case CNodeKind::STAT_FOR: return _T("STAT_FOR");
 	case CNodeKind::STAT_IF: return _T("STAT_IF");
 	case CNodeKind::STAT_GOTO: return _T("STAT_GOTO");
 	case CNodeKind::STAT_LABEL: return _T("STAT_LABEL");

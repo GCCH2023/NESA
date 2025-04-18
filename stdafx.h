@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <array>
 #include <list>
 #include <algorithm>
 #include <unordered_map>

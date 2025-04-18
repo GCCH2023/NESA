@@ -8,7 +8,7 @@ public:
 	using CASTContextVisitor::CASTContextVisitor;
 	void Reset();
 protected:
-	virtual void PostVisit(CNode* node) override;
+	virtual void PostVisit(CNode* node, int depth) override;
 	// 尝试合并两条语句，没有合并返回0，合并返回对应的类型
 	int TryCombineStatementList(CNode* first, CNode* second);
 	// 尝试优化语句列表节点

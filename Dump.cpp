@@ -97,7 +97,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 	case CNodeKind::STAT_LIST:
 	{
-								 for (auto n = obj->list.head; n; n = n->next)
+								 for (auto n = obj->list.head; n; n = n->GetNext())
 									 DumpCNode(os, n, indent);
 								 return os;
 	}
@@ -126,6 +126,18 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 									 Indent(os, indent);
 									 os << _T("} while(") << obj->s.condition << _T(");\n");
 									 return os;
+	}
+	case CNodeKind::STAT_FOR:
+	{
+		Indent(os, indent);
+		os << _T("for (") << obj->_for.init << _T(";") << obj->_for.condition << _T(";") << obj->_for.iter << _T(")");
+		if (obj->s.then->kind == CNodeKind::STAT_NONE)
+			return os << _T(" ;\n");
+		os << _T(" {\n");
+		DumpCNode(os, obj->_for.body, indent + 1);
+		Indent(os, indent);
+		os << _T("}\n");
+		return os;
 	}
 	case CNodeKind::STAT_IF:
 	{
@@ -234,12 +246,12 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::EXPR_CALL:
 	{
 								 Indent(os, indent);
-								 os << obj->f.name << _T("(");
-								 if (obj->f.params == nullptr)
+								 os << obj->call.name << _T("(");
+								 if (obj->call.params == nullptr)
 									 return os << _T(")");
-								 for (CNode* param = obj->f.params; param; param = param->next)
+								 for (CNode* param = obj->call.params; param; param = param->GetNext())
 								 {
-									 if (param != obj->f.params)
+									 if (param != obj->call.params)
 										 os << _T(", ");
 									 os << param;
 								 }
@@ -279,7 +291,7 @@ OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)
 								 os << _T("list:\n");
 								 Indent(os, indent);
 								 os << _T("{\n");
-								 for (auto n = obj->list.head; n; n = n->next)
+								 for (auto n = obj->list.head; n; n = n->GetNext())
 									 DumpCNodeStructures(os, n, indent + 1);
 								 Indent(os, indent);
 								 os << _T("}\n");

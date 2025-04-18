@@ -15,7 +15,7 @@ void CASTContextTraverser::Traverse(CNode* node, CASTContextVisitor& visitor)
 void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor)
 {
 	// 前序遍历
-	visitor.PreVisit(node);
+	visitor.PreVisit(node, depth);
 
 	// 根据节点类型调用特定的访问方法
 	CNode* child;
@@ -28,7 +28,7 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 		break;
 	case CNodeKind::STAT_LIST:
 		PushAncestor(node);
-		for (child = node->list.head; child; child = child->next)
+		for (child = node->list.head; child; child = child->GetNext())
 		{
 			TraverseNode(child, visitor);
 			PushSenior(child);
@@ -42,7 +42,7 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 		break;
 	case CNodeKind::EXPR_CALL:
 		PushAncestor(node);
-		for (CNode* param = node->f.params; param; param = param->next)
+		for (CNode* param = node->call.params; param; param = param->GetNext())
 		{
 			TraverseNode(param, visitor);
 			PushSenior(param);
@@ -54,6 +54,14 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 		PushAncestor(node);
 		TraverseNode(node->s.condition, visitor);
 		TraverseNode(node->s.then, visitor);
+		PopAncestor();
+		break;
+	case CNodeKind::STAT_FOR:
+		PushAncestor(node);
+		TraverseNode(node->_for.init, visitor);
+		TraverseNode(node->_for.condition, visitor);
+		TraverseNode(node->_for.iter, visitor);
+		TraverseNode(node->_for.body, visitor);
 		PopAncestor();
 		break;
 	case CNodeKind::STAT_IF:
@@ -111,18 +119,24 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 	default:
 	{
 		Sprintf<> s;
-		s.Format(_T("遍历抽象语法树: 未实现的节点类型"), ToString(node->kind));
+		s.Format(_T("遍历抽象语法树: 未实现的节点类型 %s"), ToString(node->kind));
 		throw Exception(s.ToString());
 		break;
 	}
 	}
 
 	// 后序遍历
-	visitor.PostVisit(node);
+	visitor.PostVisit(node, depth);
 }
 
 void CASTContextTraverser::Reset()
 {
 	ancestors.clear();
 	seniors.clear();
+}
+
+void CASTContextTraverser::PopSeniors()
+{
+	while (!seniors.empty() && seniors.back().depth == depth)
+		seniors.pop_back();
 }

@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "CTreeOptimizer.h"
 #include "CASTListOptimizer.h"
+#include "CASTDoWhileOptimier.h"
+
 
 CTreeOptimizer::CTreeOptimizer()
 {
@@ -17,5 +19,8 @@ void CTreeOptimizer::Optimize(CNode* root)
 	CASTListOptimizer optimizer;
 
 	traverser.Traverse(root, optimizer);
+
+	CASTDoWhileOptimier doWhileOptimizer;
+	traverser.Traverse(root, doWhileOptimizer);
 }
 

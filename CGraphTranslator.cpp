@@ -365,8 +365,8 @@ using namespace std;
 //					}
 //					else
 //					{
-//						paramsTail->next = GetExpression(codes[i]->x);
-//						paramsTail = paramsTail->next;
+//						paramsTail->AddNext(GetExpression(codes[i]->x);
+//						paramsTail = paramsTail->GetNext();
 //					}
 //					++i;
 //				}
@@ -456,7 +456,7 @@ using namespace std;
 //				// C语言中没有ROR运算符，翻译为函数调用好了
 //				// void Ror(int*, int)
 //				CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
-//				params->next = GetExpression(tac->y);
+//				params->AddNext(GetExpression(tac->y);
 //				current = allocator.New<CNode>(GetCDB().AddString(_T("Ror")), params);
 //				break;
 //			}
@@ -465,7 +465,7 @@ using namespace std;
 //				// C语言中没有ROL运算符，翻译为函数调用好了
 //				// void Rol(int*, int)
 //				CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
-//				params->next = GetExpression(tac->y);
+//				params->AddNext(GetExpression(tac->y);
 //				current = allocator.New<CNode>(GetCDB().AddString(_T("Rol")), params);
 //				break;
 //			}
@@ -489,7 +489,7 @@ using namespace std;
 //			{
 //				// 翻译为函数调用
 //				CNode* params = GetExpression(tac->x);
-//				params->next = GetExpression(tac->y);
+//				params->AddNext(GetExpression(tac->y);
 //				expr = allocator.New<CNode>(GetCDB().AddString(_T("IsOverflow")), (CNode*)nullptr);
 //				expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 //				current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
@@ -542,7 +542,7 @@ using namespace std;
 //			}
 //			else
 //			{
-//				tail->next = current;
+//				tail->AddNext(current;
 //				tail = current;
 //			}
 //		}
@@ -603,7 +603,7 @@ using namespace std;
 //
 //	CNode* NewStatementPair(CNode* first, CNode* second)
 //	{
-//		assert(first->next == nullptr);
+//		assert(first->GetNext() == nullptr);
 //		// 尝试优化
 //		// 在这里优化，可能有一个问题：有的地方可能引用了其中一个指针
 //		// 合并后，被丢弃了，引用失效。
@@ -614,23 +614,23 @@ using namespace std;
 //		//	if (second->kind == CNodeKind::STAT_LIST)
 //		//	{
 //		//		// 合并到末尾
-//		//		first->list.tail->next = second->list.head;
+//		//		first->list.tail->AddNext(second->list.head;
 //		//		first->list.tail = second->list.tail;
 //		//		return first;
 //		//	}
 //		//	// 添加到末尾
-//		//	first->list.tail->next = second;
+//		//	first->list.tail->AddNext(second;
 //		//	first->list.tail = second;
 //		//	return first;
 //		//}
 //		//else if (second->kind == CNodeKind::STAT_LIST)
 //		//{
 //		//	// 添加到开头
-//		//	first->next = second->list.head;
+//		//	first->AddNext(second->list.head;
 //		//	second->list.head = first;
 //		//	return second;
 //		//}
-//		first->next = second;
+//		first->AddNext(second;
 //		return NewStatementList(first, second);
 //	}
 //
@@ -1510,8 +1510,8 @@ CNode* CGraphTranslator::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacB
 										}
 										else
 										{
-											paramsTail->next = GetExpression(codes[i]->x);
-											paramsTail = paramsTail->next;
+											paramsTail->SetNext(GetExpression(codes[i]->x));
+											paramsTail = paramsTail->GetNext();
 										}
 										++i;
 									}
@@ -1601,7 +1601,7 @@ CNode* CGraphTranslator::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacB
 								 // C语言中没有ROR运算符，翻译为函数调用好了
 								 // void Ror(int*, int)
 								 CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
-								 params->next = GetExpression(tac->y);
+								 params->SetNext(GetExpression(tac->y));
 								 current = allocator.New<CNode>(GetCDB().AddString(_T("Ror")), params);
 								 break;
 		}
@@ -1610,7 +1610,7 @@ CNode* CGraphTranslator::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacB
 								 // C语言中没有ROL运算符，翻译为函数调用好了
 								 // void Rol(int*, int)
 								 CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
-								 params->next = GetExpression(tac->y);
+								 params->SetNext(GetExpression(tac->y));
 								 current = allocator.New<CNode>(GetCDB().AddString(_T("Rol")), params);
 								 break;
 		}
@@ -1634,7 +1634,7 @@ CNode* CGraphTranslator::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacB
 		{
 								   // 翻译为函数调用
 								   CNode* params = GetExpression(tac->x);
-								   params->next = GetExpression(tac->y);
+								   params->SetNext(GetExpression(tac->y));
 								   expr = allocator.New<CNode>(GetCDB().AddString(_T("IsOverflow")), (CNode*)nullptr);
 								   expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 								   current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
@@ -1687,7 +1687,7 @@ CNode* CGraphTranslator::TranslateRegion(CNode*& pCondition, TACBasicBlock* tacB
 		}
 		else
 		{
-			tail->next = current;
+			tail->SetNext(current);
 			tail = current;
 		}
 	}
@@ -1748,7 +1748,7 @@ CNode* CGraphTranslator::NewDoWhile(CNode* condition, CNode* body)
 
 CNode* CGraphTranslator::NewStatementPair(CNode* first, CNode* second)
 {
-	assert(first->next == nullptr);
+	assert(first->GetNext() == nullptr);
 	// 尝试优化
 	// 在这里优化，可能有一个问题：有的地方可能引用了其中一个指针
 	// 合并后，被丢弃了，引用失效。
@@ -1759,23 +1759,23 @@ CNode* CGraphTranslator::NewStatementPair(CNode* first, CNode* second)
 	//	if (second->kind == CNodeKind::STAT_LIST)
 	//	{
 	//		// 合并到末尾
-	//		first->list.tail->next = second->list.head;
+	//		first->list.tail->AddNext(second->list.head;
 	//		first->list.tail = second->list.tail;
 	//		return first;
 	//	}
 	//	// 添加到末尾
-	//	first->list.tail->next = second;
+	//	first->list.tail->AddNext(second;
 	//	first->list.tail = second;
 	//	return first;
 	//}
 	//else if (second->kind == CNodeKind::STAT_LIST)
 	//{
 	//	// 添加到开头
-	//	first->next = second->list.head;
+	//	first->AddNext(second->list.head;
 	//	second->list.head = first;
 	//	return second;
 	//}
-	first->next = second;
+	first->SetNext(second);
 	return NewStatementList(first, second);
 }
 

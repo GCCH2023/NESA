@@ -286,8 +286,8 @@ CNode* CDirectTranslator::TranslateBody()
 											}
 											else
 											{
-												paramsTail->next = GetExpression(codes[i]->x);
-												paramsTail = paramsTail->next;
+												paramsTail->SetNext(GetExpression(codes[i]->x));
+												paramsTail = paramsTail->GetNext();
 											}
 											++i;
 										}
@@ -357,7 +357,7 @@ CNode* CDirectTranslator::TranslateBody()
 									 // C语言中没有ROR运算符，翻译为函数调用好了
 									 // void Ror(int*, int)
 									 CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
-									 params->next = GetExpression(tac->y);
+									 params->SetNext(GetExpression(tac->y));
 									 current = allocator.New<CNode>(GetCDB().AddString(_T("Ror")), params);
 									 break;
 			}
@@ -366,7 +366,7 @@ CNode* CDirectTranslator::TranslateBody()
 									 // C语言中没有ROL运算符，翻译为函数调用好了
 									 // void Rol(int*, int)
 									 CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
-									 params->next = GetExpression(tac->y);
+									 params->SetNext(GetExpression(tac->y));
 									 current = allocator.New<CNode>(GetCDB().AddString(_T("Rol")), params);
 									 break;
 			}
@@ -390,7 +390,7 @@ CNode* CDirectTranslator::TranslateBody()
 			{
 											// 翻译为函数调用
 											CNode* params = GetExpression(tac->x);
-											params->next = GetExpression(tac->y);
+											params->SetNext(GetExpression(tac->y));
 											expr = allocator.New<CNode>(GetCDB().AddString(_T("IsOverflow")), (CNode*)nullptr);
 											expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
 											current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
@@ -443,7 +443,7 @@ CNode* CDirectTranslator::TranslateBody()
 			}
 			else
 			{
-				tail->next = current;
+				tail->SetNext(current);
 				tail = current;
 			}
 			AddAddressMapStatement(tac->address, current);  // 记录每条语句对应的地址
@@ -455,7 +455,7 @@ CNode* CDirectTranslator::TranslateBody()
 		}
 		else
 		{
-			funcTail->next = blockStat;
+			funcTail->SetNext(blockStat);
 			funcTail = blockStat;
 		}
 	}
