@@ -130,7 +130,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::STAT_FOR:
 	{
 		Indent(os, indent);
-		os << _T("for (") << obj->_for.init << _T(";") << obj->_for.condition << _T(";") << obj->_for.iter << _T(")");
+		os << _T("for (") << obj->_for.init << _T("; ") << obj->_for.condition << _T("; ") << obj->_for.iter << _T(")");
 		if (obj->s.then->kind == CNodeKind::STAT_NONE)
 			return os << _T(" ;\n");
 		os << _T(" {\n");

@@ -7,7 +7,9 @@
 
 CBasicBlockTranslator::CBasicBlockTranslator(CTranslator* translator_) :
 	translator(translator_),
-	allocator(translator_->GetAllocator())
+	allocator(translator_->GetAllocator()),
+	condition(nullptr),
+	jumpAddr(0)
 {
 }
 

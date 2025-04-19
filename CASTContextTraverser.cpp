@@ -116,6 +116,11 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 		TraverseNode(node->e.y, visitor);
 		PopAncestor();
 		break;
+	case CNodeKind::EXPR_CAST:
+		PushAncestor(node);
+		TraverseNode(node->cast.expr, visitor);
+		PopAncestor();
+		break;
 	default:
 	{
 		Sprintf<> s;

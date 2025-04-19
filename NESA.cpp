@@ -445,7 +445,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	// TACBasicBlockOptimizerTest();
 	//TACFunctionParserTest(rom, 62400, 62414);
 	//SubroutineRangeParserTest(rom);
-	NesDBSubroutineParserTest(rom, 0x8000);
+	NesDBSubroutineParserTest(rom, 0x90CC);
 	// ReachDefinitionTest(rom, 0x8000);
 	system("pause");
 	return 0;

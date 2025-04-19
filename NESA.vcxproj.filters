@@ -232,7 +232,7 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="CBasicBlockTranslator.h">
-      <Filter>头文件</Filter>
+      <Filter>C</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -387,7 +387,7 @@
       <Filter>C\Optimizer</Filter>
     </ClCompile>
     <ClCompile Include="CBasicBlockTranslator.cpp">
-      <Filter>源文件</Filter>
+      <Filter>C</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

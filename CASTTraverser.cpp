@@ -77,6 +77,9 @@ void CASTTraverser::Traverse(CNode* node, CASTVisitor& visitor)
 		Traverse(node->e.x, visitor);
 		Traverse(node->e.y, visitor);
 		break;
+	case CNodeKind::EXPR_CAST:
+		Traverse(node->cast.expr, visitor);
+		break;
 	default:
 	{
 		Sprintf<> s;
