@@ -11,7 +11,7 @@ class TACPeephole : public TACOptimizer
 	using VarDefMap = std::unordered_map<TACOperand, TAC*, TACOperandHash>;
 
 public:
-	TACPeephole(NesDataBase& db, const ReachingDefinitionResult* rdResult = nullptr);
+	TACPeephole(NesDataBase& db, std::shared_ptr<ReachingDefinitionResult> rdResult = nullptr);
 	~TACPeephole();
 
 	virtual void Optimize(TACFunction* subroutine) override;
@@ -34,6 +34,6 @@ protected:
 private:
 	VarDefMap varDefMap;
 	TACBasicBlock* currentBlock;  // 当前处理的基本块
-	const ReachingDefinitionResult* reachDefResult;
+	std::shared_ptr<ReachingDefinitionResult> reachDefResult;
 };
 

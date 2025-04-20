@@ -8,11 +8,11 @@ void ReachingDefinitionResult::GetDefinitionTACList(std::vector<TAC*>& result, c
 	result.clear();
 	auto codes = function->GetCodes();
 	size_t index = 0;
-	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
+	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)  // 遍历所有寄存器
 	{
-		for (auto def : defs[i])
+		for (auto def : defs[i])  // 遍历当前寄存器的所有定值点
 		{
-			if (set[index])
+			if (set[index]) // 如果集合中包含这个定值点
 				result.push_back(codes[def]);
 			++index;
 		}
@@ -22,6 +22,33 @@ void ReachingDefinitionResult::GetDefinitionTACList(std::vector<TAC*>& result, c
 void ReachingDefinitionResult::GetBasicBlockDefinitionsIn(std::vector<TAC*>& result, size_t blockIndex) const
 {
 	return GetDefinitionTACList(result, data[blockIndex].in);
+}
+
+void ReachingDefinitionResult::GetBasicBlockDefinitionsIn(std::vector<TAC*>& result, size_t blockIndex, const TACOperand& var) const
+{
+	result.clear();
+	if (!IsAxyNvzc(var))
+		return;
+
+	const auto& set = data[blockIndex].in;
+	auto codes = function->GetCodes();
+
+	size_t index = 0;
+	for (int i = TAC_REG_A; i <= TAC_REG_C; ++i)
+	{
+		if (i != var.GetValue())
+		{
+			index += defs[i].size();
+			continue;
+		}
+
+		for (auto def : defs[i])
+		{
+			if (set[index])
+				result.push_back(codes[def]);
+			++index;
+		}
+	}
 }
 
 
@@ -36,14 +63,14 @@ void ReachingDefinitionResult::DumpBasicBlockDefinitions(size_t index) const
 {
 	vector<TAC*> codes(32);
 	auto block = function->GetBasicBlocks()[index];
-	auto blockSet = (BasicBlockReachingDefinitionSet*)block->tag;
+	const auto& blockSet = data[index];
 	Sprintf<> s;
 	COUT << s.Format(_T("block %04X:\nIN:\n"), block->GetStartAddress());
-	GetDefinitionTACList(codes, blockSet->in);
+	GetDefinitionTACList(codes, blockSet.in);
 	for (auto tac : codes)
 		DumpAddressTAC(COUT, tac) << endl;
 	COUT << "OUT:\n";
-	GetDefinitionTACList(codes, blockSet->out);
+	GetDefinitionTACList(codes, blockSet.out);
 	for (auto tac : codes)
 		DumpAddressTAC(COUT, tac) << endl;
 }

@@ -36,8 +36,10 @@ public:
 	bool CanReach(size_t blockIndex, bool isIn, int var);
 	// 获取所有定值点的三地址码
 	void GetDefinitionTACList(std::vector<TAC*>& result, const Set& set) const;
-	// 获取指定基本块的所有入口定值三地址码
+	// 获取可以到达指定基本块入口的所有定值三地址码
 	void GetBasicBlockDefinitionsIn(std::vector<TAC*>& result, size_t blockIndex) const;
+	// 获取可以到达指定基本块入口的指定变量的定值三地址码
+	void GetBasicBlockDefinitionsIn(std::vector<TAC*>& result, size_t blockIndex, const TACOperand& var) const;
 protected:
 	void GenerateMask();  // 计算掩码
 private:

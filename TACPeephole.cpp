@@ -17,7 +17,7 @@ bool IsVariable(const TACOperand& operand)
 
 
 
-TACPeephole::TACPeephole(NesDataBase& db, const ReachingDefinitionResult* rdResult):
+TACPeephole::TACPeephole(NesDataBase& db, std::shared_ptr<ReachingDefinitionResult> rdResult):
 TACOptimizer(db),
 reachDefResult(rdResult)
 {
@@ -60,7 +60,7 @@ TAC* TACPeephole::GetOperandDefinition(TACOperand& operand)
 	{
 		TACList tacList;
 		auto index = (size_t)GetCurrentBasicBlock()->tag;
-		reachDefResult->GetBasicBlockDefinitionsIn(tacList, index);
+		reachDefResult->GetBasicBlockDefinitionsIn(tacList, index, operand);
 		if (tacList.size() == 1)
 			return tacList.front();
 	}

@@ -742,12 +742,12 @@ CNode* CBasicBlockDAGTranslator::Translate(TACBasicBlock* block)
 	GenerateDAG(block);
 	curBlock = block;
 	auto node = GenerateCodes();
-	if (block->GetStartAddress() == 0x90CC)
-	{
-		Sprintf<> s;
-		COUT << s.Format(_T("\n block %04X - %04X\n"), block->GetStartAddress(), block->GetEndAddress());
-		COUT << node;
-		int a = 0;
-	}
+	//if (block->GetStartAddress() == 0x90CC)
+	//{
+	//	Sprintf<> s;
+	//	COUT << s.Format(_T("\n block %04X - %04X\n"), block->GetStartAddress(), block->GetEndAddress());
+	//	COUT << node;
+	//	int a = 0;
+	//}
 	return node;
 }

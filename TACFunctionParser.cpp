@@ -24,6 +24,7 @@ void TACFunctionParser::Parse(TACFunction* func)
 	// 1. 进行到达定值分析，如果AXY能够到达返回基本块，则可能是返回值
 	ReachingDefinition rd(db, allocator);
 	auto result = rd.Analyze(func);
+	// result->DumpAllBasicBlockDefinitions();
 
 	size_t index = 0;
 	for (auto block : func->GetBasicBlocks())
@@ -40,7 +41,7 @@ void TACFunctionParser::Parse(TACFunction* func)
 	}
 
 	// 2. 进行优化
-	TACPeephole tacPh(db);
+	TACPeephole tacPh(db, result);
 	tacPh.Optimize(func);
 	//COUT << _T("\n窥孔优化后:\n");
 	//func->Dump();
@@ -49,6 +50,7 @@ void TACFunctionParser::Parse(TACFunction* func)
 	LiveVariableAnalysis lva(db, allocator);
 	lva.SetExitOut(func->GetReturnFlag());
 	auto lvaResult = lva.Analyze(func);
+	lvaResult->DumpAllBasicBlockLiveVariables();
 
 	TACDeadCodeElimination tacDce(db, allocator, lvaResult);
 	tacDce.Optimize(func);

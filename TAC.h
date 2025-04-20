@@ -218,13 +218,13 @@ OStream& DumpAddressTAC(OStream& os, const TAC* tac);
 #define TAC_ANALIZE_REG_COUNT TAC_REG_C + 1
 
 // 判断操作数是不是AXYNVZC
-inline bool IsAxyNvzc(TACOperand& operand)
+inline bool IsAxyNvzc(const TACOperand& operand)
 {
 	return operand.IsRegister() && operand.GetValue() <= TAC_REG_C;
 }
 
 // 判断操作数是不是AXYNVZC 或临时变量
-inline bool IsAxyNvzcTemp(TACOperand& operand)
+inline bool IsAxyNvzcTemp(const TACOperand& operand)
 {
 	return operand.IsRegister() && operand.GetValue() <= TAC_REG_C || operand.IsTemp();
 }

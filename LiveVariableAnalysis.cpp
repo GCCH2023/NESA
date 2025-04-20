@@ -38,23 +38,24 @@ void LiveVariableAnalysisResult::DumpAllBasicBlockLiveVariables()
 	for (auto block : blocks)
 	{
 		s.Append(_T("基本块 %04X IN : "), block->GetStartAddress());
-		auto blockSet = (BasicBlockLiveVariableSet*)block->tag;
-		if (blockSet->in.None())
+		auto index = (size_t)block->tag;
+		auto& blockSet = data[index];
+		if (blockSet.in.None())
 		{
 			s.Append(_T("无 "));
 		}
 		else
 		{
-			FormatVariableSet(s, blockSet->in);
+			FormatVariableSet(s, blockSet.in);
 		}
 		s.Append(_T(" OUT: "));
-		if (blockSet->out.None())
+		if (blockSet.out.None())
 		{
 			s.Append(_T("无 "));
 		}
 		else
 		{
-			FormatVariableSet(s, blockSet->out);
+			FormatVariableSet(s, blockSet.out);
 		}
 		s.Append(_T("\n"));
 	}
