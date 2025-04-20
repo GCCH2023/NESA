@@ -4,6 +4,7 @@ using namespace std;
 #include "Function.h"
 #include "CDataBase.h"
 #include "CBasicBlockTranslator.h"
+#include "CBasicBlockDAGTranslator.h"
 
 
 CGraphTranslator::CGraphTranslator(Allocator& allocator):

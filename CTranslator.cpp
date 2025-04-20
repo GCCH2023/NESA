@@ -148,6 +148,69 @@ CNode* CTranslator::GetExpression(const TACOperand& operand)
 	}
 }
 
+CNode* CTranslator::GetExpression(CNode& node, const TACOperand& operand)
+{
+	switch (operand.GetKind())
+	{
+	case TACOperand::INTEGER:
+		node = CNode(operand.GetValue());
+		break;
+	case TACOperand::TEMP:
+	{
+		auto var = GetLocalVariable(operand.GetValue());
+		node = CNode(var);
+		break;
+	}
+	case TACOperand::REGISTER:
+	{
+		// 寄存器要么是参数，要么是局部变量，不能当作全局变量处理
+		auto name = registers[operand.GetValue()];
+		auto variable = this->function->GetParameter(name);
+		if (variable)
+		{
+			node = CNode(variable);
+			break;
+		}
+		variable = GetLocalVariable(name, TypeManager::Char);
+		node = CNode(variable);
+		break;
+	}
+	case TACOperand::GLOBAL:
+	{
+		uint32_t addr = operand.GetValue();
+		auto global = GetCDB().GetGlobalVariable(addr);
+		if (!global)
+		{
+			Sprintf<> s;
+			s.Format(_T("获取全局变量 %X 失败"), addr);
+			throw Exception(s.ToString());
+		}
+		node = CNode(global);
+		break;
+	}
+	case TACOperand::ADDRESS:
+	{
+		uint32_t addr = operand.GetValue();
+		auto global = GetCDB().GetGlobalVariable(addr);
+		if (!global)
+		{
+			Sprintf<> s;
+			s.Format(_T("获取全局变量 %X 失败"), addr);
+			throw Exception(s.ToString());
+		}
+		node = CNode(global);
+		break;
+	}
+	default:
+	{
+		TCHAR buffer[64];
+		_stprintf_s(buffer, _T("三地址码转C语句：未实现的三地址码操作数转换"));
+		throw Exception(buffer);
+	}
+	}
+	return &node;
+}
+
 void CTranslator::SetFunctionType()
 {
 	// 首先创建一个表示AXY寄存器的结构体

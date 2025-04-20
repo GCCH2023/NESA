@@ -20,8 +20,10 @@ public:
 
 	inline TACFunction* GetTACFunction() { return tacFunc; }
 	inline Function* GetFunction() { return function; }
-	// 将三地址码操作数转换为C表达式
+	// 将三地址码操作数转换为C表达式，节点动态分配内存
 	CNode* GetExpression(const TACOperand& operand);
+	// 将三地址码操作数转换为C表达式，节点由外部分配
+	CNode* GetExpression(CNode& node, const TACOperand& operand);
 	// 获取局部变量，不存在就添加
 	const Variable* GetLocalVariable(String* name, Type* type);
 	// 按索引获取局部变量

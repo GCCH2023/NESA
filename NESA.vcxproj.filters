@@ -46,6 +46,9 @@
     <Filter Include="C\Optimizer">
       <UniqueIdentifier>{618b5349-e0e7-4214-94dd-072b66a96186}</UniqueIdentifier>
     </Filter>
+    <Filter Include="C\Translator">
+      <UniqueIdentifier>{0d9c2b73-5e41-441c-806b-9e285cc31b03}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -186,13 +189,7 @@
     <ClInclude Include="TACFunctionParser.h">
       <Filter>IR</Filter>
     </ClInclude>
-    <ClInclude Include="CGraphTranslator.h">
-      <Filter>C</Filter>
-    </ClInclude>
     <ClInclude Include="CCommonTranslator.h">
-      <Filter>C</Filter>
-    </ClInclude>
-    <ClInclude Include="CDirectTranslator.h">
       <Filter>C</Filter>
     </ClInclude>
     <ClInclude Include="CTranslator.h">
@@ -231,8 +228,17 @@
     <ClInclude Include="StructuralGraphTranslator.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CDirectTranslator.h">
+      <Filter>C\Translator</Filter>
+    </ClInclude>
+    <ClInclude Include="CGraphTranslator.h">
+      <Filter>C\Translator</Filter>
+    </ClInclude>
     <ClInclude Include="CBasicBlockTranslator.h">
-      <Filter>C</Filter>
+      <Filter>C\Translator</Filter>
+    </ClInclude>
+    <ClInclude Include="CBasicBlockDAGTranslator.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -347,13 +353,7 @@
     <ClCompile Include="TACFunctionParser.cpp">
       <Filter>IR</Filter>
     </ClCompile>
-    <ClCompile Include="CGraphTranslator.cpp">
-      <Filter>C</Filter>
-    </ClCompile>
     <ClCompile Include="CCommonTranslator.cpp">
-      <Filter>C</Filter>
-    </ClCompile>
-    <ClCompile Include="CDirectTranslator.cpp">
       <Filter>C</Filter>
     </ClCompile>
     <ClCompile Include="CTranslator.cpp">
@@ -386,8 +386,17 @@
     <ClCompile Include="CASTDoWhileOptimier.cpp">
       <Filter>C\Optimizer</Filter>
     </ClCompile>
+    <ClCompile Include="CDirectTranslator.cpp">
+      <Filter>C\Translator</Filter>
+    </ClCompile>
+    <ClCompile Include="CGraphTranslator.cpp">
+      <Filter>C\Translator</Filter>
+    </ClCompile>
     <ClCompile Include="CBasicBlockTranslator.cpp">
-      <Filter>C</Filter>
+      <Filter>C\Translator</Filter>
+    </ClCompile>
+    <ClCompile Include="CBasicBlockDAGTranslator.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

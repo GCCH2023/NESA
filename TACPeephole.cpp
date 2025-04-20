@@ -245,35 +245,65 @@ void OptimizeExpression(TACOperand& operand, TACOperand& other, TAC* current, TA
 }
 
 // 尝试用常量替换操作数
-// operand : 当前处理的操作数
-// other : 三地址码中的另一个操作数
-void TryReplaceOperand(TACOperand& operand, TACOperand& other, TAC* current, VarDefMap& varDefMap)
+// operand : 要处理的操作数
+void TryReplaceOperand(TACOperand& operand, VarDefMap& varDefMap)
 {
-	if (IsAxyNvzcTemp(operand))
+	if (!IsAxyNvzcTemp(operand))
+		return;
+
+	auto tac = GetOperandDefinition(varDefMap, operand);
+	if (!tac)
+		return;  // 在其他基本块定值
+	if (tac->op == TACOperator::ASSIGN)  // 首先处理赋值指令
 	{
-		auto tac = GetOperandDefinition(varDefMap, operand);
-		if (!tac)
-			return;  // 在其他基本块定值
-		if (tac->op == TACOperator::ASSIGN)  // 首先处理赋值指令
+		if (tac->x.IsInterger())  // 用常量赋值，则替换为常量
 		{
-			if (tac->x.IsInterger())  // 用常量赋值，则替换为常量
+			operand = tac->x;
+		}
+		else if (IsVariable(tac->x))
+		{
+			// 寄存器或临时变量，只要用于赋值的变量的值没变，也可以替换
+			if (!IsOperandChanged(varDefMap, tac->x, tac))
 			{
+				// 在其他基本块定值或者在当前指令之前定值
 				operand = tac->x;
 			}
-			else if(IsVariable(tac->x))
+		}
+	}
+}
+
+
+// 尝试用常量替换操作数并进行代数优化
+// operand : 当前处理的操作数
+// other : 三地址码中的另一个操作数
+// current : 当前优化的指令
+void TryReplaceOperand(TACOperand& operand, TACOperand& other, TAC* current, VarDefMap& varDefMap)
+{
+	if (!IsAxyNvzcTemp(operand))
+		return;
+
+	auto tac = GetOperandDefinition(varDefMap, operand);
+	if (!tac)
+		return;  // 在其他基本块定值
+	if (tac->op == TACOperator::ASSIGN)  // 首先处理赋值指令
+	{
+		if (tac->x.IsInterger())  // 用常量赋值，则替换为常量
+		{
+			operand = tac->x;
+		}
+		else if (IsVariable(tac->x))
+		{
+			// 寄存器或临时变量，只要用于赋值的变量的值没变，也可以替换
+			if (!IsOperandChanged(varDefMap, tac->x, tac))
 			{
-				// 寄存器或临时变量，只要用于赋值的变量的值没变，也可以替换
-				if (!IsOperandChanged(varDefMap, tac->x, tac))
-				{
-					// 在其他基本块定值或者在当前指令之前定值
-					operand = tac->x;
-				}
+				// 在其他基本块定值或者在当前指令之前定值
+				operand = tac->x;
 			}
 		}
-		else if (other.IsInterger())  // 尝试代数优化
-		{
-			OptimizeExpression(operand, other, current, tac, varDefMap);
-		}
+	}
+	else if (other.IsInterger())  // 尝试代数优化
+	{
+		OptimizeExpression(operand, other, current, tac, varDefMap);
 	}
 }
 
@@ -301,6 +331,12 @@ void TACPeephole::Optimize(TACFunction* subroutine)
 		varDefMap.clear();  // 不能跨基本块
 		for (auto tac : block->GetCodes())
 		{
+			// 数组赋值特殊处理
+			if (tac->op == TACOperator::ARRAY_SET)
+			{
+				TryReplaceOperand(tac->z, varDefMap);
+				continue;
+			}
 			// 1. 首先，尝试用常量替换操作数 x 和 y
 			TryReplaceOperand(tac->x, tac->y, tac, varDefMap);
 			TryReplaceOperand(tac->y, tac->x, tac, varDefMap);
