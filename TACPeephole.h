@@ -1,24 +1,13 @@
 #pragma once
 #include "TACOptimizer.h"
+#include "TACFunction.h"
 
-enum class TACValueKind
-{
-	Undefined,  // 未定义
-	Constant,  // 常量
-	Boolean,  // 布尔表达式
-	Unknown,  // 不是常量
-};
-
-struct TACValue
-{
-	TACValueKind kind;
-	TAC* tac;  // 定值指令
-};
-
-
-// 对三地址进行窥孔优化
+// 对三地址码进行常量替换，常量折叠，代数优化等操作
 class TACPeephole : public TACOptimizer
 {
+	// 当前基本块，操作数 -> 定值指令 的映射
+	using VarDefMap = std::unordered_map<TACOperand, TAC*, TACOperandHash>;
+
 public:
 	TACPeephole(NesDataBase& db);
 	~TACPeephole();
@@ -26,5 +15,22 @@ public:
 	virtual void Optimize(TACFunction* subroutine) override;
 	// 重置算法用到的数据
 	virtual void Reset() override;
+
+
+protected:
+	// 设置操作数的定值指令
+	void SetOperandDefinition(TAC* tac);
+	// 获取操作数的定值指令
+	// 要求操作数是寄存器或临时变量
+	// 如果操作数在其他基本块定值，则返回nullptr
+	virtual TAC* GetOperandDefinition(TACOperand& operand);
+	// 判断操作数的值是否发生改变
+	virtual bool IsOperandChanged(TACOperand& operand, TAC* current);
+	// 进行代数优化
+	void OptimizeExpression(TACOperand& operand, TACOperand& other, TAC* current, TAC* tac);
+	void TryReplaceOperand(TACOperand& operand);
+	void TryReplaceOperand(TACOperand& operand, TACOperand& other, TAC* current);
+private:
+	VarDefMap varDefMap;
 };
 

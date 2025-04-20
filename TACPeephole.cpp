@@ -1,17 +1,7 @@
 #include "stdafx.h"
 #include "TACPeephole.h"
-#include "TACFunction.h"
 
-// 当前基本块，操作数 -> 定值指令 的映射
-using VarDefMap = std::unordered_map<TACOperand, TAC*, TACOperandHash>;
 
-// 获取操作数的定值指令
-// 要求操作数是寄存器或临时变量
-// 如果操作数在其他基本块定值，则返回nullptr
-inline TAC* GetOperandDefinition(VarDefMap& varDefMap, TACOperand& operand)
-{
-	return varDefMap[operand];
-}
 
 // 操作数是否是要分析的变量
 bool IsVariable(const TACOperand& operand)
@@ -25,8 +15,20 @@ bool IsVariable(const TACOperand& operand)
 	}
 }
 
+
+
+TACPeephole::TACPeephole(NesDataBase& db):
+TACOptimizer(db)
+{
+}
+
+
+TACPeephole::~TACPeephole()
+{
+}
+
 // 设置操作数的定值指令
-void SetOperandDefinition(VarDefMap& varDefMap, TAC* tac)
+void TACPeephole::SetOperandDefinition(TAC* tac)
 {
 	if (tac->op == TACOperator::ARRAY_SET)
 		return;
@@ -47,15 +49,9 @@ void SetOperandDefinition(VarDefMap& varDefMap, TAC* tac)
 }
 
 
-
-TACPeephole::TACPeephole(NesDataBase& db):
-TACOptimizer(db)
+TAC* TACPeephole::GetOperandDefinition(TACOperand& operand)
 {
-}
-
-
-TACPeephole::~TACPeephole()
-{
+	return varDefMap[operand];
 }
 
 // 将布尔表达式合并到 IFTRUE 或 IFFALSE 分支，返回是否合并
@@ -154,21 +150,21 @@ bool CombineConditionalBranch(TAC* tac, TAC* boolExpr)
 }
 
 // 判断操作数的值是否发生改变
-bool IsOperandChanged(VarDefMap& varDefMap, TACOperand& operand, TAC* current)
+bool TACPeephole::IsOperandChanged(TACOperand& operand, TAC* current)
 {
 	// 如果有定值点，并且定值点地址大于等于使用点地址，说明改变了
-	auto tac = GetOperandDefinition(varDefMap, operand);
+	auto tac = GetOperandDefinition(operand);
 	return tac && tac->address >= current->address;
 }
 
 // 进行代数优化
-void OptimizeExpression(TACOperand& operand, TACOperand& other, TAC* current, TAC* tac, VarDefMap& varDefMap)
+void TACPeephole::OptimizeExpression(TACOperand& operand, TACOperand& other, TAC* current, TAC* tac)
 {
 	// a = b op1 num1, c = a op2 num2 =>
 	// c = (b op1 num1) op2 num2 =>
 	// c = b op3 num3
 	// op3 由 op1 和 op2 决定
-	if (!IsVariable(tac->x) || IsOperandChanged(varDefMap, tac->x, current))
+	if (!IsVariable(tac->x) || IsOperandChanged(tac->x, current))
 		return;
 
 	if (CombineConditionalBranch(current, tac))
@@ -246,12 +242,12 @@ void OptimizeExpression(TACOperand& operand, TACOperand& other, TAC* current, TA
 
 // 尝试用常量替换操作数
 // operand : 要处理的操作数
-void TryReplaceOperand(TACOperand& operand, VarDefMap& varDefMap)
+void TACPeephole::TryReplaceOperand(TACOperand& operand)
 {
 	if (!IsAxyNvzcTemp(operand))
 		return;
 
-	auto tac = GetOperandDefinition(varDefMap, operand);
+	auto tac = GetOperandDefinition(operand);
 	if (!tac)
 		return;  // 在其他基本块定值
 	if (tac->op == TACOperator::ASSIGN)  // 首先处理赋值指令
@@ -263,7 +259,7 @@ void TryReplaceOperand(TACOperand& operand, VarDefMap& varDefMap)
 		else if (IsVariable(tac->x))
 		{
 			// 寄存器或临时变量，只要用于赋值的变量的值没变，也可以替换
-			if (!IsOperandChanged(varDefMap, tac->x, tac))
+			if (!IsOperandChanged(tac->x, tac))
 			{
 				// 在其他基本块定值或者在当前指令之前定值
 				operand = tac->x;
@@ -277,12 +273,12 @@ void TryReplaceOperand(TACOperand& operand, VarDefMap& varDefMap)
 // operand : 当前处理的操作数
 // other : 三地址码中的另一个操作数
 // current : 当前优化的指令
-void TryReplaceOperand(TACOperand& operand, TACOperand& other, TAC* current, VarDefMap& varDefMap)
+void TACPeephole::TryReplaceOperand(TACOperand& operand, TACOperand& other, TAC* current)
 {
 	if (!IsAxyNvzcTemp(operand))
 		return;
 
-	auto tac = GetOperandDefinition(varDefMap, operand);
+	auto tac = GetOperandDefinition(operand);
 	if (!tac)
 		return;  // 在其他基本块定值
 	if (tac->op == TACOperator::ASSIGN)  // 首先处理赋值指令
@@ -294,7 +290,7 @@ void TryReplaceOperand(TACOperand& operand, TACOperand& other, TAC* current, Var
 		else if (IsVariable(tac->x))
 		{
 			// 寄存器或临时变量，只要用于赋值的变量的值没变，也可以替换
-			if (!IsOperandChanged(varDefMap, tac->x, tac))
+			if (!IsOperandChanged(tac->x, tac))
 			{
 				// 在其他基本块定值或者在当前指令之前定值
 				operand = tac->x;
@@ -303,20 +299,7 @@ void TryReplaceOperand(TACOperand& operand, TACOperand& other, TAC* current, Var
 	}
 	else if (other.IsInterger())  // 尝试代数优化
 	{
-		OptimizeExpression(operand, other, current, tac, varDefMap);
-	}
-}
-
-// 尝试优化条件分支 IFTRUE 和 IFFALSE
-void TryOptimizeIf(TAC* tac, VarDefMap& varDefMap)
-{
-	if (IsAxyNvzcTemp(tac->x))
-	{
-		auto def = GetOperandDefinition(varDefMap, tac->x);
-		if (def && IsBool(def->op))
-		{
-			CombineConditionalBranch(tac, def);
-		}
+		OptimizeExpression(operand, other, current, tac);
 	}
 }
 
@@ -324,7 +307,6 @@ void TACPeephole::Optimize(TACFunction* subroutine)
 {
 	Reset();
 
-	VarDefMap varDefMap;
 	// 遍历基本块
 	for (auto block : subroutine->GetBasicBlocks())
 	{
@@ -334,12 +316,12 @@ void TACPeephole::Optimize(TACFunction* subroutine)
 			// 数组赋值特殊处理
 			if (tac->op == TACOperator::ARRAY_SET)
 			{
-				TryReplaceOperand(tac->z, varDefMap);
+				TryReplaceOperand(tac->z);
 				continue;
 			}
 			// 1. 首先，尝试用常量替换操作数 x 和 y
-			TryReplaceOperand(tac->x, tac->y, tac, varDefMap);
-			TryReplaceOperand(tac->y, tac->x, tac, varDefMap);
+			TryReplaceOperand(tac->x, tac->y, tac);
+			TryReplaceOperand(tac->y, tac->x, tac);
 			// 2. 接着尝试常量折叠，直接计算出两个常量的结果
 			try
 			{
@@ -352,17 +334,11 @@ void TACPeephole::Optimize(TACFunction* subroutine)
 				// 不能折叠就算了
 			}
 
-			//if (tac->op == TACOperator::IFTRUE || tac->op == TACOperator::IFFALSE)
-			//{
-			//	// 尝试合并布尔表达式
-			//	TryOptimizeIf(tac, varDefMap);
-			//}
-			SetOperandDefinition(varDefMap, tac);
+			SetOperandDefinition(tac);
 		}
 	}
 }
 
 void TACPeephole::Reset()
 {
-
 }
