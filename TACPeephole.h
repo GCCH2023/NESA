@@ -2,6 +2,8 @@
 #include "TACOptimizer.h"
 #include "TACFunction.h"
 
+class ReachingDefinitionResult;
+
 // 对三地址码进行常量替换，常量折叠，代数优化等操作
 class TACPeephole : public TACOptimizer
 {
@@ -9,14 +11,12 @@ class TACPeephole : public TACOptimizer
 	using VarDefMap = std::unordered_map<TACOperand, TAC*, TACOperandHash>;
 
 public:
-	TACPeephole(NesDataBase& db);
+	TACPeephole(NesDataBase& db, const ReachingDefinitionResult* rdResult = nullptr);
 	~TACPeephole();
 
 	virtual void Optimize(TACFunction* subroutine) override;
 	// 重置算法用到的数据
 	virtual void Reset() override;
-
-
 protected:
 	// 设置操作数的定值指令
 	void SetOperandDefinition(TAC* tac);
@@ -30,7 +30,10 @@ protected:
 	void OptimizeExpression(TACOperand& operand, TACOperand& other, TAC* current, TAC* tac);
 	void TryReplaceOperand(TACOperand& operand);
 	void TryReplaceOperand(TACOperand& operand, TACOperand& other, TAC* current);
+	inline TACBasicBlock* GetCurrentBasicBlock() { return currentBlock; }
 private:
 	VarDefMap varDefMap;
+	TACBasicBlock* currentBlock;  // 当前处理的基本块
+	const ReachingDefinitionResult* reachDefResult;
 };
 

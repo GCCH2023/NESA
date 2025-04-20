@@ -11,10 +11,25 @@ struct BasicBlockLiveVariableSet
 	NodeSet out;  // 出口处的活跃变量集
 };
 
+
+class LiveVariableAnalysisResult
+{
+private:
+	friend class LiveVariableAnalysis;
+public:
+	LiveVariableAnalysisResult(TACFunction* function);
+	// 输出每个基本块的入口活跃变量集和出口活跃变量集
+	void DumpAllBasicBlockLiveVariables();
+	BasicBlockLiveVariableSet& Get(size_t index) { return data[index]; }
+private:
+	TACFunction* function;
+	std::vector<BasicBlockLiveVariableSet> data;
+};
+
 // 进行活跃变量分析
 // 结果保存在基本块 tag 中，类型为 BasicBlockLiveVariableSet*
 class LiveVariableAnalysis:
-	public TACFunctionAnalyzer
+	public TACFunctionAnalyzer< LiveVariableAnalysisResult>
 {
 public:
 	LiveVariableAnalysis(NesDataBase& db, Allocator& allocator);

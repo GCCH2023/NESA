@@ -257,7 +257,6 @@
     <ClCompile Include="TACDeadCodeElimination.cpp" />
     <ClCompile Include="TACFlagRegisterOptimizer.cpp" />
     <ClCompile Include="TACFunction.cpp" />
-    <ClCompile Include="TACFunctionAnalyzer.cpp" />
     <ClCompile Include="TACFunctionParser.cpp" />
     <ClCompile Include="TACOptimizer.cpp" />
     <ClCompile Include="TACBasicBlockOptimizer.cpp" />

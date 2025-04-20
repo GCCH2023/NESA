@@ -4,13 +4,6 @@
 #include "NesDataBase.h"
 using namespace std;
 
-
-LiveVariableAnalysis::LiveVariableAnalysis(NesDataBase& db, Allocator& allocator):
-TACFunctionAnalyzer(db, allocator)
-{
-
-}
-
 // 获取集合包含的变量的字符串
 template<size_t N>
 void FormatVariableSet(Sprintf<N>& s, const NodeSet& n)
@@ -29,11 +22,19 @@ void FormatVariableSet(Sprintf<N>& s, const NodeSet& n)
 	}
 }
 
-// 输出每个基本块的入口活跃变量集和出口活跃变量集
-void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks)
+
+
+LiveVariableAnalysisResult::LiveVariableAnalysisResult(TACFunction* function_):
+	function(function_),
+	data(function->GetBasicBlocks().size())
+{
+}
+
+void LiveVariableAnalysisResult::DumpAllBasicBlockLiveVariables()
 {
 	Sprintf<512> s;
 	s.Format(_T("基本块的活跃变量集：\n"));
+	auto& blocks = function->GetBasicBlocks();
 	for (auto block : blocks)
 	{
 		s.Append(_T("基本块 %04X IN : "), block->GetStartAddress());
@@ -59,6 +60,14 @@ void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks)
 	}
 	COUT << s.ToString();
 }
+
+
+LiveVariableAnalysis::LiveVariableAnalysis(NesDataBase& db, Allocator& allocator):
+TACFunctionAnalyzer(db, allocator)
+{
+
+}
+
 
 // 分析寄存器 AXY 的引用（定义或使用）情况
 void AnalyzeReference(TACOperand& operand, NodeSet& defs, NodeSet& uses, NodeSet& state)
@@ -96,16 +105,19 @@ void AnalyzeReference(TACOperand& operand, NodeSet& defs, NodeSet& uses, NodeSet
 // 首先计算出每个基本块的引用集和定义集
 void LiveVariableAnalysis::Initialize()
 {
+	SetResult(std::make_shared<LiveVariableAnalysisResult>(GetFunction()));
+
+	size_t index = 0;
 	for (auto block : GetFunction()->GetBasicBlocks())
 	{
 		NodeSet defs = 0;  // 前3位表示 AXY 是否定义
 		NodeSet uses = 0;  // 前3位表示 AXY 是否被使用
-		auto blockSet = allocator.New<BasicBlockLiveVariableSet>();
-		block->tag = blockSet;
+
+		block->tag = (void*)index;
 		// 如果是出口基本块，则OUT初始化为默认值
 		if ((block->flag & BBF_END_MASK) == BBF_END_RETURN)
 		{
-			blockSet->out = exitOut;
+			result->data[index].out = exitOut;
 		}
 		for (auto tac : block->GetCodes())
 		{
@@ -119,7 +131,7 @@ void LiveVariableAnalysis::Initialize()
 					{
 						if ((defs & sub->flag) == 0)  // 使用前没有定值
 						{
-							blockSet->uses |= NodeSet(sub->flag & SUBF_PARAM);
+							result->data[index].uses |= NodeSet(sub->flag & SUBF_PARAM);
 						}
 						uses |= NodeSet(sub->flag & SUBF_PARAM);  // 标记使用
 					}
@@ -128,7 +140,7 @@ void LiveVariableAnalysis::Initialize()
 					{
 						if ((uses & NodeSet(rets)) == 0)  // 定值前没有使用
 						{
-							blockSet->defs |= NodeSet(rets);
+							result->data[index].defs |= NodeSet(rets);
 						}
 						defs |= NodeSet(rets);  // 标记定值
 					}
@@ -138,14 +150,14 @@ void LiveVariableAnalysis::Initialize()
 			else if (tac->op == TACOperator::ARRAY_SET)
 			{
 				// 数组元素赋值：x[y] = z，使用 y，z，x比不可能是AXY寄存器，不管
-				AnalyzeReference(tac->y, defs, uses, blockSet->uses);
-				AnalyzeReference(tac->z, defs, uses, blockSet->uses);
+				AnalyzeReference(tac->y, defs, uses, result->data[index].uses);
+				AnalyzeReference(tac->z, defs, uses, result->data[index].uses);
 				continue;
 			}
 			// 通常情况：z = x op y，定义 z，使用 x，y
-			AnalyzeReference(tac->x, defs, uses, blockSet->uses);
-			AnalyzeReference(tac->y, defs, uses, blockSet->uses);
-			AnalyzeReference(tac->z, uses, defs, blockSet->defs);
+			AnalyzeReference(tac->x, defs, uses, result->data[index].uses);
+			AnalyzeReference(tac->y, defs, uses, result->data[index].uses);
+			AnalyzeReference(tac->z, uses, defs, result->data[index].defs);
 		}
 		/*Sprintf<> s;
 		s.Append(_T("基本块%04X，使用: "), block->GetStartAddress());
@@ -154,22 +166,24 @@ void LiveVariableAnalysis::Initialize()
 		FormatVariableSet(s, blockSet->defs);
 		s.Append(_T("\n"));
 		COUT << s.ToString();*/
+		++index;
 	}
 }
 
 bool LiveVariableAnalysis::AnalyzeNode(TACBasicBlock* block)
 {
-	auto blockSet = (BasicBlockLiveVariableSet*)block->tag;
+	auto blockIndex = (size_t)block->tag;
+	auto& blockSet = result->data[blockIndex];
 	// OUT[B] = 所有后继活跃变量的并集
 	// IN[B] = useB 并 (OUT[B] - defB)
 	for (TACBasicBlock* next : block->nexts)
 	{
-		auto nextSet = (BasicBlockLiveVariableSet*)next->tag;
-		blockSet->out |= nextSet->in;
+		auto nextIndex = (size_t)next->tag;
+		blockSet.out |= result->data[nextIndex].in;
 	}
-	auto value = blockSet->in;
-	blockSet->in = (blockSet->out & ~blockSet->defs) | blockSet->uses;
+	auto value = result->data[blockIndex].in;
+	blockSet.in = (blockSet.out & ~blockSet.defs) | blockSet.uses;
 	//DumpAllBasicBlockLiveVariables(subroutine->GetBasicBlocks());
 	//COUT << std::endl;
-	return blockSet->in == value;
+	return blockSet.in != value;
 }

@@ -17,15 +17,16 @@ void DominatorAnalyzer::Initialize()
 	// 每个节点的支配集合初始化为所有节点（表示未确定支配关系）。
 	// 入口节点的支配集合只包含自身。
 	auto blocks = GetFunction()->GetBasicBlocks();
+	SetResult(std::make_shared<DominatorResult>(blocks.size()));
+
 	full = NodeSet::FullSet(blocks.size());  // 全集
 	int index = 0;
 	for (auto block : blocks)
 	{
-		auto dom = allocator.New<Dominator>();
-		block->tag = dom;
+		block->tag = (void*)index;
 		if (!block->prevs.empty())  // 不是入口
-			dom->doms = full;
-		dom->index = index++;
+			result->Get(index).doms = full;
+		result->Get(index).index = index++;
 	}
 }
 
@@ -36,17 +37,17 @@ bool DominatorAnalyzer::AnalyzeNode(TACBasicBlock* block)
 	NodeSet doms = full;
 	for (auto prev : block->prevs)
 	{
-		auto tag = (Dominator*)prev->tag;
-		doms &= tag->doms;
+		auto index = (size_t)prev->tag;
+		doms &= result->Get(index).doms;
 	}
-	auto tag = (Dominator*)block->tag;
-	doms |= tag->index;
-	if (doms != tag->index)
+	auto index = (size_t)block->tag;
+	doms |= index;
+	if (doms != result->Get(index).doms)
 	{
-		tag->doms = doms;
-		return false;
+		result->Get(index).doms = doms;
+		return true;
 	}
-	return true;
+	return false;
 }
 
 void DominatorAnalyzer::Uninitialize()

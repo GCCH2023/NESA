@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "TACPeephole.h"
-
+#include "ReachingDefinition.h"
 
 
 // 操作数是否是要分析的变量
@@ -17,11 +17,11 @@ bool IsVariable(const TACOperand& operand)
 
 
 
-TACPeephole::TACPeephole(NesDataBase& db):
-TACOptimizer(db)
+TACPeephole::TACPeephole(NesDataBase& db, const ReachingDefinitionResult* rdResult):
+TACOptimizer(db),
+reachDefResult(rdResult)
 {
 }
-
 
 TACPeephole::~TACPeephole()
 {
@@ -51,7 +51,20 @@ void TACPeephole::SetOperandDefinition(TAC* tac)
 
 TAC* TACPeephole::GetOperandDefinition(TACOperand& operand)
 {
-	return varDefMap[operand];
+	// 当前基本块有定值，就返回它
+	auto tac = varDefMap[operand];
+	if (tac)
+		return tac;
+	// 否则返回可以到达的定值
+	if (reachDefResult)
+	{
+		TACList tacList;
+		auto index = (size_t)GetCurrentBasicBlock()->tag;
+		reachDefResult->GetBasicBlockDefinitionsIn(tacList, index);
+		if (tacList.size() == 1)
+			return tacList.front();
+	}
+	return nullptr;
 }
 
 // 将布尔表达式合并到 IFTRUE 或 IFFALSE 分支，返回是否合并
@@ -310,6 +323,7 @@ void TACPeephole::Optimize(TACFunction* subroutine)
 	// 遍历基本块
 	for (auto block : subroutine->GetBasicBlocks())
 	{
+		currentBlock = block;
 		varDefMap.clear();  // 不能跨基本块
 		for (auto tac : block->GetCodes())
 		{

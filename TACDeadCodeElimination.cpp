@@ -4,9 +4,11 @@
 #include "TACFunction.h"
 #include "NesDataBase.h"
 
-TACDeadCodeElimination::TACDeadCodeElimination(NesDataBase& db, Allocator& allocator_) :
+TACDeadCodeElimination::TACDeadCodeElimination(NesDataBase& db, Allocator& allocator_,
+	std::shared_ptr<LiveVariableAnalysisResult> lvaResult_) :
 TACOptimizer(db),
-allocator(allocator_)
+allocator(allocator_),
+lvaResult(lvaResult_)
 {
 
 }
@@ -81,9 +83,12 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 	this->tacFunc = subroutine;
 
 	// 首先进行活跃变量分析
-	LiveVariableAnalysis lva(db, allocator);
-	lva.SetExitOut(subroutine->GetReturnFlag());
-	lva.Analyze(subroutine);
+	if (!lvaResult)
+	{
+		LiveVariableAnalysis lva(db, allocator);
+		lva.SetExitOut(subroutine->GetReturnFlag());
+		lvaResult = lva.Analyze(subroutine);
+	}
 	// DumpAllBasicBlockLiveVariables(subroutine->GetBasicBlocks());
 
 	// 遍历每个基本块，消除死代码（对寄存器赋值了但没有使用到的三地址码）
@@ -132,8 +137,9 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 			{
 				// 判断它是否被后面的基本块引用，也就是在这个基本块的出口处，这个变量是活跃的
 				// 判断它是否被这个基本块后面的代码引用
-				auto live = (BasicBlockLiveVariableSet*)block->tag;
-				if (!IsUsed(live->out, varUses, varDefs, tac->z))
+				auto liveIndex = (size_t)block->tag;
+				auto& live = lvaResult->Get(liveIndex);
+				if (!IsUsed(live.out, varUses, varDefs, tac->z))
 				{
 					// 删除这条代码
 					it = TACList::reverse_iterator(codes.erase((++it).base()));

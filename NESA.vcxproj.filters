@@ -344,9 +344,6 @@
     <ClCompile Include="TACFlagRegisterOptimizer.cpp">
       <Filter>IR</Filter>
     </ClCompile>
-    <ClCompile Include="TACFunctionAnalyzer.cpp">
-      <Filter>DataFlow</Filter>
-    </ClCompile>
     <ClCompile Include="DominatorAnalyzer.cpp">
       <Filter>DataFlow</Filter>
     </ClCompile>

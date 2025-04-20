@@ -1,6 +1,7 @@
 #pragma once
 #include "TACOptimizer.h"
 class TACFunction;
+class LiveVariableAnalysisResult;
 
 // 进行死代码消除
 class TACDeadCodeElimination :
@@ -8,7 +9,7 @@ class TACDeadCodeElimination :
 {
 public:
 	// allocator 用于分配临时对象
-	TACDeadCodeElimination(NesDataBase& db, Allocator& allocator);
+	TACDeadCodeElimination(NesDataBase& db, Allocator& allocator, std::shared_ptr<LiveVariableAnalysisResult> lvaResult = nullptr);
 	~TACDeadCodeElimination();
 
 	virtual void Optimize(TACFunction* subroutine) override;
@@ -20,5 +21,6 @@ protected:
 protected:
 	Allocator& allocator;
 	TACFunction* tacFunc;
+	std::shared_ptr<LiveVariableAnalysisResult> lvaResult;
 };
 
