@@ -3,6 +3,7 @@
 #include "CTranslator.h"
 #include "Function.h"
 #include "CDataBase.h"
+#include "CASTTraverser.h"
 
 CTranslator::CTranslator(Allocator& allocator_):
 allocator(allocator_),
@@ -43,6 +44,8 @@ Function* CTranslator::Translate(TACFunction* tacFunc)
 	s.Format(_T("sub_%04X"), GetTACFunction()->GetStartAddress());
 	func->name = GetCDB().AddString(s.ToString());
 
+	RemoveUnusedLocalVariables();
+
 	return func;
 }
 
@@ -73,12 +76,7 @@ const Variable* CTranslator::GetLocalVariable(int index)
 	// 三地址码中的临时变量和C函数的临时变量不是一一对应的
 	// 必须根据名称来查找
 	auto name = GetLocalVariableName(index);
-	for (auto v = this->function->GetVariableList(); v; v = v->next)
-	{
-		if (v->name == name)
-			return v;
-	}
-	return nullptr;
+	return function->GetVariable(name);
 }
 
 String* CTranslator::GetLocalVariableName(int index)
@@ -332,4 +330,36 @@ CNode* CTranslator::NewStatementList(CNode* head, CNode* tail)
 	if (head == tail)
 		return head;
 	return allocator.New<CNode>(CNodeKind::STAT_LIST, head, tail);
+}
+
+class LocvalVariablesRemover : public CASTVisitor
+{
+public:
+	LocvalVariablesRemover(Function* function_):function(function_){}
+	void Run()
+	{
+		CASTTraverser traverser;
+		traverser.Traverse(function->GetBody(), *this);
+
+		std::erase_if(function->GetVariableList(), [&visited = visited](const Variable* var) {
+			return visited.find(var) == visited.end();
+			});
+	}
+protected:
+	virtual void PreVisit(CNode* node)
+	{
+		if (node->kind == CNodeKind::EXPR_VARIABLE)
+		{
+			visited.insert(node->variable);
+		}
+	}
+private:
+	Function* function;
+	std::unordered_set<const Variable*> visited;
+};
+
+void CTranslator::RemoveUnusedLocalVariables()
+{
+	LocvalVariablesRemover remover(GetFunction());
+	remover.Run();
 }

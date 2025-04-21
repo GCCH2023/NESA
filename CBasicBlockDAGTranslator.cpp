@@ -260,12 +260,19 @@ void CBasicBlockDAGTranslator::Attach(TACOperand& var, CNode* node)
 	varMap[var] = node;
 }
 
+void CBasicBlockDAGTranslator::MarkReserve(const TAC* tac)
+{
+	if (tac->op == TACOperator::ARRAY_SET)
+		return;
+
+	if (IsAxyNvzc(tac->z))
+		Reserve(tac->z);
+}
+
 void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 {
-	CNode* current = nullptr, * head = nullptr, * tail = nullptr;
 	CNode* expr = nullptr;
-	CNode* x;
-
+	CNode* current = nullptr;
 	auto& codes = block->GetCodes();
 	for (size_t i = 0; i < codes.size(); ++i)
 	{
@@ -291,8 +298,8 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
 		case	TACOperator::SUB:
-			x = GenNode(CNodeKind::EXPR_SUB, GetExpression(tac->x), GetExpression(tac->y));
-			Attach(tac->z, x);
+			expr = GenNode(CNodeKind::EXPR_SUB, GetExpression(tac->x), GetExpression(tac->y));
+			Attach(tac->z, expr);
 			break;
 		case	TACOperator::XOR:
 			expr = allocator.New<CNode>(CNodeKind::EXPR_XOR, GetExpression(tac->x), GetExpression(tac->y));
@@ -315,12 +322,12 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
 		case TACOperator::BOOL_GEQ:
-			x = GenNode(CNodeKind::EXPR_GREAT_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
-			Attach(tac->z, x);
+			expr = GenNode(CNodeKind::EXPR_GREAT_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
+			Attach(tac->z, expr);
 			break;
 		case TACOperator::BOOL_LESS:
-			x = GenNode(CNodeKind::EXPR_LESS, GetExpression(tac->x), GetExpression(tac->y));
-			Attach(tac->z, x);
+			expr = GenNode(CNodeKind::EXPR_LESS, GetExpression(tac->x), GetExpression(tac->y));
+			Attach(tac->z, expr);
 			break;
 			break;
 		case TACOperator::BOOL_LEQ:
@@ -329,8 +336,8 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
 			break;
 		case TACOperator::BOOL_EQ:
-			x = GenNode(CNodeKind::EXPR_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
-			Attach(tac->z, x);
+			expr = GenNode(CNodeKind::EXPR_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
+			Attach(tac->z, expr);
 			break;
 			break;
 		case TACOperator::BOOL_NEQ:
@@ -428,12 +435,13 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 			{
 				expr = GenNode(CNodeKind::EXPR_INDEX, GetExpression(tac->x), GetExpression(tac->y));
 			}
-			GenNode(CNodeKind::EXPR_ASSIGN, expr, GetExpression(tac->z));
+			expr = GenNode(CNodeKind::EXPR_ASSIGN, expr, GetExpression(tac->z));
+			Reserve(expr);
 			break;
 		}
 		case TACOperator::ADDR:
-			x = GenNode(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
-			Attach(tac->z, x);
+			expr = GenNode(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
+			Attach(tac->z, expr);
 			break;
 		case TACOperator::DEREF:
 			expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, GetExpression(tac->x));
@@ -446,8 +454,8 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 			assert(result->kind == CNodeKind::EXPR_VARIABLE);
 			auto type = result->variable->type;  // 要转换到的类型
 
-			x = GenNode(type, GetExpression(tac->x));
-			Attach(tac->z, x);
+			expr = GenNode(type, GetExpression(tac->x));
+			Attach(tac->z, expr);
 			break;
 		}
 		case	TACOperator::ARG:
@@ -634,41 +642,30 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 			throw Exception(buffer);
 		}
 		}
-		// 构建语句列表
-		if (!head)
-		{
-			head = tail = current;
-		}
-		else
-		{
-			tail->SetNext(current);
-			tail = current;
-		}
+		MarkReserve(tac);
 	}
-	Nes::Address firstAddr = codes.empty() ? block->GetStartAddress() : codes[0]->address;
-	auto ret = translator->NewStatementList(head, tail);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
-	translator->AddAddressMapStatement(firstAddr, ret);  // 记录下这个基本块对应的地址及语句
 }
-
-TACBasicBlock* curBlock;
-#include "Dump.h"
 
 CNode* CBasicBlockDAGTranslator::GenerateCodes()
 {
 	// 遍历变量，生成它们的赋值语句
 	CNode* head = nullptr, * tail = nullptr, *current = nullptr;
-	for (auto it : varMap)
+	for (auto expr : reserved)
 	{
-		if (it.first.IsTemp())
-			continue;
-		// 生成赋值语句
-		CNode* right = GenerateExpression(it.second);
-		CNode* left = allocator.New<CNode>(GetVariable(it.first));
-		current = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, left, right);
-		if (curBlock->GetStartAddress() == 0x90CC)
+		if (expr.index() == 0)  // TACOperand
 		{
-			COUT << current << std::endl;
+			// 生成赋值表达式
+			auto it = varMap.find(std::get<TACOperand>(expr));
+			CNode* right = GenerateExpression(it->second);
+			CNode* left = allocator.New<CNode>(GetVariable(it->first));
+			current = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, left, right);
 		}
+		else  // CNode*
+		{
+			// 生成数组或字段赋值表达式
+			current = GenerateExpression(std::get<CNode*>(expr));
+		}
+		current = allocator.New<CNode>(CNodeKind::STAT_EXPR, current);
 		// 构建语句列表
 		if (!head)
 		{
@@ -678,6 +675,7 @@ CNode* CBasicBlockDAGTranslator::GenerateCodes()
 		{
 			tail->SetNext(current);
 			tail = current;
+			current = nullptr;
 		}
 	}
 	return translator->NewStatementList(head, tail);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
@@ -735,19 +733,14 @@ CNode* CBasicBlockDAGTranslator::GenerateExpression(CNode* node)
 	}
 	}
 }
-
+#include "Dump.h"
 // 临时变量必定是两条三地址码连着，所以直接合并成一个表达式
 CNode* CBasicBlockDAGTranslator::Translate(TACBasicBlock* block)
 {
 	GenerateDAG(block);
-	curBlock = block;
 	auto node = GenerateCodes();
-	//if (block->GetStartAddress() == 0x90CC)
-	//{
-	//	Sprintf<> s;
-	//	COUT << s.Format(_T("\n block %04X - %04X\n"), block->GetStartAddress(), block->GetEndAddress());
-	//	COUT << node;
-	//	int a = 0;
-	//}
+	auto& codes = block->GetCodes();
+	Nes::Address firstAddr = codes.empty() ? block->GetStartAddress() : codes[0]->address;
+	translator->AddAddressMapStatement(firstAddr, node);  // 记录下这个基本块对应的地址及语句
 	return node;
 }

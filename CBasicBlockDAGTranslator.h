@@ -51,7 +51,11 @@ protected:
 	CNode* GenerateCodes();
 	// 从 DAG 节点生成 AST 的表达式
 	CNode* GenerateExpression(CNode* node);
-
+	// 标记表达式需要被保留
+	inline void Reserve(CNode* expr) { reserved.push_back(expr); }
+	inline void Reserve(TACOperand operand) { reserved.push_back(operand); }
+	// 标记三地址码是否被保留
+	void MarkReserve(const TAC* tac);
 private:
 	Allocator& allocator;
 	CTranslator* translator;
@@ -63,6 +67,6 @@ private:
 	// 变量到最近的赋值节点的映射
 	std::unordered_map<TACOperand, CNode*, TACOperandHash> varMap;
 	// 需要保留的表达式
-
+	std::vector<std::variant<TACOperand, CNode*>> reserved;
 };
 

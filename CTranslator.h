@@ -48,6 +48,8 @@ public:
 	CNode* NewStatementList(CNode* head, CNode* tail);
 	// 获取寄存器的名称
 	String* GetRegisterName(int index) { return registers[index]; }
+	// 删除函数中没有用到的变量
+	void RemoveUnusedLocalVariables();
 
 	Allocator& GetAllocator() { return allocator; }
 protected:

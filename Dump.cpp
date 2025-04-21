@@ -494,7 +494,7 @@ void DumpDefinition(Function* func)
 	DumpDeclaration(func);  // 函数声明
 	COUT << _T("\n{\n");
 	// 局部变量声明
-	for (auto v = func->GetVariableList(); v; v = v->next)
+	for (auto v : func->GetVariableList())
 	{
 		Indent(COUT, 1);
 		DumpDeclaration(v);

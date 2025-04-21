@@ -82,7 +82,7 @@ CNodeKind CGraphTranslator::TranslateOperator(TACOperator op)
 
 CNode* CGraphTranslator::TranslateRegion(CNode*& condition, TACBasicBlock* tacBlock, uint32_t& jumpAddr)
 {
-	CBasicBlockTranslator translator(this);
+	CBasicBlockDAGTranslator translator(this);
 	auto node = translator.Translate(tacBlock);
 	condition = translator.GetCondition();
 	jumpAddr = translator.GetJumpTarget();

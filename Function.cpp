@@ -7,7 +7,6 @@ name(nullptr),
 type(nullptr),
 address(0),
 params(nullptr),
-variables(nullptr),
 body(nullptr)
 {
 
@@ -38,20 +37,14 @@ const Variable* Function::GetParameter(String* name) const
 
 void Function::AddVariable(Variable* variable)
 {
-	if (this->variables == nullptr)
-	{
-		this->variables = variable;
+	if (!variable)
 		return;
-	}
-	Variable* tail;
-	for (tail = this->variables; tail->next; tail = tail->next)
-		;
-	tail->next = variable;
+	variables.push_back(variable);
 }
 
 const Variable* Function::GetVariable(String* name) const
 {
-	for (const Variable* v = this->variables; v; v = v->next)
+	for (const Variable* v : variables)
 	{
 		if (v->name == name)
 			return v;

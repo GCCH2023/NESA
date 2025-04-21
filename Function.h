@@ -25,7 +25,7 @@ public:
 	// 获取局部变量
 	const Variable* GetVariable(String* name) const;
 	// 获取局部变量列表
-	const Variable* GetVariableList() const { return variables; }
+	std::vector<Variable*>& GetVariableList() { return variables; }
 
 	// 获取函数的开始地址
 	inline CAddress GetAddress() const { return address; }
@@ -37,6 +37,6 @@ public:
 	Type* type;
 	CAddress address;  // 函数开始地址
 	Variable* params;  // 形参列表
-	Variable* variables;  // 局部变量列表
+	std::vector<Variable*> variables;  // 局部变量列表
 	CNode* body;  // 函数体
 };
