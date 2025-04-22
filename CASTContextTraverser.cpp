@@ -23,7 +23,7 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 	{
 	case CNodeKind::EXPR_VARIABLE:
 	case CNodeKind::EXPR_INTEGER:
-	case CNodeKind::STAT_NONE:
+	case CNodeKind::STAT_EMPTY:
 	case CNodeKind::STAT_GOTO:
 		break;
 	case CNodeKind::STAT_LIST:

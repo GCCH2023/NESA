@@ -110,7 +110,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 								  Indent(os, indent);
 								  os << _T("while (") << obj->s.condition << _T(")");
-								  if (obj->s.then->kind == CNodeKind::STAT_NONE)
+								  if (obj->s.then->kind == CNodeKind::STAT_EMPTY)
 									  return os << _T(" ;\n");
 								  os << _T(" {\n");
 								  DumpCNode(os, obj->s.then, indent + 1);
@@ -131,7 +131,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 		Indent(os, indent);
 		os << _T("for (") << obj->_for.init << _T("; ") << obj->_for.condition << _T("; ") << obj->_for.iter << _T(")");
-		if (obj->s.then->kind == CNodeKind::STAT_NONE)
+		if (obj->s.then->kind == CNodeKind::STAT_EMPTY)
 			return os << _T(" ;\n");
 		os << _T(" {\n");
 		DumpCNode(os, obj->_for.body, indent + 1);
@@ -143,7 +143,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 							   Indent(os, indent);
 							   os << _T("if (") << obj->s.condition << _T(")");
-							   if (obj->s.then->kind == CNodeKind::STAT_NONE)
+							   if (obj->s.then->kind == CNodeKind::STAT_EMPTY)
 								   return os << _T(" ;\n");
 							   os << _T(" {\n");
 							   DumpCNode(os, obj->s.then, indent + 1);
@@ -173,7 +173,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 								  DumpCNode(os, obj->l.body, indent);
 								  return os;
 	}
-	case CNodeKind::STAT_NONE:
+	case CNodeKind::STAT_EMPTY:
 	{
 								 Indent(os, indent);
 								 return os << _T(";\n");
@@ -342,7 +342,7 @@ OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)
 								  DumpCNodeStructures(os, obj->l.body, indent);
 								  return os;
 	}
-	case CNodeKind::STAT_NONE:
+	case CNodeKind::STAT_EMPTY:
 	{
 								 Indent(os, indent);
 								 return os << _T("null\n");

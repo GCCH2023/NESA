@@ -8,39 +8,36 @@ void CASTListOptimizer::Reset()
 	visited.clear();
 }
 
-// 使用后序遍历会比较好
-void CASTListOptimizer::PostVisit(CNode* node, int depth)
+void CASTListOptimizer::OnVisit(CNode* node)
 {
+	VisitChildren(node);
+
 	if (visited.find(node) != visited.end())
 		return;
 	visited.insert(node);
 
-	// 尝试合并列表语句
-	if (node->IsStatement())
-	{
-		TryOptimizeStatementList(node);
+	TryOptimizeStatementList(node);
 
-		if (node->GetNext())  // 语句的下一个节点必定是语句
+	if (node->GetNext())  // 语句的下一个节点必定是语句
+	{
+		CNode* next = node->GetNext();  // 合并语句时，可能修改 node->GetNext()，需要先保存
+		int ret = TryCombineStatementList(node, next);
+		// 需要指出的是，合并两个节点后：
+		// 返回 1，2的情况，第2个节点不会被访问
+		// 返回 3 的情况，第1个节点被访问两次
+		switch (ret)
 		{
-			CNode* next = node->GetNext();  // 合并语句时，可能修改 node->GetNext()，需要先保存
-			int ret = TryCombineStatementList(node, next);
-			// 需要指出的是，合并两个节点后：
-			// 返回 1，2的情况，第2个节点不会被访问
-			// 返回 3 的情况，第1个节点被访问两次
-			switch (ret)
-			{
-			case 1:  // 列表 + 列表
-				PostVisit(next, depth);
-				node->SetNext(next->GetNext());
-				break;
-			case 2:  // 列表 + 非列表
-				PostVisit(next, depth);
-				node->SetNext(next->GetNext());
-				break;
-			case 3:  // 非列表 + 列表
-				// 当前节点被加入到后面的列表节点中了
-				break;
-			}
+		case 1:  // 列表 + 列表
+			OnVisit(next);
+			node->SetNext(next->GetNext());
+			break;
+		case 2:  // 列表 + 非列表
+			OnVisit(next);
+			node->SetNext(next->GetNext());
+			break;
+		case 3:  // 非列表 + 列表
+			// 当前节点被加入到后面的列表节点中了
+			break;
 		}
 	}
 }
@@ -84,14 +81,13 @@ void CASTListOptimizer::TryOptimizeStatementList(CNode* node)
 		return;
 
 	// 1. 保证头节点不是空语句节点
-	while (node->list.head && node->list.head->kind == CNodeKind::STAT_NONE)
+	while (node->list.head && node->list.head->kind == CNodeKind::STAT_EMPTY)
 		node->list.head = node->list.head->GetNext();
 
 	// 2. 如果没有子节点，那么就将这个列表节点修改为空语句节点
 	if (!node->list.head)
 	{
-		*node = { 0 };
-		node->kind = CNodeKind::STAT_NONE;
+		node->Reset();
 		return;
 	}
 
@@ -108,7 +104,7 @@ void CASTListOptimizer::TryOptimizeStatementList(CNode* node)
 	for (CNode* n = node->list.head; n; n = n->GetNext())
 	{
 		// 头节点已经保证不是空语句节点了，所以可以不管当前节点
-		while (n->GetNext() && n->GetNext()->kind == CNodeKind::STAT_NONE)
+		while (n->GetNext() && n->GetNext()->kind == CNodeKind::STAT_EMPTY)
 			n->SetNext(n->GetNext()->GetNext());
 	}
 }

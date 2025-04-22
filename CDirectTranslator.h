@@ -22,6 +22,8 @@ protected:
 	CNode* TranslateCall(TAC* call, CNode* params = nullptr);
 	CNode* ConditionalJump(CNodeKind kind, TAC* tac);
 
+	CNode* UnaryExpression(CNodeKind kind, const TAC* tac);
+	CNode* BinaryExpression(CNodeKind kind, const TAC* tac);
 protected:
 	
 };

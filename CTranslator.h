@@ -1,4 +1,6 @@
 #pragma once
+#include "CNodeFactory.h"
+
 class Function;
 class TACFunction;
 struct CNode;
@@ -42,8 +44,6 @@ public:
 	void PatchLabels();
 	// 添加地址语句映射
 	void AddAddressMapStatement(uint32_t address, CNode* statement);
-	// 创建一条空语句
-	CNode* NewNoneStatement();
 	// 创建一条列表语句
 	CNode* NewStatementList(CNode* head, CNode* tail);
 	// 获取寄存器的名称
@@ -52,8 +52,10 @@ public:
 	void RemoveUnusedLocalVariables();
 
 	Allocator& GetAllocator() { return allocator; }
+	CNodeFactory& GetNodeFactory() { return nodeFactory; }
 protected:
 	Allocator& allocator;
+	CNodeFactory nodeFactory;
 private:
 	TACFunction* tacFunc;
 	Function* function;

@@ -5,88 +5,62 @@ struct String;
 struct Field;
 
 // !!!增加节点类型时，注意修改CNode中的判断类型函数
-// 以 _BEGIN 和 _END 结尾的枚举只用于划分区间，不要用作实际节点的类别
 enum class CNodeKind
 {
 	NONE,  // 未确定
 
-	/********/ STAT_BEGIN /********/,  // 语句开始
-
-	STAT_LIST = STAT_BEGIN,  // 语句列表
-	STAT_EXPR,  // 表达式语句
-	STAT_WHILE,  // while 语句
-	STAT_NONE,  // 空语句
-	STAT_DO_WHILE,  // do while 语句
-	STAT_IF, // if 语句
-	STAT_GOTO,
+	STAT_EMPTY,  // 空语句
 	STAT_LABEL,
+	STAT_EXPR,  // 表达式语句
+	STAT_LIST,  // 复合语句
+
+	STAT_WHILE,
+	STAT_DO_WHILE,
+	STAT_FOR,
+
+	STAT_IF,
+
+	STAT_GOTO,
 	STAT_RETURN,
-	STAT_FOR,  // 
 
-	/********/  STAT_END /********/,  // 语句结束
-
-
-	/********/ EXPR_BEGIN /********/,  // 表达式开始
-
-	/*11111*/ EXPR_PRIMARY_BEGIN = EXPR_BEGIN /*11111*/,  // 初级表达式开始
-	EXPR_VARIABLE = EXPR_PRIMARY_BEGIN,  // 变量
+	EXPR_VARIABLE,  // 变量
 	EXPR_FIELD,  // 字段
 	EXPR_INTEGER,  // 整数常量
-	/*11111*/ EXPR_PRIMARY_END /*11111*/,  // 初级表达式结束
 
-	/*11111*/ EXPR_UNARY_BEGIN = EXPR_PRIMARY_END /*11111*/,  // 单目表达式开始
-	EXPR_DEREF = EXPR_UNARY_BEGIN,  // 解引用 *x
+	EXPR_DEREF,  // 解引用 *x
 	EXPR_ADDR,  // 取地址 &x
 	EXPR_CAST,  // 类型转换 (T)a
+
 	EXPR_NOT,  // !x
-	/*11111*/ EXPR_UNARY_END /*11111*/,  // 单目表达式结束
 
-	/*11111*/ EXPR_BINARY_BEGIN = EXPR_UNARY_END /*11111*/,  // 双目表达式开始
-
-	/*22222*/ EXPR_BINARY_ARITH_BEGIN = EXPR_BINARY_BEGIN /*22222*/,  // 双目算术表达式开始
-	EXPR_ADD = EXPR_BINARY_ARITH_BEGIN,  // 加法 x + y
+	EXPR_ADD,  // 加法 x + y
 	EXPR_SUB,  // 减法 x - y
-	/*22222*/ EXPR_BINARY_ARITH_END /*22222*/,  // 双目算术表达式结束
 
-	/*22222*/ EXPR_BINARY_BIT_BEGIN = EXPR_BINARY_ARITH_END /*22222*/,  // 双目位运算表达式开始
-	EXPR_BOR = EXPR_BINARY_BIT_BEGIN,  // 位或 x | y
+	EXPR_BOR,  // 位或 x | y
 	EXPR_BAND,  // 位与 x & y
 	EXPR_XOR,  // 异或 x ^ y
 	EXPR_SHIFT_LEFT,  // 左移 x << y
 	EXPR_SHIFT_RIGHT,  // 右移 x >> y
-	/*22222*/ EXPR_BINARY_BIT_END /*22222*/,  // 双目位运算表达式结束
 
-	/*22222*/ EXPR_BINARY_COMP_BEGIN = EXPR_BINARY_BIT_END /*22222*/,  // 双目比较表达式开始
-	EXPR_GREAT = EXPR_BINARY_COMP_BEGIN,  // 大于 x > y
+	EXPR_GREAT,  // 大于 x > y
 	EXPR_GREAT_EQUAL,  // 大于等于 x >= y
 	EXPR_NOT_EQUAL,  // 不等于 x != y
 	EXPR_EQUAL,  // 等于 x == y
 	EXPR_LESS,  // 小于 x < y
 	EXPR_LESS_EQUAL,  // 小于等于 x <= y
-	/*22222*/ EXPR_BINARY_COMP_END /*22222*/,  // 双目比较表达式结束
 
-	/*22222*/ EXPR_BINARY_ASSIGN_BEGIN = EXPR_BINARY_COMP_END /*22222*/,  // 双目赋值表达式开始
-	EXPR_ASSIGN = EXPR_BINARY_ASSIGN_BEGIN, // 赋值 x = y
+	EXPR_ASSIGN, // 赋值 x = y
 	EXPR_BOR_ASSIGN,  // x |= y
 	EXPR_BAND_ASSIGN,  // x &= y
-	/*22222*/ EXPR_BINARY_ASSIGN_END /*22222*/,  // 双目赋值表达式结束
 
-	/*22222*/ EXPR_BINARY_LOGICAL_BEGIN = EXPR_BINARY_ASSIGN_END /*22222*/,  // 双目逻辑表达式开始
-	EXPR_AND = EXPR_BINARY_LOGICAL_BEGIN,  // x && y
+	EXPR_AND,  // x && y
 	EXPR_OR,  // x || y
-	/*22222*/ EXPR_BINARY_LOGICAL_END /*22222*/,  // 双目逻辑表达式结束
 
-	/*22222*/ EXPR_BINARY_VISIT_BEGIN = EXPR_BINARY_LOGICAL_END /*22222*/,  // 双目访问表达式开始
-	EXPR_INDEX = EXPR_BINARY_VISIT_BEGIN,  // 索引 x[y]
+	EXPR_INDEX,  // 索引 x[y]
 	EXPR_ARROW,  // 取记录对象指针的字段 x->y
 	EXPR_DOT,  // 取记录对象的字段 x.y
-	/*22222*/ EXPR_BINARY_VISIT_END /*22222*/,  // 双目访问表达式结束
-
-	/*11111*/ EXPR_BINARY_END /*11111*/,  // 双目表达式结束
 	
-	EXPR_CALL = EXPR_BINARY_END,  // 函数调用
-
-	/********/ EXPR_END /********/,  // 表达式结束
+	EXPR_CALL,  // 函数调用
 
 	COUNT,  // 节点类别数量，不是有有效节点类别，必须是最后一个枚举值
 };
@@ -94,29 +68,157 @@ enum class CNodeKind
 // 获取节点类型的字符串表示
 const TCHAR* ToString(CNodeKind kind);
 
-
-static_assert(static_cast<int>(CNodeKind::COUNT) <= 64,	"CNodeKind values exceed uint64_t bit capacity");
-
-// 获取节点类别分类
-// 可将结果进行位运算后快速判断是否满足条件
-constexpr uint64_t GetCategory(CNodeKind kind)
+// 节点类别分类
+enum CNodeCategory : uint32_t
 {
-	// 验证有效性
-	const auto val = static_cast<uint64_t>(kind);
-	assert(val < static_cast<uint64_t>(CNodeKind::COUNT));
+	CNODE_CAT_INVALID,  // 无效节点类别
+	CNODE_CAT_EXPR = 0x10000000,  // 表达式
+	CNODE_CAT_STAT = 0x20000000,  // 语句
 
-	// 确保安全位移
-	return (val < 64) ? (1ull << val) : 0;
+	CNODE_CAT_EXPR_PRIMARY = CNODE_CAT_EXPR | 0x01000000,  // 初级表达式
+	CNODE_CAT_EXPR_UNARY = CNODE_CAT_EXPR | 0x02000000,  // 单目表达式
+	CNODE_CAT_EXPR_BINARY = CNODE_CAT_EXPR | 0x04000000,  // 双目表达式
+	CNODE_CAT_EXPR_OTHER = CNODE_CAT_EXPR | 0x08000000,  // 其他表达式
+
+	CNODE_CAT_EXPR_ARITH = CNODE_CAT_EXPR | 0x00010000,  // 算术表达式
+	CNODE_CAT_EXPR_BITWISE = CNODE_CAT_EXPR | 0x00020000,  // 位运算表达式
+	CNODE_CAT_EXPR_COMP = CNODE_CAT_EXPR | 0x00040000,  // 比较表达式
+	CNODE_CAT_EXPR_LOGICAL = CNODE_CAT_EXPR | 0x00800000,  // 逻辑表达式
+	CNODE_CAT_EXPR_OFFSET = CNODE_CAT_EXPR | 0x00100000,  // 偏移表达式
+
+	CNODE_CAT_EXPR_ASSIGN = CNODE_CAT_EXPR | 0x00001000,  // 赋值表达式
+
+	CNODE_CAT_STAT_LOOP = CNODE_CAT_STAT | 0x01000000,  // 循环语句
+	CNODE_CAT_STAT_BRANCH = CNODE_CAT_STAT | 0x02000000,  // 分支语句
+	CNODE_CAT_STAT_JUMP = CNODE_CAT_STAT | 0x04000000,  // 跳转语句
+	CNODE_CAT_STAT_OTHER = CNODE_CAT_STAT | 0x08000000,  // 其他语句
+};
+
+// 获取节点分类
+constexpr uint32_t GetCategory(CNodeKind kind)
+{
+	switch (kind)
+	{
+	case CNodeKind::STAT_EMPTY:
+	case CNodeKind::STAT_LABEL:
+	case CNodeKind::STAT_EXPR:
+	case CNodeKind::STAT_LIST:
+		return CNODE_CAT_STAT_OTHER;
+
+	case CNodeKind::STAT_WHILE:
+	case CNodeKind::STAT_DO_WHILE:
+	case CNodeKind::STAT_FOR:
+		return CNODE_CAT_STAT_LOOP;
+
+	case CNodeKind::STAT_IF:
+		return CNODE_CAT_STAT_BRANCH;
+
+	case CNodeKind::STAT_GOTO:
+	case CNodeKind::STAT_RETURN:
+		return CNODE_CAT_STAT_JUMP;
+
+	case CNodeKind::EXPR_VARIABLE:
+	case CNodeKind::EXPR_FIELD:
+	case CNodeKind::EXPR_INTEGER:
+		return CNODE_CAT_EXPR_PRIMARY;
+
+	case CNodeKind::EXPR_DEREF:
+	case CNodeKind::EXPR_ADDR:
+	case CNodeKind::EXPR_CAST:
+		return CNODE_CAT_EXPR_UNARY;
+
+	case CNodeKind::EXPR_NOT:
+		return CNODE_CAT_EXPR_UNARY | CNODE_CAT_EXPR_LOGICAL;
+
+	case CNodeKind::EXPR_ADD:
+	case CNodeKind::EXPR_SUB:
+		return CNODE_CAT_EXPR_BINARY | CNODE_CAT_EXPR_ARITH;
+
+	case CNodeKind::EXPR_BOR:
+	case CNodeKind::EXPR_BAND:
+	case CNodeKind::EXPR_XOR:
+	case CNodeKind::EXPR_SHIFT_LEFT:
+	case CNodeKind::EXPR_SHIFT_RIGHT:
+		return CNODE_CAT_EXPR_BINARY | CNODE_CAT_EXPR_BITWISE;
+
+	case CNodeKind::EXPR_GREAT:
+	case CNodeKind::EXPR_GREAT_EQUAL:
+	case CNodeKind::EXPR_NOT_EQUAL:
+	case CNodeKind::EXPR_EQUAL:
+	case CNodeKind::EXPR_LESS:
+	case CNodeKind::EXPR_LESS_EQUAL:
+		return CNODE_CAT_EXPR_BINARY | CNODE_CAT_EXPR_COMP;
+
+	case CNodeKind::EXPR_ASSIGN:
+		return CNODE_CAT_EXPR_BINARY | CNODE_CAT_EXPR_ASSIGN;
+
+	case CNodeKind::EXPR_BOR_ASSIGN:
+	case CNodeKind::EXPR_BAND_ASSIGN:
+		return CNODE_CAT_EXPR_BINARY | CNODE_CAT_EXPR_ASSIGN | CNODE_CAT_EXPR_BITWISE;
+
+	case CNodeKind::EXPR_AND:
+	case CNodeKind::EXPR_OR:
+		return CNODE_CAT_EXPR_BINARY | CNODE_CAT_EXPR_LOGICAL;
+
+	case CNodeKind::EXPR_INDEX:
+	case CNodeKind::EXPR_ARROW:
+	case CNodeKind::EXPR_DOT:
+		return CNODE_CAT_EXPR_BINARY | CNODE_CAT_EXPR_OFFSET;
+
+	case CNodeKind::EXPR_CALL:
+		return CNODE_CAT_EXPR_OTHER;
+
+	default:
+		return CNODE_CAT_INVALID;
+	}
 }
 
-constexpr uint64_t StatementMask()
+// 辅助函数：检查分类是否匹配给定的掩码
+constexpr bool MatchCategory(uint32_t category, uint32_t mask)
 {
-	uint64_t mask = 0;
-	for (int i = static_cast<int>(CNodeKind::STAT_BEGIN); i < static_cast<int>(CNodeKind::STAT_END); ++i)
-	{
-		mask |= 1ull << i;
-	}
-	return mask;
+	return (category & mask) == mask;
+}
+
+// 是否是语句节点
+constexpr bool IsStatement(CNodeKind kind)
+{
+	return MatchCategory(GetCategory(kind), CNODE_CAT_STAT);
+}
+
+// 是否是表达式节点
+constexpr bool IsExpression(CNodeKind kind)
+{
+	return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR);
+}
+
+// 是否是比较表达式
+constexpr bool IsCompareExpression(CNodeKind kind)
+{
+	return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR_COMP);
+}
+
+// 是否是变量
+constexpr bool IsVariable(CNodeKind kind)
+{
+	return kind == CNodeKind::EXPR_VARIABLE;
+}
+
+// 是否赋值运算符
+constexpr bool IsAssignment(CNodeKind kind)
+{
+	return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR_ASSIGN);
+}
+
+// 是否单目运算符
+constexpr bool IsUnaryExpression(CNodeKind kind)
+{
+	return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR_UNARY);
+}
+
+// 是否双目运算符
+constexpr bool IsBinaryExpression(CNodeKind kind)
+{
+	return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR_BINARY);
 }
 
 // C语言语法节点
@@ -180,24 +282,52 @@ private:
 public:
 
 	CNode();
-	CNode(CNodeKind kind, uint32_t address);
-	// 创建变量
-	CNode(const Variable* variable);
-	// 创建字段
-	CNode(const Field* field);
-	// 创建类型转换表达式
-	CNode(const Type* type, CNode* expr);
-	// 创建函数调用或标签语句
-	CNode(String* name, CNode* params);
-	// 创建整数
-	CNode(int value);
-	// 创建表达式或语句
-	CNode(CNodeKind kind, CNode* x = nullptr, CNode* y = nullptr, CNode* z = nullptr);
-	// 创建goto语句
-	CNode(CNodeKind kind, String* name);
-	// 创建 for 语句
-	CNode(CNode* init, CNode* condition, CNode* iter, CNode* body);
-	
+	CNode(CNodeKind kind);
+	CNode(const CNode& other) = default;
+
+	// 设置为 for 语句
+	CNode& For(CNode* init, CNode* condition, CNode* iter, CNode* body);
+	// 设置为 goto 语句
+	CNode& Goto(String* label);
+	// 设置为 if 语句
+	CNode& If(CNode* condition, CNode* body, CNode* _else = nullptr);
+	// 设置为 while 语句
+	CNode& While(CNode* condition, CNode* body);
+	// 设置为 do while 语句
+	CNode& DoWhile(CNode* condition, CNode* body);
+	// 设置为 return 语句
+	CNode& Return(CNode* value = nullptr);
+	// 设置为 标签 语句
+	CNode& Label(String* label, CNode* body);
+	// 设置为 表达式 语句
+	CNode& ExprStat(CNode* expr);
+	// 设置为整数
+	CNode& Integer(int value);
+	// 设置为函数调用
+	CNode& Call(String* function, CNode* params = nullptr);
+	// 设置为类型转换表达式
+	CNode& Cast(const Type* type, CNode* expr);
+	// 设置为字段
+	CNode& Field(const ::Field* field);
+	// 设置为表达式
+	CNode& Expr(CNodeKind kind, CNode* x = nullptr, CNode* y = nullptr, CNode* z = nullptr);
+	// 设置为变量表达式
+	CNode& Var(const Variable* variable);
+	// 设置为 复合语句
+	CNode& ListStat(CNode* head, CNode* tail);
+	// 设置为赋值表达式
+	CNode& Assign(CNode* target, CNode* source);
+	// 设置为 空 语句
+	CNode& EmptyStat();
+	// 设置为无效节点
+	CNode& Reset();
+
+	// 是否语句
+	bool IsStatement() const { return MatchCategory(GetCategory(kind), CNODE_CAT_STAT); }
+	// 是否表达式
+	bool IsExpression() const { return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR); }
+
+
 	// 将指定节点设置为后继节点，并将它的前驱设置为此节点
 	void SetNext(CNode* node)
 	{
@@ -216,17 +346,6 @@ public:
 	inline CNode* GetNext() { return next; }
 	// 移除语句列表中的指定语句
 	void RemoveStatement(CNode* statement);
-
-	// 是否是语句节点
-	bool IsStatement() const { return kind >= CNodeKind::STAT_BEGIN && kind < CNodeKind::STAT_END; }
-	// 是否是表达式节点
-	bool IsExpression() const { return kind >= CNodeKind::EXPR_BEGIN && kind < CNodeKind::EXPR_END; }
-	// 是否是比较表达式
-	bool IsCompareExpression() const { return kind >= CNodeKind::EXPR_BINARY_COMP_BEGIN && kind < CNodeKind::EXPR_BINARY_COMP_END; }
-	// 是否是变量
-	bool IsVariable() const { return kind == CNodeKind::EXPR_VARIABLE; }
-	// 是否赋值表达式
-	bool IsAssignment() const { return kind >= CNodeKind::EXPR_BINARY_ASSIGN_BEGIN && kind < CNodeKind::EXPR_BINARY_ASSIGN_END; }
 };
 
 // 获取运算符的优先级

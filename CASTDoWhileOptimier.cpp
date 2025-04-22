@@ -19,7 +19,7 @@ bool UsedVariable(CNode* node, CNode* variable)
 			return node->variable->name == variable->variable->name;
 		case CNodeKind::EXPR_INTEGER:
 			return false;
-		case CNodeKind::STAT_NONE:
+		case CNodeKind::STAT_EMPTY:
 			return false;
 		case CNodeKind::STAT_GOTO:
 			return true;  // 不知道有没有使用，当作使用处理
@@ -102,7 +102,7 @@ CNode* GetDefinedStatement(CNode* node, CNode* variable)
 	if (node->kind != CNodeKind::STAT_EXPR)
 		return nullptr;
 	auto expr = node->e.x;
-	if (expr->IsAssignment() && expr->e.x->variable->name == variable->variable->name)
+	if (IsAssignment(expr->kind) && expr->e.x->variable->name == variable->variable->name)
 		return node;
 	return nullptr;
 }
@@ -150,7 +150,7 @@ void CASTDoWhileOptimier::PreVisit(CNode* node, int depth)
 		return;
 
 	auto cond = node->s.condition;
-	auto var = cond->e.x->IsVariable() ? cond->e.x : cond->e.y;
+	auto var = IsVariable(cond->e.x->kind) ? cond->e.x : cond->e.y;
 
 	CNode* init = GetInitializeStatement(node, var);
 	if (!init)
@@ -183,5 +183,5 @@ bool CASTDoWhileOptimier::CheckCondition(const CNode* node)
 	// x op y，x，y中一个是变量，一个是整数
 	// op 是关系运算符
 	constexpr auto mask = GetCategory(CNodeKind::EXPR_INTEGER) | GetCategory(CNodeKind::EXPR_VARIABLE);
-	return node->IsCompareExpression() && (GetCategory(node->e.x->kind) | GetCategory(node->e.y->kind)) == mask;
+	return IsCompareExpression(node->kind) && (GetCategory(node->e.x->kind) | GetCategory(node->e.y->kind)) == mask;
 }

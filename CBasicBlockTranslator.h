@@ -20,8 +20,10 @@ protected:
 	CNode* TranslateCall(TAC* call, CNode* params);
 	// 条件跳转语句翻译
 	CNode* ConditionalJump(CNodeKind kind, TAC* tac, uint32_t& jumpAddr);
+
+	CNode* UnaryExpression(CNodeKind kind, const TAC* tac);
+	CNode* BinaryExpression(CNodeKind kind, const TAC* tac);
 private:
-	Allocator& allocator;
 	CTranslator* translator;
 	CNode* condition;  // 跳转指令对应的条件表达式
 	uint32_t jumpAddr;  // 跳转指令对应的

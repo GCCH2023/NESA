@@ -18,7 +18,7 @@ void CTreeOptimizer::Optimize(CNode* root)
 	CASTContextTraverser traverser;
 	CASTListOptimizer optimizer;
 
-	traverser.Traverse(root, optimizer);
+	optimizer.Visit(root);
 
 	CASTDoWhileOptimier doWhileOptimizer;
 	traverser.Traverse(root, doWhileOptimizer);

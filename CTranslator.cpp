@@ -7,6 +7,7 @@
 
 CTranslator::CTranslator(Allocator& allocator_):
 allocator(allocator_),
+nodeFactory(allocator_),
 tacFunc(nullptr),
 function(nullptr)
 {
@@ -97,11 +98,11 @@ CNode* CTranslator::GetExpression(const TACOperand& operand)
 	switch (operand.GetKind())
 	{
 	case TACOperand::INTEGER:
-		return allocator.New<CNode>(operand.GetValue());
+		return nodeFactory.Integer(operand.GetValue());
 	case TACOperand::TEMP:
 	{
 							 auto var = GetLocalVariable(operand.GetValue());
-							 return allocator.New<CNode>(var);
+							 return nodeFactory.Var(var);
 	}
 	case TACOperand::REGISTER:
 	{
@@ -109,9 +110,9 @@ CNode* CTranslator::GetExpression(const TACOperand& operand)
 								 auto name = registers[operand.GetValue()];
 								 auto variable = this->function->GetParameter(name);
 								 if (variable)
-									 return allocator.New<CNode>(variable);
+									 return nodeFactory.Var(variable);
 								 variable = GetLocalVariable(name, TypeManager::Char);
-								 return allocator.New<CNode>(variable);
+								 return nodeFactory.Var(variable);
 	}
 	case TACOperand::GLOBAL:
 	{
@@ -123,7 +124,7 @@ CNode* CTranslator::GetExpression(const TACOperand& operand)
 								   s.Format(_T("获取全局变量 %X 失败"), addr);
 								   throw Exception(s.ToString());
 							   }
-							   return allocator.New<CNode>(global);
+							   return nodeFactory.Var(global);
 	}
 	case TACOperand::ADDRESS:
 	{
@@ -135,7 +136,7 @@ CNode* CTranslator::GetExpression(const TACOperand& operand)
 									s.Format(_T("获取全局变量 %X 失败"), addr);
 									throw Exception(s.ToString());
 								}
-								return allocator.New<CNode>(global);
+								return nodeFactory.Var(global);
 	}
 	default:
 	{
@@ -151,12 +152,12 @@ CNode* CTranslator::GetExpression(CNode& node, const TACOperand& operand)
 	switch (operand.GetKind())
 	{
 	case TACOperand::INTEGER:
-		node = CNode(operand.GetValue());
+		node.Integer(operand.GetValue());
 		break;
 	case TACOperand::TEMP:
 	{
 		auto var = GetLocalVariable(operand.GetValue());
-		node = CNode(var);
+		node.Var(var);
 		break;
 	}
 	case TACOperand::REGISTER:
@@ -166,11 +167,11 @@ CNode* CTranslator::GetExpression(CNode& node, const TACOperand& operand)
 		auto variable = this->function->GetParameter(name);
 		if (variable)
 		{
-			node = CNode(variable);
+			node.Var(variable);
 			break;
 		}
 		variable = GetLocalVariable(name, TypeManager::Char);
-		node = CNode(variable);
+		node.Var(variable);
 		break;
 	}
 	case TACOperand::GLOBAL:
@@ -183,7 +184,7 @@ CNode* CTranslator::GetExpression(CNode& node, const TACOperand& operand)
 			s.Format(_T("获取全局变量 %X 失败"), addr);
 			throw Exception(s.ToString());
 		}
-		node = CNode(global);
+		node.Var(global);
 		break;
 	}
 	case TACOperand::ADDRESS:
@@ -196,7 +197,7 @@ CNode* CTranslator::GetExpression(CNode& node, const TACOperand& operand)
 			s.Format(_T("获取全局变量 %X 失败"), addr);
 			throw Exception(s.ToString());
 		}
-		node = CNode(global);
+		node.Var(global);
 		break;
 	}
 	default:
@@ -303,12 +304,10 @@ void CTranslator::PatchLabels()
 		auto statement = blockStatements[label.first];
 		if (statement->kind != CNodeKind::STAT_LABEL)
 		{
-			// 修改为标签语句
-			auto body = allocator.New<CNode>();
-			*body = *statement;
-			statement->kind = CNodeKind::STAT_LABEL;
-			statement->l.body = body;
-			statement->l.name = label.second;
+			// 复制一份原来的节点，修改原来的节点标签语句，并使用复制节点作为语句体
+			// 原来就是标签语句，附加一个新标签也是可以的
+			auto body = nodeFactory.Copy(*statement);
+			statement->Label(label.second, body);
 		}
 	}
 }
@@ -318,18 +317,14 @@ void CTranslator::AddAddressMapStatement(uint32_t address, CNode* statement)
 	blockStatements[address] = statement;
 }
 
-CNode* CTranslator::NewNoneStatement()
-{
-	return allocator.New<CNode>(CNodeKind::STAT_NONE);
-}
 
 CNode* CTranslator::NewStatementList(CNode* head, CNode* tail)
 {
 	if (!head)
-		return NewNoneStatement();
+		return nodeFactory.EmptyStat();
 	if (head == tail)
 		return head;
-	return allocator.New<CNode>(CNodeKind::STAT_LIST, head, tail);
+	return nodeFactory.ListStat(head, tail);
 }
 
 class LocvalVariablesRemover : public CASTVisitor

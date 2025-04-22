@@ -238,7 +238,13 @@
       <Filter>C\Translator</Filter>
     </ClInclude>
     <ClInclude Include="CBasicBlockDAGTranslator.h">
-      <Filter>头文件</Filter>
+      <Filter>C\Translator</Filter>
+    </ClInclude>
+    <ClInclude Include="CNodeFactory.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="CStatementVisitor.h">
+      <Filter>C\Traverser</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -393,7 +399,13 @@
       <Filter>C\Translator</Filter>
     </ClCompile>
     <ClCompile Include="CBasicBlockDAGTranslator.cpp">
-      <Filter>源文件</Filter>
+      <Filter>C\Translator</Filter>
+    </ClCompile>
+    <ClCompile Include="CNodeFactory.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="CStatementVisitor.cpp">
+      <Filter>C\Traverser</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

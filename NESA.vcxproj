@@ -161,8 +161,10 @@
     <ClInclude Include="CBasicBlockTranslator.h" />
     <ClInclude Include="CDataBase.h" />
     <ClInclude Include="CNode.h" />
+    <ClInclude Include="CNodeFactory.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="CGraphTranslator.h" />
+    <ClInclude Include="CStatementVisitor.h" />
     <ClInclude Include="DataFlowAnalyzer.h" />
     <ClInclude Include="CDirectTranslator.h" />
     <ClInclude Include="DirectedGraph.h" />
@@ -224,6 +226,8 @@
     <ClCompile Include="CNode.cpp" />
     <ClCompile Include="CGraphTranslator.cpp" />
     <ClCompile Include="CDirectTranslator.cpp" />
+    <ClCompile Include="CNodeFactory.cpp" />
+    <ClCompile Include="CStatementVisitor.cpp" />
     <ClCompile Include="DominatorAnalyzer.cpp" />
     <ClCompile Include="Dump.cpp" />
     <ClCompile Include="Exception.cpp" />

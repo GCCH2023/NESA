@@ -1,14 +1,14 @@
 #pragma once
-#include "CASTContextTraverser.h"
+#include "CStatementVisitor.h"
 
 // 优化抽象语法树中的列表语句
-class CASTListOptimizer : public CASTContextVisitor
+class CASTListOptimizer : public CStatementVisitor
 {
 public:
-	using CASTContextVisitor::CASTContextVisitor;
+	CASTListOptimizer() = default;
 	void Reset();
 protected:
-	virtual void PostVisit(CNode* node, int depth) override;
+	virtual void OnVisit(CNode* node) override;
 	// 尝试合并两条语句，没有合并返回0，合并返回对应的类型
 	int TryCombineStatementList(CNode* first, CNode* second);
 	// 尝试优化语句列表节点

@@ -430,6 +430,29 @@ void ReachDefinitionTest(const TCHAR* rom, Nes::Address addr)
 	}
 }
 
+void CASTListOptimizerTest()
+{
+	//CNode null(CNodeKind::STAT_EMPTY);
+	//CNode expr(5);
+	//CNode exprStat(CNodeKind::STAT_EXPR, &expr);
+	//CNode list(CNodeKind::STAT_LIST);
+	//list.list.head = &null;
+	//list.list.tail = &exprStat;
+	//null.SetNext(&exprStat);
+
+	//auto root = &list;
+
+	//CTreeOptimizer ctreeOptimizer;
+	//COUT << _T("\n语法树结构:\n");
+	//DumpCNodeStructures(COUT, root, 0);
+
+	//// 优化C代码结构
+	//ctreeOptimizer.Optimize(&list);
+	//COUT << _T("\n优化语法树结构后:\n");
+	//DumpCNodeStructures(COUT, root, 0);
+	//COUT << endl;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	const TCHAR* rom = _T(R"(D:\FC\miaoliro.nes)");
@@ -447,6 +470,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	//SubroutineRangeParserTest(rom);
 	NesDBSubroutineParserTest(rom, 0x90CC);
 	// ReachDefinitionTest(rom, 0x8000);
+
+	CASTListOptimizerTest();
+
 	system("pause");
 	return 0;
 }

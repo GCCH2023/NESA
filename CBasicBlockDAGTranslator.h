@@ -36,15 +36,8 @@ protected:
 
 	// 获取节点表中的指定节点，不存在则添加
 	CNode* GetNode(CNode* node);
-	// 根据参数构造CNode对象，并返回节点表中的对应对象
-	template<typename... Args>
-	CNode* GenNode(Args&&... args)
-	{
-		CNode node(std::forward<Args>(args)...);
-		return GetNode(&node);
-	}
 	// 将变量附加到节点上
-	void Attach(TACOperand& var, CNode* node);
+	void Attach(const TACOperand& var, CNode* node);
 	// 构建DAG
 	void GenerateDAG(TACBasicBlock* block);
 	// 从 DAG 生成 C 代码
@@ -56,8 +49,9 @@ protected:
 	inline void Reserve(TACOperand operand) { reserved.push_back(operand); }
 	// 标记三地址码是否被保留
 	void MarkReserve(const TAC* tac);
+	void UnaryExpression(CNodeKind kind, const TAC* tac);
+	void BinaryExpression(CNodeKind kind, const TAC* tac);
 private:
-	Allocator& allocator;
 	CTranslator* translator;
 	CNode* condition;  // 跳转指令对应的条件表达式
 	uint32_t jumpAddr;  // 跳转指令对应的

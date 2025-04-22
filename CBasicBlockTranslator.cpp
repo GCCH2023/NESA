@@ -7,7 +7,6 @@
 
 CBasicBlockTranslator::CBasicBlockTranslator(CTranslator* translator_) :
 	translator(translator_),
-	allocator(translator_->GetAllocator()),
 	condition(nullptr),
 	jumpAddr(0)
 {
@@ -49,21 +48,31 @@ CNode* CBasicBlockTranslator::TranslateCall(TAC* call, CNode* params)
 		s.Format(_T("三地址码翻译为C语句：%04X 解析函数名称失败"), call->address);
 		throw Exception(s.ToString());
 	}
-	CNode* expr = allocator.New<CNode>(name, params);
+	CNode* expr = translator->GetNodeFactory().Call(name, params);
 	// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
 	if (call->z.IsTemp())
 	{
-		expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(call->z), expr);
+		expr = translator->GetNodeFactory().Assign(GetExpression(call->z), expr);
 	}
-	return allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+	return translator->GetNodeFactory().ExprStat(expr);
 }
 
 CNode* CBasicBlockTranslator::ConditionalJump(CNodeKind kind, TAC* tac, uint32_t& jumpAddr)
 {
 	// 条件跳转指令必定是基本块结束指令
-	condition = allocator.New<CNode>(kind, GetExpression(tac->x), GetExpression(tac->y));
+	condition = translator->GetNodeFactory().Expr(kind, GetExpression(tac->x), GetExpression(tac->y));
 	jumpAddr = tac->z.GetValue();
 	return condition;
+}
+
+CNode* CBasicBlockTranslator::UnaryExpression(CNodeKind kind, const TAC* tac)
+{
+	return translator->GetNodeFactory().UnaryAssignExprStat(kind, GetExpression(tac->z), GetExpression(tac->x));
+}
+
+CNode* CBasicBlockTranslator::BinaryExpression(CNodeKind kind, const TAC* tac)
+{
+	return translator->GetNodeFactory().BinaryAssignExprStat(kind, GetExpression(tac->z), GetExpression(tac->x), GetExpression(tac->y));
 }
 
 
@@ -72,6 +81,7 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 {
 	CNode* current = nullptr, * head = nullptr, * tail = nullptr;
 	CNode* expr = nullptr;
+	auto& nodeFactory = translator->GetNodeFactory();
 	auto& codes = block->GetCodes();
 	for (size_t i = 0; i < codes.size(); ++i)
 	{
@@ -79,85 +89,56 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 		switch (tac->op)
 		{
 		case	TACOperator::BOR:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_BOR, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_BOR, tac);
 			break;
 		case	TACOperator::BAND:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
-			break;
-		case	TACOperator::ASSIGN:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), GetExpression(tac->x));
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_BAND, tac);
 			break;
 		case	TACOperator::ADD:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_ADD, tac);
 			break;
 		case	TACOperator::SUB:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_SUB, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_SUB, tac);
 			break;
 		case	TACOperator::XOR:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_XOR, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_XOR, tac);
 			break;
-		case TACOperator::SHL:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_SHIFT_LEFT, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+		case	TACOperator::SHL:
+			current = BinaryExpression(CNodeKind::EXPR_SHIFT_LEFT, tac);
 			break;
-		case TACOperator::SHR:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_SHIFT_RIGHT, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+		case	TACOperator::SHR:
+			current = BinaryExpression(CNodeKind::EXPR_SHIFT_RIGHT, tac);
 			break;
 		case TACOperator::BOOL_GREAT:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_GREAT, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_GREAT, tac);
 			break;
 		case TACOperator::BOOL_GEQ:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_GREAT_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_GREAT_EQUAL, tac);
 			break;
 		case TACOperator::BOOL_LESS:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_LESS, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_LESS, tac);
 			break;
 		case TACOperator::BOOL_LEQ:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_LESS_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_LESS_EQUAL, tac);
 			break;
 		case TACOperator::BOOL_EQ:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_EQUAL, tac);
 			break;
 		case TACOperator::BOOL_NEQ:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_NOT_EQUAL, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = BinaryExpression(CNodeKind::EXPR_NOT_EQUAL, tac);
 			break;
 		case TACOperator::BOOL_BAND:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_NOT_EQUAL, expr, GetExpression(TACOperand(0)));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Expr(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
+			current = nodeFactory.BinaryAssignExprStat(CNodeKind::EXPR_NOT_EQUAL,
+				GetExpression(tac->z), expr, GetExpression(TACOperand(0)));
 			break;
 		case TACOperator::BOOL_BIT:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_SHIFT_RIGHT, GetExpression(tac->x), GetExpression(tac->y));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_BAND, expr, GetExpression(TACOperand(1)));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Expr(CNodeKind::EXPR_SHIFT_RIGHT, GetExpression(tac->x), GetExpression(tac->y));
+			current = nodeFactory.BinaryAssignExprStat(CNodeKind::EXPR_BAND,
+				GetExpression(tac->z), expr, GetExpression(TACOperand(1)));
+			break;
+		case	TACOperator::ASSIGN:
+			current = nodeFactory.AssignStat(GetExpression(tac->z), GetExpression(tac->x));
 			break;
 		case TACOperator::ARRAY_GET:
 		{
@@ -172,8 +153,8 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 				assert(tac->y.IsInterger());
 				// 根据偏移量查找字段
 				auto field = type->GetField(tac->y.GetValue());
-				auto fieldNode = allocator.New<CNode>(field);
-				expr = allocator.New<CNode>(CNodeKind::EXPR_DOT, x, fieldNode);
+				auto fieldNode = nodeFactory.Field(field);
+				expr = nodeFactory.Expr(CNodeKind::EXPR_DOT, x, fieldNode);
 			}
 			//else if (type->GetKind() == TypeKind::Pointer)
 			//{
@@ -181,24 +162,23 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 			   // assert(tac->y.IsInterger());
 			   // int offset = tac->y.GetValue();
 			   // // (1) 取指针的地址 &x
-			   // expr = allocator.New<CNode>(CNodeKind::EXPR_ADDR, x);
+			   // expr = nodeFactory.Expr(CNodeKind::EXPR_ADDR, x);
 			   // // (2) 强制类型转换为 (char*)&x
-			   // expr = allocator.New<CNode>(TypeManager::pValue, expr);
+			   // expr = nodeFactory.Expr(TypeManager::pValue, expr);
 			   // // (3) 可选的偏移字节 (char*)&x + offset
 			   // if (offset > 0)
 			   // {
-				  //  CNode* offsetNode = allocator.New<CNode>(offset);
-				  //  expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, expr, offsetNode);
+				  //  CNode* offsetNode = nodeFactory.Expr(offset);
+				  //  expr = nodeFactory.Expr(CNodeKind::EXPR_ADD, expr, offsetNode);
 			   // }
 			   // // 解引用
-			   // expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, expr);
+			   // expr = nodeFactory.Expr(CNodeKind::EXPR_DEREF, expr);
 			//}
 			else
 			{
-				expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
+				expr = nodeFactory.Expr(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
 			}
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = nodeFactory.AssignStat(GetExpression(tac->z), expr);
 			break;
 
 		}
@@ -215,8 +195,8 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 				assert(tac->y.IsInterger());
 				// 根据偏移量查找字段
 				auto field = type->GetField(tac->y.GetValue());
-				auto fieldNode = allocator.New<CNode>(field);
-				expr = allocator.New<CNode>(CNodeKind::EXPR_DOT, x, fieldNode);
+				auto fieldNode = nodeFactory.Field(field);
+				expr = nodeFactory.Expr(CNodeKind::EXPR_DOT, x, fieldNode);
 			}
 			//else if (type->GetKind() == TypeKind::Pointer)
 			//{
@@ -225,44 +205,39 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 			   // assert(tac->y.IsInterger());
 			   // int offset = tac->y.GetValue();
 			   // // (1) 取指针的地址 &x
-			   // expr = allocator.New<CNode>(CNodeKind::EXPR_ADDR, x);
+			   // expr = nodeFactory.Expr(CNodeKind::EXPR_ADDR, x);
 			   // // (2) 强制类型转换为 (char*)&x
-			   // expr = allocator.New<CNode>(TypeManager::pValue, expr);
+			   // expr = nodeFactory.Expr(TypeManager::pValue, expr);
 			   // // (3) 可选的偏移字节 (char*)&x + offset
 			   // if (offset > 0)
 			   // {
-				  //  CNode* offsetNode = allocator.New<CNode>(offset);
-				  //  expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, expr, offsetNode);
+				  //  CNode* offsetNode = nodeFactory.Expr(offset);
+				  //  expr = nodeFactory.Expr(CNodeKind::EXPR_ADD, expr, offsetNode);
 			   // }
 			   // // 解引用
-			   // expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, expr);
+			   // expr = nodeFactory.Expr(CNodeKind::EXPR_DEREF, expr);
 			//}
 			else
 			{
-				expr = allocator.New<CNode>(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
+				expr = nodeFactory.Expr(CNodeKind::EXPR_INDEX, x, GetExpression(tac->y));
 			}
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, expr, GetExpression(tac->z));
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = nodeFactory.AssignStat(expr, GetExpression(tac->z));
 			break;
 		}
 		case TACOperator::ADDR:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = UnaryExpression(CNodeKind::EXPR_ADDR, tac);
 			break;
 		case TACOperator::DEREF:
-			expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, GetExpression(tac->x));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			current = UnaryExpression(CNodeKind::EXPR_DEREF, tac);
 			break;
 		case TACOperator::CAST:
 		{
 			auto result = GetExpression(tac->z);
 			assert(result->kind == CNodeKind::EXPR_VARIABLE);
 			auto type = result->variable->type;  // 要转换到的类型
-			expr = allocator.New<CNode>(type, GetExpression(tac->x));
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, result, expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Cast(type, GetExpression(tac->x));
+			expr = nodeFactory.Expr(CNodeKind::EXPR_ASSIGN, result, expr);
+			current = nodeFactory.ExprStat(expr);
 			break;
 		}
 		case	TACOperator::ARG:
@@ -317,18 +292,18 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 			ConditionalJump(CNodeKind::EXPR_LESS_EQUAL, tac, jumpAddr);
 			continue;
 		case TACOperator::IFTRUE:
-			condition = allocator.New<CNode>(CNodeKind::EXPR_NOT_EQUAL,
+			condition = nodeFactory.Expr(CNodeKind::EXPR_NOT_EQUAL,
 				GetExpression(tac->x), GetExpression(TACOperand(0)));
 			jumpAddr = tac->z.GetValue();
 			continue;
 		case TACOperator::IFFALSE:
-			condition = allocator.New<CNode>(CNodeKind::EXPR_EQUAL, GetExpression(tac->x), GetExpression(TACOperand(0)));
+			condition = nodeFactory.Expr(CNodeKind::EXPR_EQUAL, GetExpression(tac->x), GetExpression(TACOperand(0)));
 			jumpAddr = tac->z.GetValue();
 			continue;
 		case TACOperator::GOTO:
 		{
 			// 新：当作条件总是真的跳转语句来翻译
-			condition = allocator.New<CNode>(1);
+			condition = nodeFactory.Integer(1);
 			jumpAddr = tac->z.GetValue();
 			continue;
 
@@ -340,63 +315,62 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 			// //expr = allocator.New<CInteger>(1);
 			// //current = allocator.New<CWhileStatement>(expr, noneStatement);
 			// current = noneStatement;
-			// condition = allocator.New<CNode>(1);
+			// condition = nodeFactory.Expr(1);
 			// break;
 			//}
 			//auto label = GetLabelName(tac->z.GetValue());
-			//current = allocator.New<CNode>(CNodeKind::STAT_GOTO, label);
+			//current = nodeFactory.Expr(CNodeKind::STAT_GOTO, label);
 			break;
 		}
 		case TACOperator::BIT:
 		{
 			// 先这样翻译凑合一下，翻译成表达式语句
-			expr = allocator.New<CNode>(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Expr(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
+			current = nodeFactory.ExprStat(expr);
 			break;
 		}
 		case TACOperator::RETURN:
 		{
 			if (tac->x.IsZero())  // 目前只能返回 AXY 对象，所以可以这么判断有没有返回值
 			{
-				current = allocator.New<CNode>(CNodeKind::STAT_RETURN);
+				current = nodeFactory.Expr(CNodeKind::STAT_RETURN);
 				break;
 			}
 			// 有返回值的情况
-			current = allocator.New<CNode>(CNodeKind::STAT_RETURN, GetExpression(tac->x));
+			current = nodeFactory.Expr(CNodeKind::STAT_RETURN, GetExpression(tac->x));
 			break;
 		}
 		case TACOperator::ROR:
 		{
 			// C语言中没有ROR运算符，翻译为函数调用好了
 			// void Ror(int*, int)
-			CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
+			CNode* params = nodeFactory.Expr(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
 			params->SetNext(GetExpression(tac->y));
-			current = allocator.New<CNode>(GetCDB().AddString(_T("Ror")), params);
+			current = nodeFactory.Call(GetCDB().AddString(_T("Ror")), params);
 			break;
 		}
 		case TACOperator::ROL:
 		{
 			// C语言中没有ROL运算符，翻译为函数调用好了
 			// void Rol(int*, int)
-			CNode* params = allocator.New<CNode>(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
+			CNode* params = nodeFactory.Expr(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
 			params->SetNext(GetExpression(tac->y));
-			current = allocator.New<CNode>(GetCDB().AddString(_T("Rol")), params);
+			current = nodeFactory.Call(GetCDB().AddString(_T("Rol")), params);
 			break;
 		}
 		case TACOperator::PUSH:
 		{
 			// 还不知道怎么翻译push，先翻译为函数调用吧
 			CNode* params = GetExpression(tac->x);
-			expr = allocator.New<CNode>(GetCDB().AddString(_T("Push")), params);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Call(GetCDB().AddString(_T("Push")), params);
+			current = nodeFactory.Expr(CNodeKind::STAT_EXPR, expr);
 			break;
 		}
 		case TACOperator::POP:
 		{
 			// 还不知道怎么翻译pop，先翻译为函数调用吧
-			expr = allocator.New<CNode>(GetCDB().AddString(_T("Pop")), (CNode*)nullptr);
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Call(GetCDB().AddString(_T("Pop")), (CNode*)nullptr);
+			current = nodeFactory.AssignStat(GetExpression(tac->z), expr);
 			break;
 		}
 		case TACOperator::BOOL_FLAGV:
@@ -404,38 +378,37 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 			// 翻译为函数调用
 			CNode* params = GetExpression(tac->x);
 			params->SetNext(GetExpression(tac->y));
-			expr = allocator.New<CNode>(GetCDB().AddString(_T("IsOverflow")), (CNode*)nullptr);
-			expr = allocator.New<CNode>(CNodeKind::EXPR_ASSIGN, GetExpression(tac->z), expr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Call(GetCDB().AddString(_T("IsOverflow")), (CNode*)nullptr);
+			current = nodeFactory.AssignStat(GetExpression(tac->z), expr);
 			break;
 		}
 
 		case TACOperator::CLI:
 		{
 			// 翻译为函数调用
-			expr = allocator.New<CNode>(GetCDB().AddString(_T("Cli")), (CNode*)nullptr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Call(GetCDB().AddString(_T("Cli")), (CNode*)nullptr);
+			current = nodeFactory.ExprStat(expr);
 			break;
 		}
 		case TACOperator::SEI:
 		{
 			// 翻译为函数调用
-			expr = allocator.New<CNode>(GetCDB().AddString(_T("Sei")), (CNode*)nullptr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Call(GetCDB().AddString(_T("Sei")), (CNode*)nullptr);
+			current = nodeFactory.ExprStat(expr);
 			break;
 		}
 		case TACOperator::CLD:
 		{
 			// 翻译为函数调用
-			expr = allocator.New<CNode>(GetCDB().AddString(_T("Cld")), (CNode*)nullptr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Call(GetCDB().AddString(_T("Cld")), (CNode*)nullptr);
+			current = nodeFactory.ExprStat(expr);
 			break;
 		}
 		case TACOperator::SED:
 		{
 			// 翻译为函数调用
-			expr = allocator.New<CNode>(GetCDB().AddString(_T("Sed")), (CNode*)nullptr);
-			current = allocator.New<CNode>(CNodeKind::STAT_EXPR, expr);
+			expr = nodeFactory.Call(GetCDB().AddString(_T("Sed")), (CNode*)nullptr);
+			current = nodeFactory.ExprStat(expr);
 			break;
 		}
 		//case TACOperator::CLC:

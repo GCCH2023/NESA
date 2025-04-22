@@ -94,7 +94,7 @@ CNode* CGraphTranslator::TranslateRegion(CNode*& condition, TACBasicBlock* tacBl
 
 CNode* CGraphTranslator::CombineListIf(CNode* statement, CNode* condition, CNode* body, CNode* elseBody /*= nullptr*/)
 {
-	auto ifStat = allocator.New<CNode>(CNodeKind::STAT_IF, condition, body, elseBody);
+	auto ifStat = nodeFactory.If(condition, body, elseBody);
 	if (!statement)
 		return ifStat;
 	return NewStatementPair(statement, ifStat);
@@ -134,9 +134,9 @@ CNode* CGraphTranslator::NewDoWhile(CNode* condition, CNode* body)
 {
 	// do ; while (condition) => while (condition) ;
 	// 没有循环体或者条件总是为真，则转换为 while 循环
-	if (body->kind == CNodeKind::STAT_NONE || condition->kind == CNodeKind::EXPR_INTEGER)
-		return allocator.New<CNode>(CNodeKind::STAT_WHILE, condition, body);
-	return allocator.New<CNode>(CNodeKind::STAT_DO_WHILE, condition, body);
+	if (body->kind == CNodeKind::STAT_EMPTY || condition->kind == CNodeKind::EXPR_INTEGER)
+		return nodeFactory.While(condition, body);
+	return nodeFactory.DoWhile(condition, body);
 }
 
 
@@ -226,7 +226,7 @@ void CGraphTranslator::OnReducePoint2Loop(Node f, Node s)
 	{
 		first.statement = TranslateRegion(condition, blocks[first.index], jumpAddr);
 		// 跳转边翻译为 goto 语句
-		auto gotoStat = allocator.New<CNode>(CNodeKind::STAT_GOTO, GetLabelName(jumpAddr));
+		auto gotoStat = nodeFactory.Goto(GetLabelName(jumpAddr));
 		first.statement = CombineListIf(first.statement, condition, gotoStat);
 	}
 	else
@@ -357,7 +357,7 @@ void CGraphTranslator::OnReduceIfOr(Node _if, Node then, Node _else)
 	}
 	// 用 || 连接 a 和 b 的条件，b的条件要取反，因为b条件满足时跳转到d
 	condition2 = GetNotExpression(condition2);
-	condition1 = allocator.New<CNode>(CNodeKind::EXPR_OR, condition1, condition2);
+	condition1 = nodeFactory.Expr(CNodeKind::EXPR_OR, condition1, condition2);
 	if (c.type == CTNTYPE_LEAF)
 	{
 		c.statement = TranslateRegion(condition2, blocks[c.index], jumpAddr);
