@@ -61,6 +61,7 @@ enum class CNodeKind
 	EXPR_DOT,  // 取记录对象的字段 x.y
 	
 	EXPR_CALL,  // 函数调用
+	EXPR_LIST,  // 表达式列表
 
 	COUNT,  // 节点类别数量，不是有有效节点类别，必须是最后一个枚举值
 };
@@ -167,6 +168,8 @@ constexpr uint32_t GetCategory(CNodeKind kind)
 
 	case CNodeKind::EXPR_CALL:
 		return CNODE_CAT_EXPR_OTHER;
+	case CNodeKind::EXPR_LIST:
+		return CNODE_CAT_EXPR_OTHER;
 
 	default:
 		return CNODE_CAT_INVALID;
@@ -259,7 +262,7 @@ struct CNode
 		struct
 		{
 			String* name;  // 函数名称
-			CNode* params;  // 参数链表
+			CNode* args;  // 参数列表
 		}call;
 		struct
 		{
@@ -276,6 +279,7 @@ struct CNode
 	};
 
 private:
+	friend class CListNode;
 	// 构成双向链表
 	CNode* prev = nullptr;
 	CNode* next = nullptr;
@@ -304,7 +308,7 @@ public:
 	// 设置为整数
 	CNode& Integer(int value);
 	// 设置为函数调用
-	CNode& Call(String* function, CNode* params = nullptr);
+	CNode& Call(String* function, CNode* args = nullptr);
 	// 设置为类型转换表达式
 	CNode& Cast(const Type* type, CNode* expr);
 	// 设置为字段
@@ -314,40 +318,79 @@ public:
 	// 设置为变量表达式
 	CNode& Var(const Variable* variable);
 	// 设置为 复合语句
-	CNode& ListStat(CNode* head, CNode* tail);
+	CNode& ListStat();
 	// 设置为赋值表达式
 	CNode& Assign(CNode* target, CNode* source);
 	// 设置为 空 语句
 	CNode& EmptyStat();
+	// 设置为表达式列表
+	CNode& ExprList();
+
 	// 设置为无效节点
 	CNode& Reset();
+	// 设置为指定节点的数据，不包括链表关系
+	CNode& CopyData(const CNode& other);
 
 	// 是否语句
 	bool IsStatement() const { return MatchCategory(GetCategory(kind), CNODE_CAT_STAT); }
+	// 是否空语句
+	bool IsEmptyStatement() const { return kind == CNodeKind::STAT_EMPTY; }
+	// 是否复合语句
+	bool IsCompoundStatement() const { return kind == CNodeKind::STAT_LIST; }
 	// 是否表达式
 	bool IsExpression() const { return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR); }
 
-
-	// 将指定节点设置为后继节点，并将它的前驱设置为此节点
-	void SetNext(CNode* node)
-	{
-		next = node;
-		if (node)
-			node->prev = this;
-	/*	if (!node)
-			return;
-		node->next = next;
-		node->prev = this;
-		if (next)
-			next->prev = node;
-		next = node;*/
-	}
-	inline CNode* GetPrev() { return prev; }
-	inline CNode* GetNext() { return next; }
-	// 移除语句列表中的指定语句
-	void RemoveStatement(CNode* statement);
+	CNode* GetPrev() { return prev; }
+	CNode* GetNext() { return next; }
 };
 
 // 获取运算符的优先级
 // 返回值越小，优先级越大
 int GetOperatorPriority(CNodeKind op);
+
+
+// 专门用于操作列表节点的类
+class CListNode
+{
+public:
+	// 迭代器类
+	class Iterator {
+	private:
+		CNode* current;
+	public:
+		Iterator(CNode* node) : current(node) {}
+		CNode* operator*() const { return current; }
+		CNode* operator->() const { return current; }
+		Iterator& operator++() { if (current) current = current->next; return *this; }
+		Iterator operator++(int) { Iterator temp = *this; 	++(*this); return temp; }
+		Iterator& operator--() { if (current) current = current->prev;			return *this; }
+		Iterator operator--(int) { Iterator temp = *this;			--(*this);			return temp; }
+		bool operator==(const Iterator& other) const { return current == other.current; }
+		bool operator!=(const Iterator& other) const { return current != other.current; }
+	};
+
+	CListNode(CNode& node_);
+	CListNode(CNode* node_);
+	// 添加一个节点到末尾
+	CListNode& Add(CNode* node);
+	// 添加一个节点到开头
+	CListNode& PushFront(CNode* node);
+	// 添加一个链表到开头
+	CListNode& PushFront(CNode* head, CNode* tail);
+	// 移除指定节点，返回下一个节点的迭代器
+	Iterator Remove(CNode* node);
+	// 获取列表中节点的数量
+	size_t Count() const;
+	// 将指定列表的全部元素加入到这个列表中
+	void Add(const CListNode& other);
+	// 将指定列表的全部元素加入到这个列表的前面
+	void JoinFront(const CListNode& other);
+	// 将指定列表插入到指定位置后
+	CListNode& Insert(Iterator pos, const CListNode& other);
+	// 是否不包含元素
+	bool Empty() const { return list->list.head == nullptr; }
+	Iterator begin() { return Iterator(list->list.head); }
+	Iterator end() { return Iterator(nullptr); }
+private:
+	CNode* list;
+};

@@ -247,11 +247,11 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 								 Indent(os, indent);
 								 os << obj->call.name << _T("(");
-								 if (obj->call.params == nullptr)
+								 if (obj->call.args == nullptr)
 									 return os << _T(")");
-								 for (CNode* param = obj->call.params; param; param = param->GetNext())
+								 for (CNode* param : CListNode(obj->call.args))
 								 {
-									 if (param != obj->call.params)
+									 if (param != obj->call.args->list.tail)
 										 os << _T(", ");
 									 os << param;
 								 }

@@ -45,7 +45,7 @@ public:
 	// 添加地址语句映射
 	void AddAddressMapStatement(uint32_t address, CNode* statement);
 	// 创建一条列表语句
-	CNode* NewStatementList(CNode* head, CNode* tail);
+	CNode* NewStatementList(CListNode& list);
 	// 获取寄存器的名称
 	String* GetRegisterName(int index) { return registers[index]; }
 	// 删除函数中没有用到的变量

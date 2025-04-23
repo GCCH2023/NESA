@@ -28,7 +28,7 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 		break;
 	case CNodeKind::STAT_LIST:
 		PushAncestor(node);
-		for (child = node->list.head; child; child = child->GetNext())
+		for (auto child : CListNode(*node))
 		{
 			TraverseNode(child, visitor);
 			PushSenior(child);
@@ -42,7 +42,7 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 		break;
 	case CNodeKind::EXPR_CALL:
 		PushAncestor(node);
-		for (CNode* param = node->call.params; param; param = param->GetNext())
+		for (auto param : CListNode(*node->call.args))
 		{
 			TraverseNode(param, visitor);
 			PushSenior(param);

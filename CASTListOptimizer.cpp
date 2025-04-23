@@ -8,37 +8,44 @@ void CASTListOptimizer::Reset()
 	visited.clear();
 }
 
+#include "Dump.h"
+
+// 后序抽象语法树，有多条子语句则顺序遍历它们
 void CASTListOptimizer::OnVisit(CNode* node)
 {
+	if (!node) return;
+
+	// 首先处理子节点
 	VisitChildren(node);
 
-	if (visited.find(node) != visited.end())
+	if (!node->IsCompoundStatement())
 		return;
-	visited.insert(node);
 
-	TryOptimizeStatementList(node);
-
-	if (node->GetNext())  // 语句的下一个节点必定是语句
+	// 遍历列表语句的所有子节点
+	CListNode list(node);
+	for (auto it = list.begin(); it != list.end();)
 	{
-		CNode* next = node->GetNext();  // 合并语句时，可能修改 node->GetNext()，需要先保存
-		int ret = TryCombineStatementList(node, next);
-		// 需要指出的是，合并两个节点后：
-		// 返回 1，2的情况，第2个节点不会被访问
-		// 返回 3 的情况，第1个节点被访问两次
-		switch (ret)
+		if (it->IsEmptyStatement())
+			it = list.Remove(*it);  // 删除空语句
+		else if (it->IsCompoundStatement())
 		{
-		case 1:  // 列表 + 列表
-			OnVisit(next);
-			node->SetNext(next->GetNext());
-			break;
-		case 2:  // 列表 + 非列表
-			OnVisit(next);
-			node->SetNext(next->GetNext());
-			break;
-		case 3:  // 非列表 + 列表
-			// 当前节点被加入到后面的列表节点中了
-			break;
+			auto pos = it++;
+			CListNode childList(*pos);
+			list.Insert(pos, childList);  // { } 的子节点上移一层
+			list.Remove(*pos);  // 删除 {}
 		}
+		else
+			++it;
+	}
+
+	switch (list.Count())
+	{
+	case 0:  // 没有元素则修改为空语句节点
+		node->EmptyStat();
+		return;
+	case 1:  // 只有一条子语句，去除列表
+		*node = **list.begin();
+		return;
 	}
 }
 
@@ -50,27 +57,27 @@ void CASTListOptimizer::OnVisit(CNode* node)
 // 非列表作为列表的子语句添加到开头
 int CASTListOptimizer::TryCombineStatementList(CNode* first, CNode* second)
 {
-	if (first->kind == CNodeKind::STAT_LIST)
-	{
-		if (second->kind == CNodeKind::STAT_LIST)
-		{
-			// 合并到末尾
-			first->list.tail->SetNext(second->list.head);
-			first->list.tail = second->list.tail;
-			return 1;
-		}
-		// 添加到末尾
-		first->list.tail->SetNext(second);
-		first->list.tail = second;
-		return 2;
-	}
-	else if (second->kind == CNodeKind::STAT_LIST)
-	{
-		// 添加到开头
-		first->SetNext(second->list.head);
-		second->list.head = first;
-		return 3;
-	}
+	//if (first->kind == CNodeKind::STAT_LIST)
+	//{
+	//	if (second->kind == CNodeKind::STAT_LIST)
+	//	{
+	//		// 合并到末尾
+	//		CListNode sec(second);
+	//		CListNode(first).Join(sec);
+	//		return 1;
+	//	}
+	//	// 添加到末尾
+	//	second->RemoveFromList();
+	//	CListNode(first).Add(second);
+	//	return 2;
+	//}
+	//else if (second->kind == CNodeKind::STAT_LIST)
+	//{
+	//	// 添加到开头
+	//	second->RemoveFromList();
+	//	CListNode(first).PushFront(second);
+	//	return 3;
+	//}
 	return 0;
 }
 
@@ -80,31 +87,29 @@ void CASTListOptimizer::TryOptimizeStatementList(CNode* node)
 	if (node->kind != CNodeKind::STAT_LIST)
 		return;
 
-	// 1. 保证头节点不是空语句节点
+	CListNode list(node);
+	// 1. 删除 空语句 节点
+	for (auto it = list.begin(); it != list.end();)
+	{
+		if (it->IsEmptyStatement())
+			it = list.Remove(*it);
+		else
+			++it;
+	}
 	while (node->list.head && node->list.head->kind == CNodeKind::STAT_EMPTY)
 		node->list.head = node->list.head->GetNext();
 
 	// 2. 如果没有子节点，那么就将这个列表节点修改为空语句节点
-	if (!node->list.head)
+	if (list.Empty())
 	{
 		node->Reset();
 		return;
 	}
 
 	// 3. 只有一个子节点，那么用子节点代替它
-	if (node->list.head->GetNext() == nullptr)
+	if (list.Count() == 1)
 	{
-		auto next = node->GetNext();
-		*node = *node->list.head;
-		node->SetNext(next);  // 保持原来的下一个节点不变
+		node->CopyData(**list.begin());
 		return;
-	}
-
-	// 多个节点的情况，遍历子节点，删除空语句节点
-	for (CNode* n = node->list.head; n; n = n->GetNext())
-	{
-		// 头节点已经保证不是空语句节点了，所以可以不管当前节点
-		while (n->GetNext() && n->GetNext()->kind == CNodeKind::STAT_EMPTY)
-			n->SetNext(n->GetNext()->GetNext());
 	}
 }

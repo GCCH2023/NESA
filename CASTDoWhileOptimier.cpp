@@ -24,16 +24,20 @@ bool UsedVariable(CNode* node, CNode* variable)
 		case CNodeKind::STAT_GOTO:
 			return true;  // 不知道有没有使用，当作使用处理
 		case CNodeKind::STAT_LIST:
-			for (CNode* child = node->list.head; child; child = child->GetNext())
-				if ((child, variable))
+			for (auto child : CListNode(*node))
+			{
+				if (child == variable)
 					return true;
+			}
 			return false;
 		case CNodeKind::STAT_EXPR:
 			return UsedVariable(node->e.x, variable);
 		case CNodeKind::EXPR_CALL:
-			for (CNode* param = node->call.params; param; param = param->GetNext())
+			for (auto param : CListNode(*node->call.args))
+			{
 				if (UsedVariable(param, variable))
 					return true;
+			}
 			break;
 		case CNodeKind::STAT_WHILE:
 		case CNodeKind::STAT_DO_WHILE:
@@ -166,9 +170,9 @@ void CASTDoWhileOptimier::PreVisit(CNode* node, int depth)
 	// 可以转换为 for 语句
 	// (1) 移除初始化语句
 	auto parent = GetTraverser()->GetAncestors().back().node;
-	parent->RemoveStatement(init);
+	CListNode(*parent).Remove(init);
 	// (2) 移除迭代语句
-	body->RemoveStatement(iter);
+	CListNode(*body).Remove(iter);
 	// 修改 do while 为 for
 	CNode* condition = node->s.condition;
 	node->kind = CNodeKind::STAT_FOR;

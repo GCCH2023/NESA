@@ -79,8 +79,10 @@ CNode* CBasicBlockTranslator::BinaryExpression(CNodeKind kind, const TAC* tac)
 // 临时变量必定是两条三地址码连着，所以直接合并成一个表达式
 CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 {
-	CNode* current = nullptr, * head = nullptr, * tail = nullptr;
+	CNode* current = nullptr;
 	CNode* expr = nullptr;
+	CNode node(CNodeKind::STAT_LIST);
+	CListNode list(node);
 	auto& nodeFactory = translator->GetNodeFactory();
 	auto& codes = block->GetCodes();
 	for (size_t i = 0; i < codes.size(); ++i)
@@ -244,25 +246,18 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 		{
 			// 若干个 ARG 后面跟着一个 CALL
 			// 遇到 ARG，则要连着后面的直到 CALL 的三地址码一起翻译
-			CNode* params = nullptr;
-			CNode* paramsTail = nullptr;
+			CNode* argsNode = translator->GetNodeFactory().ExprList();
+			CListNode args(argsNode);
+
 			while (codes[i]->op == TACOperator::ARG)
 			{
-				if (!paramsTail)
-				{
-					paramsTail = params = GetExpression(codes[i]->x);
-				}
-				else
-				{
-					paramsTail->SetNext(GetExpression(codes[i]->x));
-					paramsTail = paramsTail->GetNext();
-				}
+				args.Add(GetExpression(codes[i]->x));
 				++i;
 			}
 			if (codes[i]->op != TACOperator::CALL)
 				throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
 			// 最后是 CALL 指令
-			current = TranslateCall(codes[i], params);
+			current = TranslateCall(codes[i], argsNode);
 			break;
 		}
 		case	TACOperator::CALL:
@@ -344,18 +339,24 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 		{
 			// C语言中没有ROR运算符，翻译为函数调用好了
 			// void Ror(int*, int)
+			CNode* listNode = nodeFactory.ExprList();
+			CListNode list(listNode);
 			CNode* params = nodeFactory.Expr(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
-			params->SetNext(GetExpression(tac->y));
-			current = nodeFactory.Call(GetCDB().AddString(_T("Ror")), params);
+			list.Add(params);
+			list.Add(GetExpression(tac->y));
+			current = nodeFactory.Call(GetCDB().AddString(_T("Ror")), listNode);
 			break;
 		}
 		case TACOperator::ROL:
 		{
 			// C语言中没有ROL运算符，翻译为函数调用好了
 			// void Rol(int*, int)
+			CNode* listNode = nodeFactory.ExprList();
+			CListNode list(listNode);
 			CNode* params = nodeFactory.Expr(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
-			params->SetNext(GetExpression(tac->y));
-			current = nodeFactory.Call(GetCDB().AddString(_T("Rol")), params);
+			list.Add(params);
+			list.Add(GetExpression(tac->y));
+			current = nodeFactory.Call(GetCDB().AddString(_T("Rol")), listNode);
 			break;
 		}
 		case TACOperator::PUSH:
@@ -376,8 +377,10 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 		case TACOperator::BOOL_FLAGV:
 		{
 			// 翻译为函数调用
-			CNode* params = GetExpression(tac->x);
-			params->SetNext(GetExpression(tac->y));
+			CNode* listNode = nodeFactory.ExprList();
+			CListNode list(listNode);
+			list.Add(GetExpression(tac->x));
+			list.Add(GetExpression(tac->y));
 			expr = nodeFactory.Call(GetCDB().AddString(_T("IsOverflow")), (CNode*)nullptr);
 			current = nodeFactory.AssignStat(GetExpression(tac->z), expr);
 			break;
@@ -422,19 +425,10 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 			throw Exception(buffer);
 		}
 		}
-		// 构建语句列表
-		if (!head)
-		{
-			head = tail = current;
-		}
-		else
-		{
-			tail->SetNext(current);
-			tail = current;
-		}
+		list.Add(current);
 	}
 	Nes::Address firstAddr = codes.empty() ? block->GetStartAddress() : codes[0]->address;
-	auto ret = translator->NewStatementList(head, tail);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
+	auto ret = translator->NewStatementList(list);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
 	translator->AddAddressMapStatement(firstAddr, ret);  // 记录下这个基本块对应的地址及语句
 	return ret;
 }

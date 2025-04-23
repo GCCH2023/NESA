@@ -34,7 +34,7 @@ std::size_t CNodeHash::operator()(const CNode* node) const
 		break;
 	case CNodeKind::EXPR_CALL:
 		hash ^= (size_t)node->call.name;
-		for (auto n = node->call.params; n; n = n->GetNext())
+		for (auto n : CListNode(node->call.args))
 			hash ^= (size_t)n;
 		break;
 	case CNodeKind::STAT_RETURN:
@@ -120,8 +120,8 @@ bool CNodeEqual::operator()(const CNode* node1, const CNode* node2) const
 		if (node1->call.name != node2->call.name)
 			return false;
 		{
-			auto p = node1->call.params;
-			auto q = node2->call.params;
+			auto p = node1->call.args->list.head;
+			auto q = node2->call.args->list.head;
 			while (p++ == q++)
 				;
 			return p == q;
@@ -445,25 +445,18 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 		{
 			// 若干个 ARG 后面跟着一个 CALL
 			// 遇到 ARG，则要连着后面的直到 CALL 的三地址码一起翻译
-			CNode* params = nullptr;
-			CNode* paramsTail = nullptr;
+			CNode* argsNode = translator->GetNodeFactory().ExprList();
+			CListNode args(argsNode);
+
 			while (codes[i]->op == TACOperator::ARG)
 			{
-				if (!paramsTail)
-				{
-					paramsTail = params = GetExpression(codes[i]->x);
-				}
-				else
-				{
-					paramsTail->SetNext(GetExpression(codes[i]->x));
-					paramsTail = paramsTail->GetNext();
-				}
+				args.Add(GetExpression(codes[i]->x));
 				++i;
 			}
 			if (codes[i]->op != TACOperator::CALL)
 				throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
 			// 最后是 CALL 指令
-			current = TranslateCall(codes[i], params);
+			current = TranslateCall(codes[i], argsNode);
 			break;
 		}
 		case	TACOperator::CALL:
@@ -558,7 +551,9 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 CNode* CBasicBlockDAGTranslator::GenerateCodes()
 {
 	// 遍历变量，生成它们的赋值语句
-	CNode* head = nullptr, * tail = nullptr, *current = nullptr;
+	CNode listNode(CNodeKind::STAT_LIST);
+	CListNode list(listNode);
+	CNode* current;
 	for (auto expr : reserved)
 	{
 		if (expr.index() == 0)  // TACOperand
@@ -576,18 +571,9 @@ CNode* CBasicBlockDAGTranslator::GenerateCodes()
 		}
 		current = translator->GetNodeFactory().ExprStat(current);
 		// 构建语句列表
-		if (!head)
-		{
-			head = tail = current;
-		}
-		else
-		{
-			tail->SetNext(current);
-			tail = current;
-			current = nullptr;
-		}
+		list.Add(current);
 	}
-	return translator->NewStatementList(head, tail);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
+	return translator->NewStatementList(list);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
 }
 
 CNode* CBasicBlockDAGTranslator::GenerateExpression(CNode* node)
@@ -642,7 +628,7 @@ CNode* CBasicBlockDAGTranslator::GenerateExpression(CNode* node)
 	}
 	}
 }
-#include "Dump.h"
+
 // 临时变量必定是两条三地址码连着，所以直接合并成一个表达式
 CNode* CBasicBlockDAGTranslator::Translate(TACBasicBlock* block)
 {

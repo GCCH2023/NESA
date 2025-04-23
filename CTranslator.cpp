@@ -318,13 +318,15 @@ void CTranslator::AddAddressMapStatement(uint32_t address, CNode* statement)
 }
 
 
-CNode* CTranslator::NewStatementList(CNode* head, CNode* tail)
+CNode* CTranslator::NewStatementList(CListNode& list)
 {
-	if (!head)
+	if (list.Empty())
 		return nodeFactory.EmptyStat();
-	if (head == tail)
-		return head;
-	return nodeFactory.ListStat(head, tail);
+	if (list.Count() == 1)
+		return *list.begin();
+	auto node = nodeFactory.ListStat();
+	CListNode(node).Add(list);
+	return node;
 }
 
 class LocvalVariablesRemover : public CASTVisitor

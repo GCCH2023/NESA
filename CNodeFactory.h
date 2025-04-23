@@ -33,7 +33,7 @@ public:
 	// 创建变量表达式
 	CNode* Var(const Variable* variable);
 	// 创建 复合语句
-	CNode* ListStat(CNode* head, CNode* tail);
+	CNode* ListStat();
 	// 创建赋值表达式
 	CNode* Assign(CNode* target, CNode* source);
 	// 创建赋值语句
@@ -42,6 +42,8 @@ public:
 	CNode* EmptyStat();
 	// 创建 return 语句
 	CNode* Return(CNode* value);
+	// 创建表达式列表
+	CNode* ExprList();
 
 	// 创建单目赋值表达式 z = op x
 	CNode* UnaryAssignExpr(CNodeKind op, CNode* z, CNode* x);

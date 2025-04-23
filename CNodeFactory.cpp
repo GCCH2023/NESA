@@ -99,10 +99,10 @@ CNode* CNodeFactory::Var(const Variable* variable)
 	return node;
 }
 
-CNode* CNodeFactory::ListStat(CNode* head, CNode* tail)
+CNode* CNodeFactory::ListStat()
 {
 	CNode* node = allocator.Alloc<CNode>();
-	node->ListStat(head, tail);
+	node->ListStat();
 	return node;
 }
 
@@ -133,6 +133,13 @@ CNode* CNodeFactory::Return(CNode* value)
 {
 	CNode* node = allocator.Alloc<CNode>();
 	node->Return(value);
+	return node;
+}
+
+CNode* CNodeFactory::ExprList()
+{
+	CNode* node = allocator.Alloc<CNode>();
+	node->ExprList();
 	return node;
 }
 

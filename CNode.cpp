@@ -1,31 +1,16 @@
 #include "stdafx.h"
 #include "CNode.h"
 
-CNode::CNode()
+CNode::CNode():
+kind(CNodeKind::NONE),
+_for({0})
 {
 }
 
 CNode::CNode(CNodeKind kind_):
-kind(kind_)
+kind(kind_),
+_for({0})
 {
-}
-
-void CNode::RemoveStatement(CNode* statement)
-{
-	assert(kind == CNodeKind::STAT_LIST && statement);
-
-	auto prev = statement->GetPrev();
-	if (prev)
-		prev->next = statement->next;
-	statement->prev = nullptr;
-	auto next = statement->next;
-	if (next)
-		next->prev = prev;
-	statement->next = nullptr;
-	if (list.head == statement)
-		list.head = next;
-	if (list.tail == statement)
-		list.tail = prev;
 }
 
 const TCHAR* ToString(CNodeKind kind)
@@ -74,6 +59,7 @@ const TCHAR* ToString(CNodeKind kind)
 	case CNodeKind::EXPR_AND: return _T("&&");
 	case CNodeKind::EXPR_OR: return _T("||");
 	case CNodeKind::EXPR_NOT: return _T("!");
+	case CNodeKind::EXPR_LIST: return _T("EXPR_LIST");
 	default:
 		throw Exception(_T("Î´ÊµÏÖµÄ CNodeKind ToString"));
 	}
@@ -255,14 +241,15 @@ CNode& CNode::Integer(int value)
 	return *this;
 }
 
-CNode& CNode::Call(String* function, CNode* params)
+CNode& CNode::Call(String* function, CNode* args)
 {
 	assert(function);
-	assert(params && params->IsExpression());
+	if (args)
+		assert(args->kind == CNodeKind::EXPR_LIST);
 
 	this->kind = CNodeKind::EXPR_CALL;
 	this->call.name = function;
-	this->call.params = params;
+	this->call.args = args;
 	return *this;
 }
 
@@ -306,14 +293,9 @@ CNode& CNode::Var(const Variable* variable)
 	return *this;
 }
 
-CNode& CNode::ListStat(CNode* head, CNode* tail)
+CNode& CNode::ListStat()
 {
-	assert(head && head->IsStatement());
-	assert(tail && tail->IsStatement());
-
 	this->kind = CNodeKind::STAT_LIST;
-	this->list.head = head;
-	this->list.tail = tail;
 	return *this;
 }
 
@@ -334,8 +316,151 @@ CNode& CNode::EmptyStat()
 	return *this;
 }
 
+CNode& CNode::ExprList()
+{
+	this->kind = CNodeKind::EXPR_LIST;
+	return *this;
+}
+
 CNode& CNode::Reset()
 {
 	this->kind = CNodeKind::NONE;
 	return *this;
+}
+
+CNode& CNode::CopyData(const CNode& other)
+{
+	kind = other.kind;
+	_for = other._for;
+	return *this;
+}
+
+CListNode::CListNode(CNode& node) :
+	list(&node)
+{
+	assert(node.kind == CNodeKind::STAT_LIST || node.kind == CNodeKind::EXPR_LIST);
+}
+
+CListNode::CListNode(CNode* node) :
+	list(node)
+{
+	assert(node->kind == CNodeKind::STAT_LIST || node->kind == CNodeKind::EXPR_LIST);
+}
+
+CListNode& CListNode::Add(CNode* node)
+{
+	if (!node)
+		return *this;
+
+	//assert(!node->parent);
+
+	if (list->list.head == nullptr)
+	{
+		list->list.head = list->list.tail = node;
+	}
+	else
+	{
+		list->list.tail->next = node;
+		node->prev = list->list.tail;
+		list->list.tail = node;
+	}
+	return *this;
+}
+
+CListNode& CListNode::PushFront(CNode* node)
+{
+	if (!node)
+		return *this;
+
+	if (list->list.head == nullptr)
+	{
+		list->list.head = list->list.tail = node;
+	}
+	else
+	{
+		node->next = list->list.head;
+		list->list.head->prev = node;
+		list->list.head = node;
+	}
+	return *this;
+}
+
+CListNode& CListNode::PushFront(CNode* head, CNode* tail)
+{
+	tail->next = list->list.head;
+	list->list.head->prev = tail;
+	list->list.head = head;
+
+	return *this;
+}
+
+CListNode::Iterator CListNode::Remove(CNode* node)
+{
+	if (!node)
+		return Iterator(nullptr);
+
+	if (node->prev)
+		node->prev->next = node->next;
+	auto next = node->next;
+	if (next)
+		next->prev = node->prev;
+	if (list->list.tail == node)
+		list->list.tail = node->prev;
+	if (list->list.head == node)
+		list->list.head = next;
+	node->prev = node->next = nullptr;
+	return Iterator(next);
+}
+
+size_t CListNode::Count() const
+{
+	size_t count = 0;
+	for (auto n = list->list.head; n; n = n->GetNext())
+		++count;
+	return count;
+}
+
+void CListNode::Add(const CListNode& other)
+{
+	auto head = other.list->list.head;
+	auto tail = other.list->list.tail;
+
+	if (list->list.head == nullptr)
+	{
+		list->list.head = head;
+		list->list.tail = tail;
+		return;
+	}
+
+	list->list.tail->next = head;
+	head->prev = list->list.tail;
+}
+
+void CListNode::JoinFront(const CListNode& other)
+{
+	if (other.Count() == 0)
+		return;
+	
+	PushFront(other.list->list.head, other.list->list.tail);
+}
+
+CListNode& CListNode::Insert(Iterator pos, const CListNode& other)
+{
+	if (other.Empty())
+		return *this;
+
+	if (pos == end())
+	{
+		Add(other);
+		return *this;
+	}
+
+	auto p = *pos;
+	auto head = other.list->list.head;
+	auto tail = other.list->list.tail;
+
+	tail->next = p->next;
+	p->next->prev = tail;
+	p->next = head;
+	head->prev = p;
 }

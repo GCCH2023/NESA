@@ -169,8 +169,11 @@ CNode* CGraphTranslator::NewStatementPair(CNode* first, CNode* second)
 	//	second->list.head = first;
 	//	return second;
 	//}
-	first->SetNext(second);
-	return NewStatementList(first, second);
+	CNode parent(CNodeKind::STAT_LIST);
+	CListNode list(parent);
+	list.Add(first);
+	list.Add(second);
+	return NewStatementList(list);
 }
 
 
