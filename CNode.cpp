@@ -148,9 +148,9 @@ int GetOperatorPriority(CNodeKind op)
 
 CNode& CNode::For(CNode* init, CNode* condition, CNode* iter, CNode* body)
 {
-	assert(init && init->IsExpression());
-	assert(condition && condition->IsExpression());
-	assert(iter && iter->IsExpression());
+	assert(init == nullptr || init->IsExpression());
+	assert(condition == nullptr || condition->IsExpression());
+	assert(iter == nullptr || iter->IsExpression());
 	assert(body && body->IsStatement());
 
 	this->kind = CNodeKind::STAT_FOR;

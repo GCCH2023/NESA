@@ -174,12 +174,7 @@ void CASTDoWhileOptimier::PreVisit(CNode* node, int depth)
 	// (2) ÒÆ³ýµü´úÓï¾ä
 	CListNode(*body).Remove(iter);
 	// ÐÞ¸Ä do while Îª for
-	CNode* condition = node->s.condition;
-	node->kind = CNodeKind::STAT_FOR;
-	node->_for.init = init->e.x;
-	node->_for.condition = condition;
-	node->_for.iter = iter->e.x;
-	node->_for.body = body;
+	node->For(init->e.x, node->s.condition, iter->e.x, body);
 }
 
 bool CASTDoWhileOptimier::CheckCondition(const CNode* node)

@@ -162,31 +162,34 @@ bool CombineConditionalBranch(TAC* tac, TAC* boolExpr)
 	return true;
 }
 
-// 判断操作数的值是否发生改变
-bool TACPeephole::IsOperandChanged(TACOperand& operand, TAC* current)
+// 判断操作数的值，从使用位置到当前处理的位置是否发生改变
+bool TACPeephole::IsOperandChanged(TACOperand& operand, const TAC* use)
 {
-	// 如果有定值点，并且定值点地址大于等于使用点地址，说明改变了
-	auto tac = GetOperandDefinition(operand);
-	return tac && tac->address >= current->address;
+	if (!currentBlock->Contains(use->address))  // 如果使用位置在其他基本块，就当作是变了
+		return true;
+	// 新的定值点在使用位置后，说明操作数变了
+	// 判断定值点地址是否大于等于使用点地址
+	auto tac = varDefMap[operand];
+	return tac && tac->address >= use->address;
 }
 
 // 进行代数优化
-void TACPeephole::OptimizeExpression(TACOperand& operand, TACOperand& other, TAC* current, TAC* tac)
+void TACPeephole::OptimizeExpression(TACOperand& operand, TACOperand& other, TAC* current, TAC* def)
 {
 	// a = b op1 num1, c = a op2 num2 =>
 	// c = (b op1 num1) op2 num2 =>
 	// c = b op3 num3
 	// op3 由 op1 和 op2 决定
-	if (!IsVariable(tac->x) || IsOperandChanged(tac->x, current))
+	if (!IsVariable(def->x) || IsOperandChanged(def->x, current))
 		return;
 
-	if (CombineConditionalBranch(current, tac))
+	if (CombineConditionalBranch(current, def))
 		return;
 
-	if (!tac->y.IsInterger())
+	if (!def->y.IsInterger())
 		return;
 
-	switch (tac->op)
+	switch (def->op)
 	{
 	case TACOperator::SUB:  // a = b - num1
 		switch (current->op)
@@ -194,20 +197,20 @@ void TACPeephole::OptimizeExpression(TACOperand& operand, TACOperand& other, TAC
 			// d = a < num2 => d = b - num1 < num2 => b < num1 + num2
 		case TACOperator::BOOL_LESS:
 		case TACOperator::IFLESS:
-			operand = tac->x;
-			other = TACOperand(tac->y.GetValue() + other.GetValue());
+			operand = def->x;
+			other = TACOperand(def->y.GetValue() + other.GetValue());
 			break;
 			// d = a <= num2 => d = b - num1 <= num2 => b <= num1 + num2
 		case TACOperator::BOOL_LEQ:
 		case TACOperator::IFLEQ:
-			operand = tac->x;
-			other = TACOperand(tac->y.GetValue() + other.GetValue());
+			operand = def->x;
+			other = TACOperand(def->y.GetValue() + other.GetValue());
 			break;
 			// d = a == num2 => d = b - num1 == num2 => b == num1 + num2
 		case TACOperator::BOOL_EQ:
 		case TACOperator::IFEQ:
-			operand = tac->x;
-			other = TACOperand(tac->y.GetValue() + other.GetValue());
+			operand = def->x;
+			other = TACOperand(def->y.GetValue() + other.GetValue());
 			break;
 		}
 		break;
@@ -217,19 +220,19 @@ void TACPeephole::OptimizeExpression(TACOperand& operand, TACOperand& other, TAC
 			// d = a == num2 => d = (b == num1) == num2
 		case TACOperator::BOOL_LEQ:
 		case TACOperator::IFLEQ:
-			if (tac->y.GetValue() == other.GetValue())  // num1 == num2 => d = b == num1
-				operand = tac->x;
+			if (def->y.GetValue() == other.GetValue())  // num1 == num2 => d = b == num1
+				operand = def->x;
 			break;
 			// if a goto z => if b == num1 goto z
 		case TACOperator::IFTRUE:
-			current->x = tac->x;
-			current->y = tac->y;
+			current->x = def->x;
+			current->y = def->y;
 			current->op = TACOperator::IFEQ;
 			break;
 			// if !a goto z => if b != num1 goto z
 		case TACOperator::IFFALSE:
-			current->x = tac->x;
-			current->y = tac->y;
+			current->x = def->x;
+			current->y = def->y;
 			current->op = TACOperator::IFNEQ;
 			break;
 		}
@@ -239,13 +242,13 @@ void TACPeephole::OptimizeExpression(TACOperand& operand, TACOperand& other, TAC
 		{
 			// if a goto z => if b < num1 goto z
 		case TACOperator::IFTRUE:
-			current->x = tac->x;
-			current->y = tac->y;
+			current->x = def->x;
+			current->y = def->y;
 			current->op = TACOperator::IFEQ;
 			break;
 		case TACOperator::IFFALSE:
-			current->x = tac->x;
-			current->y = tac->y;
+			current->x = def->x;
+			current->y = def->y;
 			current->op = TACOperator::IFNEQ;
 			break;
 		}

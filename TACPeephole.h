@@ -24,8 +24,9 @@ protected:
 	// 要求操作数是寄存器或临时变量
 	// 如果操作数在其他基本块定值，则返回nullptr
 	virtual TAC* GetOperandDefinition(TACOperand& operand);
-	// 判断操作数的值是否发生改变
-	virtual bool IsOperandChanged(TACOperand& operand, TAC* current);
+	// 判断操作数的值，从使用位置到当前处理的位置是否发生改变
+	// use 是使用这个操作数的位置
+	virtual bool IsOperandChanged(TACOperand& operand, const TAC* use);
 	// 进行代数优化
 	void OptimizeExpression(TACOperand& operand, TACOperand& other, TAC* current, TAC* tac);
 	void TryReplaceOperand(TACOperand& operand);
