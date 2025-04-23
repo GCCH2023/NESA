@@ -118,7 +118,7 @@ CNode* CNodeFactory::AssignStat(CNode* target, CNode* source)
 	CNode* expr = allocator.Alloc<CNode>();
 	expr->Assign(target, source);
 	CNode* node = allocator.Alloc<CNode>();
-	node->ExprStat(node);
+	node->ExprStat(expr);
 	return node;
 }
 

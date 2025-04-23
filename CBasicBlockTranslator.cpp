@@ -328,11 +328,11 @@ CNode* CBasicBlockTranslator::Translate(TACBasicBlock* block)
 		{
 			if (tac->x.IsZero())  // 目前只能返回 AXY 对象，所以可以这么判断有没有返回值
 			{
-				current = nodeFactory.Expr(CNodeKind::STAT_RETURN);
+				current = nodeFactory.Return();
 				break;
 			}
 			// 有返回值的情况
-			current = nodeFactory.Expr(CNodeKind::STAT_RETURN, GetExpression(tac->x));
+			current = nodeFactory.Return(GetExpression(tac->x));
 			break;
 		}
 		case TACOperator::ROR:

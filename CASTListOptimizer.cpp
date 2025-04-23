@@ -44,7 +44,7 @@ void CASTListOptimizer::OnVisit(CNode* node)
 		node->EmptyStat();
 		return;
 	case 1:  // 只有一条子语句，去除列表
-		*node = **list.begin();
+		node->CopyData(**list.begin());
 		return;
 	}
 }

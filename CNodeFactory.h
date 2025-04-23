@@ -41,7 +41,7 @@ public:
 	// 创建 空 语句
 	CNode* EmptyStat();
 	// 创建 return 语句
-	CNode* Return(CNode* value);
+	CNode* Return(CNode* value = nullptr);
 	// 创建表达式列表
 	CNode* ExprList();
 
