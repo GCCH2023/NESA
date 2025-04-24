@@ -19,9 +19,13 @@ struct CNodeEqual
 
 // 将三地址码基本块翻译为C代码
 // 跳转指令不会被翻译C语句，而是保存为条件表达式和跳转目标地址
-// 使用DAG来优化生成的C代码
+// 使用DAG来优化生成的C代码，可以去除临时变量和复用公共子表达式
+// 注意:
+// 1. 保留有副作用的语句，比如函数调用，数组赋值
+// 2. 生成C代码时一定要缓存赋值过的变量，否则 x = x + 1; y = x * 2; 这样的的情况会有问题
 class CBasicBlockDAGTranslator
 {
+	using DefinitionVar = std::unordered_map<CNode*, const Variable*>;
 public:
 	CBasicBlockDAGTranslator(CTranslator* translator);
 	CNode* Translate(TACBasicBlock* block);
@@ -30,9 +34,9 @@ public:
 protected:
 	CNode* GetExpression(const TACOperand& operand);
 	const Variable* GetVariable(const TACOperand& operand);
-	CNode* TranslateCall(TAC* call, CNode* params);
+	void TranslateCall(TAC* call, CNode* params);
 	// 条件跳转语句翻译
-	CNode* ConditionalJump(CNodeKind kind, TAC* tac, uint32_t& jumpAddr);
+	void ConditionalJump(TAC* tac);
 
 	// 获取节点表中的指定节点，不存在则添加
 	CNode* GetNode(CNode* node);
@@ -43,7 +47,7 @@ protected:
 	// 从 DAG 生成 C 代码
 	CNode* GenerateCodes();
 	// 从 DAG 节点生成 AST 的表达式
-	CNode* GenerateExpression(CNode* node);
+	CNode* GenerateExpression(CNode* node, const DefinitionVar& definition);
 	// 标记表达式需要被保留
 	inline void Reserve(CNode* expr) { reserved.push_back(expr); }
 	inline void Reserve(TACOperand operand) { reserved.push_back(operand); }
@@ -51,10 +55,13 @@ protected:
 	void MarkReserve(const TAC* tac);
 	void UnaryExpression(CNodeKind kind, const TAC* tac);
 	void BinaryExpression(CNodeKind kind, const TAC* tac);
+	// 处理跳转指令
+	void GenerateConditionalJump(const DefinitionVar& definition);
 private:
 	CTranslator* translator;
 	CNode* condition;  // 跳转指令对应的条件表达式
 	uint32_t jumpAddr;  // 跳转指令对应的
+	TAC* jumpTAC = nullptr;  // 基本块末尾的跳转指令
 
 	// 已存在的节点表
 	std::unordered_set<CNode*, CNodeHash, CNodeEqual> nodeSet;

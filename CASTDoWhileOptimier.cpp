@@ -150,6 +150,12 @@ void CASTDoWhileOptimier::PreVisit(CNode* node, int depth)
 	if (node->kind != CNodeKind::STAT_DO_WHILE)
 		return;
 
+	static int count = 0;
+	++count;
+	if (count == 2)
+	{
+		int a = 0;
+	}
 	if (!CheckCondition(node->s.condition))
 		return;
 
@@ -182,5 +188,6 @@ bool CASTDoWhileOptimier::CheckCondition(const CNode* node)
 	// x op y，x，y中一个是变量，一个是整数
 	// op 是关系运算符
 	constexpr auto mask = GetCategory(CNodeKind::EXPR_INTEGER) | GetCategory(CNodeKind::EXPR_VARIABLE);
-	return IsCompareExpression(node->kind) && (GetCategory(node->e.x->kind) | GetCategory(node->e.y->kind)) == mask;
+	const uint32_t value = GetCategory(node->e.x->kind) | GetCategory(node->e.y->kind);
+	return IsCompareExpression(node->kind) && value == mask;
 }

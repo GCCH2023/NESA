@@ -194,7 +194,7 @@ const Variable* CBasicBlockDAGTranslator::GetVariable(const TACOperand& operand)
 	return node.variable;
 }
 
-CNode* CBasicBlockDAGTranslator::TranslateCall(TAC* call, CNode* params)
+void CBasicBlockDAGTranslator::TranslateCall(TAC* call, CNode* params)
 {
 	String* name = nullptr;
 	if (call->x.IsAddress())  // 直接给出函数地址
@@ -225,21 +225,24 @@ CNode* CBasicBlockDAGTranslator::TranslateCall(TAC* call, CNode* params)
 		s.Format(_T("三地址码翻译为C语句：%04X 解析函数名称失败"), call->address);
 		throw Exception(s.ToString());
 	}
-	CNode* expr = translator->GetNodeFactory().Call(name, params);
+	CNode expr;
+	expr.Call(name, params);
 	// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
 	if (call->z.IsTemp())
 	{
-		expr = translator->GetNodeFactory().Assign(GetExpression(call->z), expr);
+		Attach(call->z, GetNode(&expr));
+		Reserve(call->z);
 	}
-	return  translator->GetNodeFactory().ExprStat(expr);
+	else
+	{
+		Reserve(GetNode(&expr));
+	}
 }
 
-CNode* CBasicBlockDAGTranslator::ConditionalJump(CNodeKind kind, TAC* tac, uint32_t& jumpAddr)
+void CBasicBlockDAGTranslator::ConditionalJump(TAC* tac)
 {
-	// 条件跳转指令必定是基本块结束指令
-	condition = translator->GetNodeFactory().Expr(kind, GetExpression(tac->x), GetExpression(tac->y));
-	jumpAddr = tac->z.GetValue();
-	return condition;
+	// 记录下跳转指令
+	jumpTAC = tac;
 }
 
 CNode* CBasicBlockDAGTranslator::GetNode(CNode* node)
@@ -270,6 +273,51 @@ void CBasicBlockDAGTranslator::BinaryExpression(CNodeKind kind, const TAC* tac)
 	CNode node;
 	node.Expr(kind, GetExpression(tac->x), GetExpression(tac->y));
 	Attach(tac->z, GetNode(&node));
+}
+
+void CBasicBlockDAGTranslator::GenerateConditionalJump(const DefinitionVar& definition)
+{
+	if (!jumpTAC)
+		return;
+
+	CNodeKind op;
+	switch (jumpTAC->op)
+	{
+	case TACOperator::IFGEQ:  // 跳转指令是基本块的最后一条指令
+		op = CNodeKind::EXPR_GREAT_EQUAL;
+		break;
+	case TACOperator::IFGREAT:
+		op = CNodeKind::EXPR_GREAT;
+		break;
+	case TACOperator::IFEQ:
+		op = CNodeKind::EXPR_EQUAL;
+		break;
+	case TACOperator::IFNEQ:
+		op = CNodeKind::EXPR_NOT_EQUAL;
+		break;
+	case TACOperator::IFLESS:
+		op = CNodeKind::EXPR_LESS;
+		break;
+	case TACOperator::IFLEQ:
+		op = CNodeKind::EXPR_LESS_EQUAL;
+		break;
+	case TACOperator::IFTRUE:
+		op = CNodeKind::EXPR_NOT_EQUAL;
+		break;
+	case TACOperator::IFFALSE:
+		op = CNodeKind::EXPR_EQUAL;
+		break;
+	default:
+		return;
+	}
+	CNode* x = GetExpression(jumpTAC->x);
+	CNode* y = GetExpression(jumpTAC->y);
+	x = GenerateExpression(x, definition);
+	y = GenerateExpression(y, definition);
+	CNode node;
+	node.Expr(op, x, y);
+	condition = GenerateExpression(&node, definition);
+	jumpAddr = jumpTAC->z.GetValue();
 }
 
 
@@ -423,7 +471,7 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 			}
 			expr.Expr(CNodeKind::EXPR_ASSIGN, GetNode(&expr), GetExpression(tac->z));
 			Reserve(GetNode(&expr));
-			break;
+			continue;
 		}
 		case TACOperator::ADDR:
 			UnaryExpression(CNodeKind::EXPR_ADDR, tac);
@@ -456,43 +504,26 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 			if (codes[i]->op != TACOperator::CALL)
 				throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
 			// 最后是 CALL 指令
-			current = TranslateCall(codes[i], argsNode);
-			break;
+			TranslateCall(codes[i], argsNode);
+			continue;
 		}
 		case	TACOperator::CALL:
 		{
 			// 如果有参数，则必是 若干个 ARG 后面跟着一个 CALL
 			// 直接出现 CALL，说明没有参数
-			current = TranslateCall(tac, nullptr);
-			break;
+			TranslateCall(tac, nullptr);
+			continue;
 		}
 
 		case TACOperator::IFGEQ:  // 跳转指令是基本块的最后一条指令
-			ConditionalJump(CNodeKind::EXPR_GREAT_EQUAL, tac, jumpAddr);
-			continue;
 		case TACOperator::IFGREAT:
-			ConditionalJump(CNodeKind::EXPR_GREAT, tac, jumpAddr);
-			continue;
 		case TACOperator::IFEQ:
-			ConditionalJump(CNodeKind::EXPR_EQUAL, tac, jumpAddr);
-			continue;
 		case TACOperator::IFNEQ:
-			ConditionalJump(CNodeKind::EXPR_NOT_EQUAL, tac, jumpAddr);
-			continue;
 		case TACOperator::IFLESS:
-			ConditionalJump(CNodeKind::EXPR_LESS, tac, jumpAddr);
-			continue;
 		case TACOperator::IFLEQ:
-			ConditionalJump(CNodeKind::EXPR_LESS_EQUAL, tac, jumpAddr);
-			continue;
 		case TACOperator::IFTRUE:
-			condition = translator->GetNodeFactory().Expr(CNodeKind::EXPR_NOT_EQUAL,
-				GetExpression(tac->x), GetExpression(TACOperand(0)));
-			jumpAddr = tac->z.GetValue();
-			continue;
 		case TACOperator::IFFALSE:
-			condition = translator->GetNodeFactory().Expr(CNodeKind::EXPR_EQUAL, GetExpression(tac->x), GetExpression(TACOperand(0)));
-			jumpAddr = tac->z.GetValue();
+			ConditionalJump(tac);
 			continue;
 		case TACOperator::GOTO:
 		{
@@ -554,30 +585,38 @@ CNode* CBasicBlockDAGTranslator::GenerateCodes()
 	CNode listNode(CNodeKind::STAT_LIST);
 	CListNode list(listNode);
 	CNode* current;
+	std::unordered_map<CNode*, const Variable*>  definition;  // 已经赋值的变量
 	for (auto expr : reserved)
 	{
 		if (expr.index() == 0)  // TACOperand
 		{
 			// 生成赋值表达式
 			auto it = varMap.find(std::get<TACOperand>(expr));
-			CNode* right = GenerateExpression(it->second);
+			CNode* right = GenerateExpression(it->second, definition);
 			CNode* left = translator->GetNodeFactory().Var(GetVariable(it->first));
 			current = translator->GetNodeFactory().Assign(left, right);
+			definition[it->second] = left->variable;
 		}
 		else  // CNode*
 		{
 			// 生成数组或字段赋值表达式
-			current = GenerateExpression(std::get<CNode*>(expr));
+			current = GenerateExpression(std::get<CNode*>(expr), definition);
 		}
 		current = translator->GetNodeFactory().ExprStat(current);
 		// 构建语句列表
 		list.Add(current);
 	}
+	GenerateConditionalJump(definition);
 	return translator->NewStatementList(list);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
 }
 
-CNode* CBasicBlockDAGTranslator::GenerateExpression(CNode* node)
+CNode* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const DefinitionVar& definition)
 {
+	// 已经生成过赋值代码的变量，直接返回它
+	auto it = definition.find(node);
+	if (it != definition.end())
+		return translator->GetNodeFactory().Var(it->second);
+
 	switch (node->kind)
 	{
 	//case CNodeKind::EXPR_CALL:
@@ -628,7 +667,7 @@ CNode* CBasicBlockDAGTranslator::GenerateExpression(CNode* node)
 	}
 	}
 }
-
+#include "Dump.h"
 // 临时变量必定是两条三地址码连着，所以直接合并成一个表达式
 CNode* CBasicBlockDAGTranslator::Translate(TACBasicBlock* block)
 {
