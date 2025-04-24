@@ -173,7 +173,7 @@ TACOperand Evaluate(TACOperator op, TACOperand x, TACOperand y)
 	case TACOperator::BOOL_GEQ: return TACOperand(a >= b);
 	}
 	Sprintf<> s;
-	s.Format(_T("无法进行求值的操作码 "), ToString(op));
+	s.Format(_T("无法进行求值的操作码 %s"), ToString(op));
 	throw Exception(s);
 }
 

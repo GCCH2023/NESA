@@ -339,6 +339,12 @@ public:
 	bool IsCompoundStatement() const { return kind == CNodeKind::STAT_LIST; }
 	// 是否表达式
 	bool IsExpression() const { return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR); }
+	// 是否比较表达式
+	bool IsCompareExpression() const { return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR_COMP); }
+	// 是否整数
+	bool IsInteger() const { return kind == CNodeKind::EXPR_INTEGER; }
+	// 是否变量
+	bool IsVariable() const { return kind == CNodeKind::EXPR_VARIABLE; }
 
 	CNode* GetPrev() { return prev; }
 	CNode* GetNext() { return next; }
@@ -394,3 +400,8 @@ public:
 private:
 	CNode* list;
 };
+
+// 计算 x op y 的值
+// 要求 x 和 y 都是整数节点
+// 失败抛出异常
+int Evaluate(CNodeKind op, const CNode& x, const CNode& y);

@@ -316,6 +316,13 @@ OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)
 									 DumpCNodeStructures(os, obj->e.y, indent + 1);
 									 return os;
 	}
+	case CNodeKind::STAT_FOR:
+	{
+		Indent(os, indent);
+		os << _T("for:\n");
+		DumpCNodeStructures(os, obj->_for.body, indent + 1);
+		return os;
+	}
 	case CNodeKind::STAT_IF:
 	{
 							   Indent(os, indent);

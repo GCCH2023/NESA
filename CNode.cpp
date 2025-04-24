@@ -464,3 +464,37 @@ CListNode& CListNode::Insert(Iterator pos, const CListNode& other)
 	p->next = head;
 	head->prev = p;
 }
+
+
+int Evaluate(CNodeKind op, const CNode& x, const CNode& y)
+{
+	if (!x.IsInteger() || !y.IsInteger())
+	{
+		Sprintf<> s;
+		s.Format(_T("C节点求值: 只能对整数节点求值"));
+		throw Exception(s);
+	}
+
+	int a = x.i.value;
+	int b = y.i.value;
+	switch (op)
+	{
+	case CNodeKind::EXPR_ADD: return a + b;
+	case CNodeKind::EXPR_SUB:  return a - b;
+	case CNodeKind::EXPR_BOR:  return a | b;
+	case CNodeKind::EXPR_BAND: return a & b;
+	//case CNodeKind::EXPR_BNOT:  return ~a;
+	case CNodeKind::EXPR_XOR: return a ^ b;
+	case CNodeKind::EXPR_SHIFT_RIGHT: return a >> b;
+	case CNodeKind::EXPR_SHIFT_LEFT: return a << b;
+	case CNodeKind::EXPR_EQUAL: return a == b;
+	case CNodeKind::EXPR_NOT_EQUAL: return a != b;
+	case CNodeKind::EXPR_LESS: return a < b;
+	case CNodeKind::EXPR_LESS_EQUAL: return a <= b;
+	case CNodeKind::EXPR_GREAT: return a > b;
+	case CNodeKind::EXPR_GREAT_EQUAL: return a >= b;
+	}
+	Sprintf<> s;
+	s.Format(_T("C节点求值: 无法进行求值的操作码 %s"), ToString(op));
+	throw Exception(s);
+}

@@ -471,7 +471,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	NesDBSubroutineParserTest(rom, 0x90CC);
 	// ReachDefinitionTest(rom, 0x8000);
 
-	CASTListOptimizerTest();
+	//CASTListOptimizerTest();
 
 	system("pause");
 	return 0;
