@@ -6,6 +6,7 @@ using namespace std;
 #include "CBasicBlockTranslator.h"
 #include "CBasicBlockDAGTranslator.h"
 
+//#define DEBUG_GRAPH
 
 CGraphTranslator::CGraphTranslator(Allocator& allocator):
 CTranslator(allocator),
@@ -175,7 +176,7 @@ void CGraphTranslator::OnReduceSelfLoop(Node n)
 	if (node.type != CTNTYPE_LEAF)
 	{
 		if (node.condition == nullptr)
-			throw Exception(_T("非叶子自循环节点异常"));
+			throw Exception(_T("非叶子自循环节点条件表达式丢失"));
 		node.statement = NewDoWhile(node.condition, node.statement);
 		return;
 	}
@@ -188,19 +189,20 @@ void CGraphTranslator::OnReduceList(Node f, Node s)
 {
 	auto& first = graph[f];
 	auto& second = graph[s];
-	CNode* condition = nullptr;
 	auto blocks = this->GetTACFunction()->GetBasicBlocks();
-	uint32_t jumpAddr;
+	BasicBlockResult ret = { 0 };
 	if (first.type == CTNTYPE_LEAF)
 	{
-		first.statement = TranslateBasicBlock(blocks[first.index]).statement;
+		ret = TranslateBasicBlock(blocks[first.index]);
+		first.statement = ret.statement;
 	}
 	if (second.type == CTNTYPE_LEAF)
 	{
-		second.statement = TranslateBasicBlock(blocks[second.index]).statement;
+		ret = TranslateBasicBlock(blocks[second.index]);
+		second.statement = ret.statement;
 	}
 	first.statement = NewStatementPair(first.statement, second.statement);
-	first.condition = condition;
+	first.condition = ret.condition;
 }
 
 void CGraphTranslator::OnReducePoint2Loop(Node f, Node s)
@@ -388,6 +390,7 @@ Node CGraphTranslator::CReduce(Node parent, const vector<Node>& children)
 	COUT << _T(", 后继 = ");
 	DumpNodeSet(node.succ);
 	COUT << endl;
+	COUT << _T("条件 = ") << node.condition << endl;
 	//ctNode->Dump();
 	//COUT << ctNode->statement;
 	//COUT << endl;

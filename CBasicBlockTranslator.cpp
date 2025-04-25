@@ -12,47 +12,6 @@ CBasicBlockTranslator::CBasicBlockTranslator(CTranslator* translator_) :
 {
 }
 
-
-CNode* CBasicBlockTranslator::TranslateCall(const TAC* call, CNode* params)
-{
-	String* name = nullptr;
-	if (call->x.IsAddress())  // 直接给出函数地址
-	{
-		Sprintf<> s;
-		s.Format(_T("sub_%04X"), call->x.GetValue());
-		name = GetCDB().AddString(s.ToString());
-	}
-	else if (call->x.IsTemp())  // 函数指针临时变量
-	{
-		name = GetTranslator()->GetLocalVariableName(call->x.GetValue());
-	}
-	else if (call->x.IsGlobal())  // 函数指针全局变量
-	{
-		uint32_t addr = call->x.GetValue();
-		auto global = GetCDB().GetGlobalVariable(addr);
-		if (!global)
-		{
-			Sprintf<> s;
-			s.Format(_T("获取全局函数指针 %X 失败"), addr);
-			throw Exception(s.ToString());
-		}
-		name = global->name;
-	}
-	else
-	{
-		Sprintf<> s;
-		s.Format(_T("三地址码翻译为C语句：%04X 解析函数名称失败"), call->address);
-		throw Exception(s.ToString());
-	}
-	CNode* expr = GetNodeFactory().Call(name, params);
-	// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
-	if (call->z.IsTemp())
-	{
-		expr = GetNodeFactory().Assign(GetExpression(call->z), expr);
-	}
-	return GetNodeFactory().ExprStat(expr);
-}
-
 CNode* CBasicBlockTranslator::ConditionalJump(CNodeKind kind, const TAC* tac, uint32_t& jumpAddr)
 {
 	// 条件跳转指令必定是基本块结束指令
@@ -85,31 +44,6 @@ CNode* CBasicBlockTranslator::TranslateTAC(const TAC* tac, size_t& index)
 		expr = GetNodeFactory().Cast(type, GetExpression(tac->x));
 		expr = GetNodeFactory().Expr(CNodeKind::EXPR_ASSIGN, result, expr);
 		current = GetNodeFactory().ExprStat(expr);
-		break;
-	}
-	case	TACOperator::ARG:
-	{
-		// 若干个 ARG 后面跟着一个 CALL
-		// 遇到 ARG，则要连着后面的直到 CALL 的三地址码一起翻译
-		CNode* argsNode = GetNodeFactory().ExprList();
-		CListNode args(argsNode);
-		auto& codes = GetBasicBlock()->GetCodes();
-		while (codes[index]->op == TACOperator::ARG)
-		{
-			args.Add(GetExpression(codes[index]->x));
-			++index;
-		}
-		if (codes[index]->op != TACOperator::CALL)
-			throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
-		// 最后是 CALL 指令
-		current = TranslateCall(codes[index], argsNode);
-		break;
-	}
-	case	TACOperator::CALL:
-	{
-		// 如果有参数，则必是 若干个 ARG 后面跟着一个 CALL
-		// 直接出现 CALL，说明没有参数
-		current = TranslateCall(tac, nullptr);
 		break;
 	}
 
@@ -264,7 +198,7 @@ CNode* CBasicBlockTranslator::TranslateTAC(const TAC* tac, size_t& index)
 }
 
 // 临时变量必定是两条三地址码连着，所以直接合并成一个表达式
-CNode* CBasicBlockTranslator::Translate(const TACBasicBlock* block)
+CNode* CBasicBlockTranslator::OnTranslate(const TACBasicBlock* block)
 {
 	CNode* expr = nullptr;
 	CNode node(CNodeKind::STAT_LIST);

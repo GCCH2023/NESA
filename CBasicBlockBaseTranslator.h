@@ -4,7 +4,7 @@ class TAC;
 class TACBasicBlock;
 class TACOperand;
 class CTranslator;
-class NodeFactory;
+class CNodeFactory;
 
 class CBasicBlockBaseTranslator
 {
@@ -14,8 +14,9 @@ public:
 	{
 	}
 	virtual ~CBasicBlockBaseTranslator() = default;
-
+	CNode* Translate(const TACBasicBlock* block);
 protected:
+	virtual CNode* OnTranslate(const TACBasicBlock* block) = 0;
 	// 传入当前要翻译的三地址码和它对应的索引
 	virtual CNode* TranslateTAC(const TAC* tac, size_t& index);
 	// 翻译双目表达式
@@ -36,6 +37,8 @@ protected:
 	virtual CNode* IndexExpression(CNode* array, CNode* index);
 	// 翻译数组元素赋值或对象字段赋值
 	virtual CNode* ArrayAssign(CNode* z, CNode* x);
+	// 翻译函数调用
+	virtual 	CNode* TranslateCall(const TAC* call, CNode* params);
 
 	const TACBasicBlock* GetBasicBlock() const { return block; }
 	CTranslator* GetTranslator() const { return translator; }

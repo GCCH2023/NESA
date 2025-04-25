@@ -8,13 +8,11 @@ class CBasicBlockTranslator:
 {
 public:
 	CBasicBlockTranslator(CTranslator* translator);
-	CNode* Translate(const TACBasicBlock* block);
 	CNode* GetCondition() { return condition; }
 	uint32_t GetJumpTarget() { return jumpAddr; }
 protected:
-	// 传入当前要翻译的三地址码和它对应的索引
+	CNode* OnTranslate(const TACBasicBlock* block) override;
 	CNode* TranslateTAC(const TAC* tac, size_t& index) override;
-	CNode* TranslateCall(const TAC* call, CNode* params);
 	CNode* ConditionalJump(CNodeKind kind, const TAC* tac, uint32_t& jumpAddr);
 
 private:

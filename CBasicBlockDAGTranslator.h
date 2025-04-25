@@ -25,11 +25,10 @@ class CBasicBlockDAGTranslator:
 	using DefinitionVar = std::unordered_map<CNode*, const Variable*>;
 public:
 	CBasicBlockDAGTranslator(CTranslator* translator);
-	CNode* Translate(const TACBasicBlock* block);
 	CNode* GetCondition() { return condition; }
 	uint32_t GetJumpTarget() { return jumpAddr; }
 protected:
-	// 传入当前要翻译的三地址码和它对应的索引
+	CNode* OnTranslate(const TACBasicBlock* block) override;
 	CNode* TranslateTAC(const TAC* tac, size_t& index) override;
 	CNode* BinAssignStatement(CNodeKind kind, const TAC* tac) override;
 	CNode* AssignStatement(const TACOperand& z, CNode* x) override;
@@ -38,8 +37,8 @@ protected:
 	CNode* ArrayAssign(CNode* z, CNode* x) override;
 	CNode* UnaryAssignStatement(CNodeKind kind, const TAC* tac) override;
 
-	CNode* GetExpression(const TACOperand& operand);
-	void TranslateCall(const TAC* call, CNode* params);
+	CNode* GetExpression(const TACOperand& operand) override;
+	CNode* TranslateCall(const TAC* call, CNode* params) override;
 	// 条件跳转语句翻译
 	void ConditionalJump(const TAC* tac);
 

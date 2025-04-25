@@ -41,13 +41,16 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 		PopAncestor();
 		break;
 	case CNodeKind::EXPR_CALL:
-		PushAncestor(node);
-		for (auto param : CListNode(*node->call.args))
+		if (node->call.args)
 		{
-			TraverseNode(param, visitor);
-			PushSenior(param);
+			PushAncestor(node);
+			for (auto param : CListNode(*node->call.args))
+			{
+				TraverseNode(param, visitor);
+				PushSenior(param);
+			}
+			PopAncestor();
 		}
-		PopAncestor();
 		break;
 	case CNodeKind::STAT_WHILE:
 	case CNodeKind::STAT_DO_WHILE:
