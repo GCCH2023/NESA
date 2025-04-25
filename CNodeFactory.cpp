@@ -24,7 +24,7 @@ CNode* CNodeFactory::Goto(String* label)
 CNode* CNodeFactory::If(CNode* condition, CNode* body, CNode* _else)
 {
 	CNode* node = allocator.Alloc<CNode>();
-	node->If(condition, body);
+	node->If(condition, body, _else);
 	return node;
 }
 

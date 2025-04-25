@@ -146,7 +146,76 @@ CNode* CBasicBlockBaseTranslator::TranslateTAC(const TAC* tac, size_t& index)
 		// 最后是 CALL 指令
 		return TranslateCall(codes[index], argsNode);
 	}
+	case TACOperator::ROR:
+	{
+		// C语言中没有ROR运算符，翻译为函数调用好了
+		// void Ror(int*, int)
+		CNode* listNode = GetNodeFactory().ExprList();
+		CListNode list(listNode);
+		CNode* params = GetNodeFactory().Expr(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
+		list.Add(params);
+		list.Add(GetExpression(tac->y));
+		return  GetNodeFactory().Call(GetCDB().AddString(_T("Ror")), listNode);
+	}
+	case TACOperator::ROL:
+	{
+		// C语言中没有ROL运算符，翻译为函数调用好了
+		// void Rol(int*, int)
+		CNode* listNode = GetNodeFactory().ExprList();
+		CListNode list(listNode);
+		CNode* params = GetNodeFactory().Expr(CNodeKind::EXPR_ADDR, GetExpression(tac->x));
+		list.Add(params);
+		list.Add(GetExpression(tac->y));
+		return GetNodeFactory().Call(GetCDB().AddString(_T("Rol")), listNode);
+	}
+	case TACOperator::PUSH:
+	{
+		// 还不知道怎么翻译push，先翻译为函数调用吧
+		CNode* params = GetExpression(tac->x);
+		expr = GetNodeFactory().Call(GetCDB().AddString(_T("Push")), params);
+		return  GetNodeFactory().Expr(CNodeKind::STAT_EXPR, expr);
+	}
+	case TACOperator::POP:
+	{
+		// 还不知道怎么翻译pop，先翻译为函数调用吧
+		expr = GetNodeFactory().Call(GetCDB().AddString(_T("Pop")), (CNode*)nullptr);
+		return  GetNodeFactory().AssignStat(GetExpression(tac->z), expr);
+	}
+	case TACOperator::BOOL_FLAGV:
+	{
+		// 翻译为函数调用
+		CNode* listNode = GetNodeFactory().ExprList();
+		CListNode list(listNode);
+		list.Add(GetExpression(tac->x));
+		list.Add(GetExpression(tac->y));
+		expr = GetNodeFactory().Call(GetCDB().AddString(_T("IsOverflow")), (CNode*)nullptr);
+		return  GetNodeFactory().AssignStat(GetExpression(tac->z), expr);
+	}
 
+	case TACOperator::CLI:
+	{
+		// 翻译为函数调用
+		expr = GetNodeFactory().Call(GetCDB().AddString(_T("Cli")), (CNode*)nullptr);
+		return  GetNodeFactory().ExprStat(expr);
+	}
+	case TACOperator::SEI:
+	{
+		// 翻译为函数调用
+		expr = GetNodeFactory().Call(GetCDB().AddString(_T("Sei")), (CNode*)nullptr);
+		return  GetNodeFactory().ExprStat(expr);
+	}
+	case TACOperator::CLD:
+	{
+		// 翻译为函数调用
+		expr = GetNodeFactory().Call(GetCDB().AddString(_T("Cld")), (CNode*)nullptr);
+		return  GetNodeFactory().ExprStat(expr);
+	}
+	case TACOperator::SED:
+	{
+		// 翻译为函数调用
+		expr = GetNodeFactory().Call(GetCDB().AddString(_T("Sed")), (CNode*)nullptr);
+		return  GetNodeFactory().ExprStat(expr);
+	}
 	}
 	Sprintf<> s;
 	s.Format(_T("三地址码转C语句：未实现的三地址码 %s"), ToString(tac->op));
@@ -184,7 +253,7 @@ const Variable* CBasicBlockBaseTranslator::GetVariable(const TACOperand& operand
 
 inline CNodeFactory& CBasicBlockBaseTranslator::GetNodeFactory()
 {
-	return translator->GetNodeFactory(); 
+	return translator->GetNodeFactory();
 }
 
 CNode* CBasicBlockBaseTranslator::GetExpression(const TACOperand& operand)

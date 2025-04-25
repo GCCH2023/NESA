@@ -178,6 +178,10 @@ CNode& CNode::If(CNode* condition, CNode* body, CNode* _else)
 	this->kind = CNodeKind::STAT_IF;
 	this->s.condition = condition;
 	this->s.then = body;
+	if (_else == (CNode*)0x8)
+	{
+		int a = 0;
+	}
 	this->s._else = _else;
 	return *this;
 }
@@ -296,6 +300,8 @@ CNode& CNode::Var(const Variable* variable)
 CNode& CNode::ListStat()
 {
 	this->kind = CNodeKind::STAT_LIST;
+	this->list.head = nullptr;
+	this->list.tail = nullptr;
 	return *this;
 }
 

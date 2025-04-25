@@ -34,8 +34,11 @@ std::size_t CNodeHash::operator()(const CNode* node) const
 		break;
 	case CNodeKind::EXPR_CALL:
 		hash ^= (size_t)node->call.name;
-		for (auto n : CListNode(node->call.args))
-			hash ^= (size_t)n;
+		if (node->call.args)
+		{
+			for (auto n : CListNode(node->call.args))
+				hash ^= (size_t)n;
+		}
 		break;
 	case CNodeKind::STAT_RETURN:
 		hash ^= (size_t)node->e.x;
@@ -123,6 +126,7 @@ bool CNodeEqual::operator()(const CNode* node1, const CNode* node2) const
 	case CNodeKind::EXPR_CALL:
 		if (node1->call.name != node2->call.name)
 			return false;
+		if (node1->call.args && node2->call.args)
 		{
 			auto p = node1->call.args->list.head;
 			auto q = node2->call.args->list.head;
@@ -130,6 +134,7 @@ bool CNodeEqual::operator()(const CNode* node1, const CNode* node2) const
 				;
 			return p == q;
 		}
+		return false;
 	case CNodeKind::EXPR_INTEGER:
 		return node1->i.value == node2->i.value;
 	case CNodeKind::EXPR_VARIABLE:
@@ -263,7 +268,8 @@ CNode* CBasicBlockDAGTranslator::TranslateTAC(const TAC* tac, size_t& index)
 		}
 		// 有返回值的情况
 		expr.Return(GetExpression(tac->x));
-		GetNode(&expr);
+		auto ret = GetNode(&expr);
+		Reserve(ret);
 		break;
 	}
 	// 进位和溢出标志都是和其他指令配合使用的，抽象语法树中不应该出现
