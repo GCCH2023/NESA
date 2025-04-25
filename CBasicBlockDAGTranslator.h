@@ -1,10 +1,6 @@
 #pragma once
-#include "CNode.h"
+#include "CBasicBlockBaseTranslator.h".h"
 #include "TAC.h"
-
-class TACBasicBlock;
-class TACOperand;
-class CTranslator;
 
 struct CNodeHash
 {
@@ -23,27 +19,36 @@ struct CNodeEqual
 // 注意:
 // 1. 保留有副作用的语句，比如函数调用，数组赋值
 // 2. 生成C代码时一定要缓存赋值过的变量，否则 x = x + 1; y = x * 2; 这样的的情况会有问题
-class CBasicBlockDAGTranslator
+class CBasicBlockDAGTranslator:
+	public CBasicBlockBaseTranslator
 {
 	using DefinitionVar = std::unordered_map<CNode*, const Variable*>;
 public:
 	CBasicBlockDAGTranslator(CTranslator* translator);
-	CNode* Translate(TACBasicBlock* block);
+	CNode* Translate(const TACBasicBlock* block);
 	CNode* GetCondition() { return condition; }
 	uint32_t GetJumpTarget() { return jumpAddr; }
 protected:
+	// 传入当前要翻译的三地址码和它对应的索引
+	CNode* TranslateTAC(const TAC* tac, size_t& index) override;
+	CNode* BinAssignStatement(CNodeKind kind, const TAC* tac) override;
+	CNode* AssignStatement(const TACOperand& z, CNode* x) override;
+	CNode* FieldExpression(CNode* obj, const Field* field) override;
+	CNode* IndexExpression(CNode* array, CNode* index) override;
+	CNode* ArrayAssign(CNode* z, CNode* x) override;
+	CNode* UnaryAssignStatement(CNodeKind kind, const TAC* tac) override;
+
 	CNode* GetExpression(const TACOperand& operand);
-	const Variable* GetVariable(const TACOperand& operand);
-	void TranslateCall(TAC* call, CNode* params);
+	void TranslateCall(const TAC* call, CNode* params);
 	// 条件跳转语句翻译
-	void ConditionalJump(TAC* tac);
+	void ConditionalJump(const TAC* tac);
 
 	// 获取节点表中的指定节点，不存在则添加
 	CNode* GetNode(CNode* node);
 	// 将变量附加到节点上
 	void Attach(const TACOperand& var, CNode* node);
 	// 构建DAG
-	void GenerateDAG(TACBasicBlock* block);
+	void GenerateDAG(const TACBasicBlock* block);
 	// 从 DAG 生成 C 代码
 	CNode* GenerateCodes();
 	// 从 DAG 节点生成 AST 的表达式
@@ -53,15 +58,12 @@ protected:
 	inline void Reserve(TACOperand operand) { reserved.push_back(operand); }
 	// 标记三地址码是否被保留
 	void MarkReserve(const TAC* tac);
-	void UnaryExpression(CNodeKind kind, const TAC* tac);
-	void BinaryExpression(CNodeKind kind, const TAC* tac);
 	// 处理跳转指令
 	void GenerateConditionalJump(const DefinitionVar& definition);
 private:
-	CTranslator* translator;
 	CNode* condition;  // 跳转指令对应的条件表达式
 	uint32_t jumpAddr;  // 跳转指令对应的
-	TAC* jumpTAC = nullptr;  // 基本块末尾的跳转指令
+	const TAC* jumpTAC = nullptr;  // 基本块末尾的跳转指令
 
 	// 已存在的节点表
 	std::unordered_set<CNode*, CNodeHash, CNodeEqual> nodeSet;

@@ -26,8 +26,11 @@ void CASTTraverser::Traverse(CNode* node, CASTVisitor& visitor)
 		Traverse(node->e.x, visitor);
 		break;
 	case CNodeKind::EXPR_CALL:
-		for (auto param : CListNode(node))
-			Traverse(param, visitor);
+		if (node->call.args)
+		{
+			for (auto param : CListNode(node->call.args))
+				Traverse(param, visitor);
+		}
 		break;
 	case CNodeKind::STAT_WHILE:
 		Traverse(node->s.condition, visitor);

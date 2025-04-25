@@ -14,6 +14,7 @@ public:
 	// 添加一条三地址码
 	inline void AddTAC(TAC* code) { codes.push_back(code); }
 	inline TACList& GetCodes() { return codes; }
+	inline const TACList& GetCodes() const { return codes; }
 	inline void SetCodes(const TACList& codes){ this->codes = codes; }
 	// 获取三地址码的数量
 	inline size_t GetCodesCount() const { return codes.size(); }

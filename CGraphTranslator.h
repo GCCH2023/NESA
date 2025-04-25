@@ -87,7 +87,7 @@ protected:
 
 
 	virtual CNode* TranslateBody() override;
-
+	virtual BasicBlockResult TranslateBasicBlock(const TACBasicBlock* block) override;
 protected:
 	void OnReduceSelfLoop(Node node);
 	void OnReduceList(Node first, Node second);
@@ -98,8 +98,6 @@ protected:
 protected:
 	// 翻译三地址码的操作码为C语言的表达式类型
 	CNodeKind TranslateOperator(TACOperator op);
-	// 翻译区域代码为抽象语法树节点
-	CNode* TranslateRegion(CNode*& condition, TACBasicBlock* tacBlock, uint32_t& jumpAddr);
 	// 根据跳转地址获取对应的标签语句
 	// CLabelStatement* GetLabel(uint32_t jumpAddr);
 	// 创建分支基本块的语句

@@ -80,18 +80,6 @@ CNodeKind CGraphTranslator::TranslateOperator(TACOperator op)
 	}
 }
 
-CNode* CGraphTranslator::TranslateRegion(CNode*& condition, TACBasicBlock* tacBlock, uint32_t& jumpAddr)
-{
-	CBasicBlockDAGTranslator translator(this);
-	auto node = translator.Translate(tacBlock);
-	condition = translator.GetCondition();
-	jumpAddr = translator.GetJumpTarget();
-	return node;
-}
-
-
-
-
 CNode* CGraphTranslator::CombineListIf(CNode* statement, CNode* condition, CNode* body, CNode* elseBody /*= nullptr*/)
 {
 	auto ifStat = nodeFactory.If(condition, body, elseBody);
@@ -191,11 +179,9 @@ void CGraphTranslator::OnReduceSelfLoop(Node n)
 		node.statement = NewDoWhile(node.condition, node.statement);
 		return;
 	}
-	CNode* condition = nullptr;
 	auto block = this->GetTACFunction()->GetBasicBlocks()[node.index];
-	uint32_t jumpAddr;
-	auto a = TranslateRegion(condition, block, jumpAddr);
-	node.statement = NewDoWhile(condition, a);
+	auto a = TranslateBasicBlock(block);
+	node.statement = NewDoWhile(a.condition, a.statement);
 }
 
 void CGraphTranslator::OnReduceList(Node f, Node s)
@@ -207,11 +193,11 @@ void CGraphTranslator::OnReduceList(Node f, Node s)
 	uint32_t jumpAddr;
 	if (first.type == CTNTYPE_LEAF)
 	{
-		first.statement = TranslateRegion(condition, blocks[first.index], jumpAddr);
+		first.statement = TranslateBasicBlock(blocks[first.index]).statement;
 	}
 	if (second.type == CTNTYPE_LEAF)
 	{
-		second.statement = TranslateRegion(condition, blocks[second.index], jumpAddr);
+		second.statement = TranslateBasicBlock(blocks[second.index]).statement;
 	}
 	first.statement = NewStatementPair(first.statement, second.statement);
 	first.condition = condition;
@@ -222,15 +208,15 @@ void CGraphTranslator::OnReducePoint2Loop(Node f, Node s)
 	auto& first = graph[f];
 	auto& second = graph[s];
 	auto& node = first;  // 结果
-	CNode* condition = nullptr;
 	auto blocks = this->GetTACFunction()->GetBasicBlocks();
-	uint32_t jumpAddr;
+	BasicBlockResult blockRet;
 	if (first.type == CTNTYPE_LEAF)
 	{
-		first.statement = TranslateRegion(condition, blocks[first.index], jumpAddr);
+		blockRet = TranslateBasicBlock(blocks[first.index]);
+		first.statement = blockRet.statement;
 		// 跳转边翻译为 goto 语句
-		auto gotoStat = nodeFactory.Goto(GetLabelName(jumpAddr));
-		first.statement = CombineListIf(first.statement, condition, gotoStat);
+		auto gotoStat = nodeFactory.Goto(GetLabelName(blockRet.jumpTarget));
+		first.statement = CombineListIf(first.statement, blockRet.condition, gotoStat);
 	}
 	else
 	{
@@ -238,16 +224,17 @@ void CGraphTranslator::OnReducePoint2Loop(Node f, Node s)
 	}
 	if (second.type == CTNTYPE_LEAF)
 	{
-		second.statement = TranslateRegion(condition, blocks[second.index], jumpAddr);
+		blockRet = TranslateBasicBlock(blocks[second.index]);
+		second.statement = blockRet.statement;
 	}
 	else
 	{
 		assert(second.statement);
 		assert(second.condition);
-		condition = second.condition;
+		blockRet.condition = second.condition;
 	}
 	node.statement = NewStatementPair(first.statement, second.statement);
-	node.statement = NewDoWhile(condition, node.statement);
+	node.statement = NewDoWhile(blockRet.condition, node.statement);
 }
 
 void CGraphTranslator::OnReduceIf(Node _if, Node then)
@@ -255,24 +242,25 @@ void CGraphTranslator::OnReduceIf(Node _if, Node then)
 	auto& cond = graph[_if];
 	auto& body = graph[then];
 	auto& node = cond;  // 结果
-	CNode* condition = nullptr;
 	auto blocks = this->GetTACFunction()->GetBasicBlocks();
-	uint32_t jumpAddr;
+	CNode* ifCond;
 	if (cond.type == CTNTYPE_LEAF)
 	{
-		cond.statement = TranslateRegion(condition, blocks[cond.index], jumpAddr);
+		auto result = TranslateBasicBlock(blocks[cond.index]);
+		cond.statement = result.statement;
+		ifCond = result.condition;
 	}
 	else
 	{
 		// 如果不是叶子节点，则之前的归约必然要保留有条件
 		if (!cond.condition)
 			throw Exception(_T("翻译为 if 语句的过程中缺少 if 语句的条件表达式"));
-		condition = cond.condition;
+		ifCond = cond.condition;
 	}
-	CNode* ifCond = condition;
+	
 	if (body.type == CTNTYPE_LEAF)
 	{
-		body.statement = TranslateRegion(condition, blocks[body.index], jumpAddr);
+		body.statement = TranslateBasicBlock(blocks[body.index]).statement;
 	}
 	// 在 if 语句之前还有一段代码
 	node.statement = CombineListIf(cond.statement, ifCond, body.statement);
@@ -284,21 +272,23 @@ void CGraphTranslator::OnReduceIfElse(Node _if, Node t, Node e)
 	auto& then = graph[t];
 	auto& _else = graph[e];
 	auto& node = cond;  // 结果
-	CNode* condition = nullptr;
 	auto blocks = this->GetTACFunction()->GetBasicBlocks();
-	uint32_t jumpAddr;
+	CNode* ifCond;
+	uint32_t jumpAddr = 0;
 	if (cond.type == CTNTYPE_LEAF)
 	{
-		cond.statement = TranslateRegion(condition, blocks[cond.index], jumpAddr);
+		auto result = TranslateBasicBlock(blocks[cond.index]);
+		cond.statement = result.statement;
+		ifCond = result.condition;
+		jumpAddr = result.jumpTarget;
 	}
 	else
 	{
 		// 如果不是叶子节点，则之前的归约必然要保留有条件
 		if (!cond.condition)
 			throw Exception(_T("翻译为 if - else 语句的过程中缺少 if 语句的条件表达式"));
-		condition = cond.condition;
+		ifCond = cond.condition;
 	}
-	CNode* ifCond = condition;
 	// 需要根据跳转地址来判断哪个基本块是 then 部分，哪个是 else 部分
 	if (jumpAddr == blocks[then.index]->GetStartAddress())
 	{
@@ -308,11 +298,11 @@ void CGraphTranslator::OnReduceIfElse(Node _if, Node t, Node e)
 	}
 	if (then.type == CTNTYPE_LEAF)
 	{
-		then.statement = TranslateRegion(condition, blocks[then.index], jumpAddr);
+		then.statement = TranslateBasicBlock(blocks[then.index]).statement;
 	}
 	if (_else.type == CTNTYPE_LEAF)
 	{
-		_else.statement = TranslateRegion(condition, blocks[_else.index], jumpAddr);
+		_else.statement = TranslateBasicBlock(blocks[_else.index]).statement;
 	}
 	// 在 if 语句之前还有一段代码
 	node.statement = CombineListIf(cond.statement, ifCond, then.statement, _else.statement);
@@ -327,43 +317,45 @@ void CGraphTranslator::OnReduceIfOr(Node _if, Node then, Node _else)
 	auto& c = graph[_else];
 	auto& node = a;
 	auto blocks = this->GetTACFunction()->GetBasicBlocks();
-	uint32_t jumpAddr;
-	CNode* condition1 = nullptr, *condition2 = nullptr;
+	BasicBlockResult blockRet1;
 	if (a.type == CTNTYPE_LEAF)
 	{
-		a.statement = TranslateRegion(condition1, blocks[a.index], jumpAddr);
+		blockRet1 = TranslateBasicBlock(blocks[a.index]);
+		a.statement = blockRet1.statement;
 	}
 	else
 	{
 		// 如果不是叶子节点，则之前的归约必然要保留有条件
 		if (!a.condition)
 			throw Exception(_T("翻译为 if - or 语句的过程中缺少 if 语句的第1个条件表达式"));
-		condition1 = a.condition;
+		blockRet1.condition = a.condition;
 	}
 	// 需要根据跳转地址来判断哪个基本块是 then 部分，哪个是 else 部分
-	if (jumpAddr == blocks[b.index]->GetStartAddress())
+	if (blockRet1.jumpTarget == blocks[b.index]->GetStartAddress())
 	{
 		// 这种情况，需要交换 then 和 else 部分
 		std::swap(node._if.then, node._if._else);
 		std::swap(b, c);
 	}
+	BasicBlockResult blockRet2;
 	if (b.type == CTNTYPE_LEAF)
 	{
-		b.statement = TranslateRegion(condition2, blocks[b.index], jumpAddr);
+		blockRet2 = TranslateBasicBlock(blocks[b.index]);
+		b.statement = blockRet2.statement;
 	}
 	else
 	{
 		// 如果不是叶子节点，则之前的归约必然要保留有条件
 		if (!b.condition)
 			throw Exception(_T("翻译为 if 语句的过程中缺少 if 语句的第2个条件表达式"));
-		condition2 = b.condition;
+		blockRet2.condition = b.condition;
 	}
 	// 用 || 连接 a 和 b 的条件，b的条件要取反，因为b条件满足时跳转到d
-	condition2 = GetNotExpression(condition2);
-	condition1 = nodeFactory.Expr(CNodeKind::EXPR_OR, condition1, condition2);
+	blockRet2.condition = GetNotExpression(blockRet2.condition);
+	blockRet1.condition = nodeFactory.Expr(CNodeKind::EXPR_OR, blockRet1.condition, blockRet2.condition);
 	if (c.type == CTNTYPE_LEAF)
 	{
-		c.statement = TranslateRegion(condition2, blocks[c.index], jumpAddr);
+		c.statement = TranslateBasicBlock(blocks[c.index]).statement;
 	}
 
 	// 多出的那条边翻译为 goto 语句，多出的边的尾节点只有一个后继，所以不会给condition赋值
@@ -375,7 +367,7 @@ void CGraphTranslator::OnReduceIfOr(Node _if, Node then, Node _else)
 	//b.statement = CombineListIf(b.statement, condition, b.statement, c.statement);  // 头节点的末尾加上一个条件跳转语句
 
 	// 在 if 语句之前还有一段代码
-	node.statement = CombineListIf(a.statement, condition1, c.statement);
+	node.statement = CombineListIf(a.statement, blockRet1.condition, c.statement);
 }
 
 
@@ -663,12 +655,19 @@ CNode* CGraphTranslator::TranslateBody()
 	Node n = N.ToVector()[0];
 	if (graph[n].statement == nullptr)
 	{
-		CNode* condition = nullptr;
-		uint32_t jumpAddr;
 		auto block = GetTACFunction()->GetBasicBlocks()[n];
-		graph[n].statement = TranslateRegion(condition, block, jumpAddr);
+		graph[n].statement = TranslateBasicBlock(block).statement;
 	}
 	return graph[n].statement;
+}
+
+BasicBlockResult CGraphTranslator::TranslateBasicBlock(const TACBasicBlock* block)
+{
+	CBasicBlockDAGTranslator translator(this);
+	auto node = translator.Translate(block);
+	auto condition = translator.GetCondition();
+	auto jumpAddr = translator.GetJumpTarget();
+	return { node, condition, jumpAddr };
 }
 
 void CGraphTranslator::DumpControlTree()

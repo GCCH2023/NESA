@@ -157,6 +157,7 @@
     <ClInclude Include="CASTDoWhileOptimier.h" />
     <ClInclude Include="CASTListOptimizer.h" />
     <ClInclude Include="CASTTraverser.h" />
+    <ClInclude Include="CBasicBlockBaseTranslator.h" />
     <ClInclude Include="CBasicBlockDAGTranslator.h" />
     <ClInclude Include="CBasicBlockTranslator.h" />
     <ClInclude Include="CDataBase.h" />
@@ -220,6 +221,7 @@
     <ClCompile Include="CASTDoWhileOptimier.cpp" />
     <ClCompile Include="CASTListOptimizer.cpp" />
     <ClCompile Include="CASTTraverser.cpp" />
+    <ClCompile Include="CBasicBlockBaseTranslator.cpp" />
     <ClCompile Include="CBasicBlockDAGTranslator.cpp" />
     <ClCompile Include="CBasicBlockTranslator.cpp" />
     <ClCompile Include="CDataBase.cpp" />

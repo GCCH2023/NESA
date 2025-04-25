@@ -192,9 +192,6 @@
     <ClInclude Include="CCommonTranslator.h">
       <Filter>C</Filter>
     </ClInclude>
-    <ClInclude Include="CTranslator.h">
-      <Filter>C</Filter>
-    </ClInclude>
     <ClInclude Include="StringJoiner.h">
       <Filter>Common</Filter>
     </ClInclude>
@@ -245,6 +242,12 @@
     </ClInclude>
     <ClInclude Include="CStatementVisitor.h">
       <Filter>C\Traverser</Filter>
+    </ClInclude>
+    <ClInclude Include="CTranslator.h">
+      <Filter>C\Translator</Filter>
+    </ClInclude>
+    <ClInclude Include="CBasicBlockBaseTranslator.h">
+      <Filter>C\Translator</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -359,9 +362,6 @@
     <ClCompile Include="CCommonTranslator.cpp">
       <Filter>C</Filter>
     </ClCompile>
-    <ClCompile Include="CTranslator.cpp">
-      <Filter>C</Filter>
-    </ClCompile>
     <ClCompile Include="StringJoiner.cpp">
       <Filter>Common</Filter>
     </ClCompile>
@@ -406,6 +406,12 @@
     </ClCompile>
     <ClCompile Include="CStatementVisitor.cpp">
       <Filter>C\Traverser</Filter>
+    </ClCompile>
+    <ClCompile Include="CTranslator.cpp">
+      <Filter>C\Translator</Filter>
+    </ClCompile>
+    <ClCompile Include="CBasicBlockBaseTranslator.cpp">
+      <Filter>C\Translator</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

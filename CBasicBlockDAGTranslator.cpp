@@ -169,10 +169,123 @@ bool CNodeEqual::operator()(const CNode* node1, const CNode* node2) const
 }
 
 CBasicBlockDAGTranslator::CBasicBlockDAGTranslator(CTranslator* translator_) :
-	translator(translator_),
+	CBasicBlockBaseTranslator(translator_),
 	condition(nullptr),
 	jumpAddr(0)
 {
+}
+
+CNode* CBasicBlockDAGTranslator::TranslateTAC(const TAC* tac, size_t& index)
+{
+	CNode expr;
+	CNode* current = nullptr;
+	switch (tac->op)
+	{
+	default:
+		return CBasicBlockBaseTranslator::TranslateTAC(tac, index);
+	case TACOperator::BOOL_BAND:
+		expr.Expr(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
+		expr.Expr(CNodeKind::EXPR_NOT_EQUAL, GetNode(&expr), GetExpression(TACOperand(0)));
+		current = GetNode(&expr);
+		Attach(tac->z, current);
+		return current;
+	case TACOperator::BOOL_BIT:
+		expr.Expr(CNodeKind::EXPR_SHIFT_RIGHT, GetExpression(tac->x), GetExpression(tac->y));
+		expr.Expr(CNodeKind::EXPR_BAND, GetNode(&expr), GetExpression(TACOperand(1)));
+		current = GetNode(&expr);
+		Attach(tac->z, current);
+		return current;
+	case TACOperator::CAST:
+	{
+		auto result = GetExpression(tac->z);
+		assert(result->kind == CNodeKind::EXPR_VARIABLE);
+		auto type = result->variable->type;  // 要转换到的类型
+
+		expr.Cast(type, GetExpression(tac->x));
+		Attach(tac->z, GetNode(&expr));
+		break;
+	}
+	case	TACOperator::ARG:
+	{
+		// 若干个 ARG 后面跟着一个 CALL
+		// 遇到 ARG，则要连着后面的直到 CALL 的三地址码一起翻译
+		CNode* argsNode = GetNodeFactory().ExprList();
+		CListNode args(argsNode);
+		auto& codes = GetBasicBlock()->GetCodes();
+		while (codes[index]->op == TACOperator::ARG)
+		{
+			args.Add(GetExpression(codes[index]->x));
+			++index;
+		}
+		if (codes[index]->op != TACOperator::CALL)
+			throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
+		// 最后是 CALL 指令
+		TranslateCall(codes[index], argsNode);
+		continue;
+	}
+	case	TACOperator::CALL:
+	{
+		// 如果有参数，则必是 若干个 ARG 后面跟着一个 CALL
+		// 直接出现 CALL，说明没有参数
+		TranslateCall(tac, nullptr);
+		continue;
+	}
+
+	case TACOperator::IFGEQ:  // 跳转指令是基本块的最后一条指令
+	case TACOperator::IFGREAT:
+	case TACOperator::IFEQ:
+	case TACOperator::IFNEQ:
+	case TACOperator::IFLESS:
+	case TACOperator::IFLEQ:
+	case TACOperator::IFTRUE:
+	case TACOperator::IFFALSE:
+		ConditionalJump(tac);
+		continue;
+	case TACOperator::GOTO:
+	{
+		// 新：当作条件总是真的跳转语句来翻译
+		condition = GetNodeFactory().Integer(1);
+		jumpAddr = tac->z.GetValue();
+		continue;
+
+		// 旧： goto 在控制流图中对应一条边，可能被处理成循环结构，也可能就是对应goto语句，
+		// 还不知道该怎么处理
+		//if (tac->z.GetValue() == tac->address)
+		//{
+		// // 跳转到自己的语句翻译为 while (1);
+		// //expr = allocator.New<CInteger>(1);
+		// //current = allocator.New<CWhileStatement>(expr, noneStatement);
+		// current = noneStatement;
+		// condition = allocator.New<CNode>(1);
+		// break;
+		//}
+		//auto label = GetLabelName(tac->z.GetValue());
+		//current = allocator.New<CNode>(CNodeKind::STAT_GOTO, label);
+		break;
+	}
+	case TACOperator::BIT:
+	{
+		// 先这样翻译凑合一下，翻译成表达式语句
+		expr.Expr(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
+		GetNode(&expr);
+		break;
+	}
+	case TACOperator::RETURN:
+	{
+		if (tac->x.IsZero())  // 目前只能返回 AXY 对象，所以可以这么判断有没有返回值
+		{
+			expr.Return();
+			GetNode(&expr);
+			break;
+		}
+		// 有返回值的情况
+		expr.Return(GetExpression(tac->x));
+		GetNode(&expr);
+		break;
+	}
+	// 进位和溢出标志都是和其他指令配合使用的，抽象语法树中不应该出现
+	}
+	return nullptr;
 }
 
 CNode* CBasicBlockDAGTranslator::GetExpression(const TACOperand& operand)
@@ -186,15 +299,8 @@ CNode* CBasicBlockDAGTranslator::GetExpression(const TACOperand& operand)
 	return GetNode(&node);
 }
 
-const Variable* CBasicBlockDAGTranslator::GetVariable(const TACOperand& operand)
-{
-	CNode node;
-	translator->GetExpression(node, operand);
-	assert(node.kind == CNodeKind::EXPR_VARIABLE);
-	return node.variable;
-}
 
-void CBasicBlockDAGTranslator::TranslateCall(TAC* call, CNode* params)
+void CBasicBlockDAGTranslator::TranslateCall(const TAC* call, CNode* params)
 {
 	String* name = nullptr;
 	if (call->x.IsAddress())  // 直接给出函数地址
@@ -239,7 +345,7 @@ void CBasicBlockDAGTranslator::TranslateCall(TAC* call, CNode* params)
 	}
 }
 
-void CBasicBlockDAGTranslator::ConditionalJump(TAC* tac)
+void CBasicBlockDAGTranslator::ConditionalJump(const TAC* tac)
 {
 	// 记录下跳转指令
 	jumpTAC = tac;
@@ -251,7 +357,7 @@ CNode* CBasicBlockDAGTranslator::GetNode(CNode* node)
 	if (it != nodeSet.end())
 		return *it;
 	// 创建
-	CNode* n = translator->GetNodeFactory().Copy(*node);
+	CNode* n = GetNodeFactory().Copy(*node);
 	nodeSet.insert(n);
 	return n;
 }
@@ -261,18 +367,49 @@ void CBasicBlockDAGTranslator::Attach(const TACOperand& var, CNode* node)
 	varMap[var] = node;
 }
 
-void CBasicBlockDAGTranslator::UnaryExpression(CNodeKind kind, const TAC* tac)
-{
-	CNode node;
-	node.Expr(kind, GetExpression(tac->x));
-	Attach(tac->z, GetNode(&node));
-}
-
-void CBasicBlockDAGTranslator::BinaryExpression(CNodeKind kind, const TAC* tac)
+CNode* CBasicBlockDAGTranslator::BinAssignStatement(CNodeKind kind, const TAC* tac)
 {
 	CNode node;
 	node.Expr(kind, GetExpression(tac->x), GetExpression(tac->y));
 	Attach(tac->z, GetNode(&node));
+	return nullptr;
+}
+
+CNode* CBasicBlockDAGTranslator::AssignStatement(const TACOperand& z, CNode* x)
+{
+	Attach(z, x);
+	return nullptr;
+}
+
+CNode* CBasicBlockDAGTranslator::FieldExpression(CNode* obj, const Field* field)
+{
+	CNode expr;
+	expr.Field(field);
+	expr.Expr(CNodeKind::EXPR_DOT, obj, GetNode(&expr));
+	return GetNode(&expr);
+}
+
+CNode* CBasicBlockDAGTranslator::IndexExpression(CNode* array, CNode* index)
+{
+	CNode expr;
+	expr.Expr(CNodeKind::EXPR_INDEX, array, index);
+	return GetNode(&expr);
+}
+
+CNode* CBasicBlockDAGTranslator::ArrayAssign(CNode* z, CNode* x)
+{
+	CNode expr;
+	expr.Expr(CNodeKind::EXPR_ASSIGN, z, x);
+	return GetNode(&expr);
+}
+
+CNode* CBasicBlockDAGTranslator::UnaryAssignStatement(CNodeKind kind, const TAC* tac)
+{
+	CNode node;
+	node.Expr(kind, GetExpression(tac->x));
+	auto expr = GetNode(&node);
+	Attach(tac->z, expr);
+	return expr;
 }
 
 void CBasicBlockDAGTranslator::GenerateConditionalJump(const DefinitionVar& definition)
@@ -330,7 +467,7 @@ void CBasicBlockDAGTranslator::MarkReserve(const TAC* tac)
 		Reserve(tac->z);
 }
 
-void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
+void CBasicBlockDAGTranslator::GenerateDAG(const TACBasicBlock* block)
 {
 	CNode* current = nullptr;
 	auto& codes = block->GetCodes();
@@ -338,243 +475,7 @@ void CBasicBlockDAGTranslator::GenerateDAG(TACBasicBlock* block)
 	for (size_t i = 0; i < codes.size(); ++i)
 	{
 		auto tac = codes[i];
-		switch (tac->op)
-		{
-		case	TACOperator::BOR:
-			BinaryExpression(CNodeKind::EXPR_BOR, tac);
-			break;
-		case	TACOperator::BAND:
-			BinaryExpression(CNodeKind::EXPR_BAND, tac);
-			break;
-		case	TACOperator::ADD:
-			BinaryExpression(CNodeKind::EXPR_ADD, tac);
-			break;
-		case	TACOperator::SUB:
-			BinaryExpression(CNodeKind::EXPR_SUB, tac);
-			break;
-		case	TACOperator::XOR:
-			BinaryExpression(CNodeKind::EXPR_XOR, tac);
-			break;
-		case	TACOperator::SHL:
-			BinaryExpression(CNodeKind::EXPR_SHIFT_LEFT, tac);
-			break;
-		case	TACOperator::SHR:
-			BinaryExpression(CNodeKind::EXPR_SHIFT_RIGHT, tac);
-			break;
-		case TACOperator::BOOL_GREAT:
-			BinaryExpression(CNodeKind::EXPR_GREAT, tac);
-			break;
-		case TACOperator::BOOL_GEQ:
-			BinaryExpression(CNodeKind::EXPR_GREAT_EQUAL, tac);
-			break;
-		case TACOperator::BOOL_LESS:
-			BinaryExpression(CNodeKind::EXPR_LESS, tac);
-			break;
-		case TACOperator::BOOL_LEQ:
-			BinaryExpression(CNodeKind::EXPR_LESS_EQUAL, tac);
-			break;
-		case TACOperator::BOOL_EQ:
-			BinaryExpression(CNodeKind::EXPR_EQUAL, tac);
-			break;
-		case TACOperator::BOOL_NEQ:
-			BinaryExpression(CNodeKind::EXPR_NOT_EQUAL, tac);
-			break;
-		case TACOperator::BOOL_BAND:
-			expr.Expr(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
-			expr.Expr(CNodeKind::EXPR_NOT_EQUAL, GetNode(&expr), GetExpression(TACOperand(0)));
-			Attach(tac->z, GetNode(&expr));
-			break;
-		case TACOperator::BOOL_BIT:
-			expr.Expr(CNodeKind::EXPR_SHIFT_RIGHT, GetExpression(tac->x), GetExpression(tac->y));
-			expr.Expr(CNodeKind::EXPR_BAND, GetNode(&expr), GetExpression(TACOperand(1)));
-			Attach(tac->z, GetNode(&expr));
-			break;
-		case	TACOperator::ASSIGN:
-			Attach(tac->z, GetExpression(tac->x));
-			break;
-		case TACOperator::ARRAY_GET:
-		{
-			// 可能是给结构体字段赋值
-			auto variable = GetVariable(tac->x);
-			auto type = variable->type;
-			if (type->GetKind() == TypeKind::Struct)
-			{
-				// y 必定是整数
-				assert(tac->y.IsInterger());
-				// 根据偏移量查找字段
-				auto field = type->GetField(tac->y.GetValue());
-				expr.Field(field);
-				expr.Expr(CNodeKind::EXPR_DOT, GetExpression(tac->x), GetNode(&expr));
-			}
-			//else if (type->GetKind() == TypeKind::Pointer)
-			//{
-			   // // y 必定是整数，此时是用指针的高字节赋值 z = *((char*)&x + y)，因为指针占2个字节
-			   // assert(tac->y.IsInterger());
-			   // int offset = tac->y.GetValue();
-			   // // (1) 取指针的地址 &x
-			   // expr = allocator.New<CNode>(CNodeKind::EXPR_ADDR, x);
-			   // // (2) 强制类型转换为 (char*)&x
-			   // expr = allocator.New<CNode>(TypeManager::pValue, expr);
-			   // // (3) 可选的偏移字节 (char*)&x + offset
-			   // if (offset > 0)
-			   // {
-				  //  CNode* offsetNode = allocator.New<CNode>(offset);
-				  //  expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, expr, offsetNode);
-			   // }
-			   // // 解引用
-			   // expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, expr);
-			//}
-			else
-			{
-				expr.Expr(CNodeKind::EXPR_INDEX, GetExpression(tac->x), GetExpression(tac->y));
-			}
-			Attach(tac->z, GetNode(&expr));
-			break;
-
-		}
-		case TACOperator::ARRAY_SET:
-		{
-			// 可能是给结构体字段赋值
-			auto variable = GetVariable(tac->x);
-			auto type = variable->type;
-			if (type->GetKind() == TypeKind::Struct)
-			{
-				// y 必定是整数
-				assert(tac->y.IsInterger());
-				// 根据偏移量查找字段
-				auto field = type->GetField(tac->y.GetValue());
-				expr.Field(field);
-				expr.Expr(CNodeKind::EXPR_DOT, GetExpression(tac->x), GetNode(&expr));
-			}
-			//else if (type->GetKind() == TypeKind::Pointer)
-			//{
-			   // COUT << tac;
-			   // // y 必定是整数，此时是用指针的高字节赋值 z = *((char*)&x + y)，因为指针占2个字节
-			   // assert(tac->y.IsInterger());
-			   // int offset = tac->y.GetValue();
-			   // // (1) 取指针的地址 &x
-			   // expr = allocator.New<CNode>(CNodeKind::EXPR_ADDR, x);
-			   // // (2) 强制类型转换为 (char*)&x
-			   // expr = allocator.New<CNode>(TypeManager::pValue, expr);
-			   // // (3) 可选的偏移字节 (char*)&x + offset
-			   // if (offset > 0)
-			   // {
-				  //  CNode* offsetNode = allocator.New<CNode>(offset);
-				  //  expr = allocator.New<CNode>(CNodeKind::EXPR_ADD, expr, offsetNode);
-			   // }
-			   // // 解引用
-			   // expr = allocator.New<CNode>(CNodeKind::EXPR_DEREF, expr);
-			//}
-			else
-			{
-				expr.Expr(CNodeKind::EXPR_INDEX, GetExpression(tac->x), GetExpression(tac->y));
-			}
-			expr.Expr(CNodeKind::EXPR_ASSIGN, GetNode(&expr), GetExpression(tac->z));
-			Reserve(GetNode(&expr));
-			continue;
-		}
-		case TACOperator::ADDR:
-			UnaryExpression(CNodeKind::EXPR_ADDR, tac);
-			break;
-		case TACOperator::DEREF:
-			UnaryExpression(CNodeKind::EXPR_DEREF, tac);
-			break;
-		case TACOperator::CAST:
-		{
-			auto result = GetExpression(tac->z);
-			assert(result->kind == CNodeKind::EXPR_VARIABLE);
-			auto type = result->variable->type;  // 要转换到的类型
-
-			expr.Cast(type, GetExpression(tac->x));
-			Attach(tac->z, GetNode(&expr));
-			break;
-		}
-		case	TACOperator::ARG:
-		{
-			// 若干个 ARG 后面跟着一个 CALL
-			// 遇到 ARG，则要连着后面的直到 CALL 的三地址码一起翻译
-			CNode* argsNode = translator->GetNodeFactory().ExprList();
-			CListNode args(argsNode);
-
-			while (codes[i]->op == TACOperator::ARG)
-			{
-				args.Add(GetExpression(codes[i]->x));
-				++i;
-			}
-			if (codes[i]->op != TACOperator::CALL)
-				throw Exception(_T("三地址码翻译为C语句：ARG 后面不是 CALL"));
-			// 最后是 CALL 指令
-			TranslateCall(codes[i], argsNode);
-			continue;
-		}
-		case	TACOperator::CALL:
-		{
-			// 如果有参数，则必是 若干个 ARG 后面跟着一个 CALL
-			// 直接出现 CALL，说明没有参数
-			TranslateCall(tac, nullptr);
-			continue;
-		}
-
-		case TACOperator::IFGEQ:  // 跳转指令是基本块的最后一条指令
-		case TACOperator::IFGREAT:
-		case TACOperator::IFEQ:
-		case TACOperator::IFNEQ:
-		case TACOperator::IFLESS:
-		case TACOperator::IFLEQ:
-		case TACOperator::IFTRUE:
-		case TACOperator::IFFALSE:
-			ConditionalJump(tac);
-			continue;
-		case TACOperator::GOTO:
-		{
-			// 新：当作条件总是真的跳转语句来翻译
-			condition = translator->GetNodeFactory().Integer(1);
-			jumpAddr = tac->z.GetValue();
-			continue;
-
-			// 旧： goto 在控制流图中对应一条边，可能被处理成循环结构，也可能就是对应goto语句，
-			// 还不知道该怎么处理
-			//if (tac->z.GetValue() == tac->address)
-			//{
-			// // 跳转到自己的语句翻译为 while (1);
-			// //expr = allocator.New<CInteger>(1);
-			// //current = allocator.New<CWhileStatement>(expr, noneStatement);
-			// current = noneStatement;
-			// condition = allocator.New<CNode>(1);
-			// break;
-			//}
-			//auto label = GetLabelName(tac->z.GetValue());
-			//current = allocator.New<CNode>(CNodeKind::STAT_GOTO, label);
-			break;
-		}
-		case TACOperator::BIT:
-		{
-			// 先这样翻译凑合一下，翻译成表达式语句
-			expr.Expr(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y));
-			GetNode(&expr);
-			break;
-		}
-		case TACOperator::RETURN:
-		{
-			if (tac->x.IsZero())  // 目前只能返回 AXY 对象，所以可以这么判断有没有返回值
-			{
-				expr.Return();
-				GetNode(&expr);
-				break;
-			}
-			// 有返回值的情况
-			expr.Return(GetExpression(tac->x));
-			GetNode(&expr);
-			break;
-		}
-		// 进位和溢出标志都是和其他指令配合使用的，抽象语法树中不应该出现
-		default:
-		{
-			TCHAR buffer[64];
-			_stprintf_s(buffer, _T("三地址码转C语句：未实现的三地址码 %s"), ToString(tac->op));
-			throw Exception(buffer);
-		}
-		}
+		TranslateTAC(tac, i);
 		MarkReserve(tac);
 	}
 }
@@ -593,8 +494,8 @@ CNode* CBasicBlockDAGTranslator::GenerateCodes()
 			// 生成赋值表达式
 			auto it = varMap.find(std::get<TACOperand>(expr));
 			CNode* right = GenerateExpression(it->second, definition);
-			CNode* left = translator->GetNodeFactory().Var(GetVariable(it->first));
-			current = translator->GetNodeFactory().Assign(left, right);
+			CNode* left = GetNodeFactory().Var(GetVariable(it->first));
+			current = GetNodeFactory().Assign(left, right);
 			definition[it->second] = left->variable;
 		}
 		else  // CNode*
@@ -602,7 +503,7 @@ CNode* CBasicBlockDAGTranslator::GenerateCodes()
 			// 生成数组或字段赋值表达式
 			current = GenerateExpression(std::get<CNode*>(expr), definition);
 		}
-		current = translator->GetNodeFactory().ExprStat(current);
+		current = GetNodeFactory().ExprStat(current);
 		// 构建语句列表
 		list.Add(current);
 	}
@@ -615,7 +516,7 @@ CNode* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const Definitio
 	// 已经生成过赋值代码的变量，直接返回它
 	auto it = definition.find(node);
 	if (it != definition.end())
-		return translator->GetNodeFactory().Var(it->second);
+		return GetNodeFactory().Var(it->second);
 
 	switch (node->kind)
 	{
@@ -631,9 +532,9 @@ CNode* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const Definitio
 	//	break;
 	//}
 	case CNodeKind::EXPR_INTEGER:
-		return  translator->GetNodeFactory().Integer(node->i.value);
+		return  GetNodeFactory().Integer(node->i.value);
 	case CNodeKind::EXPR_VARIABLE:
-		return  translator->GetNodeFactory().Var(node->variable);
+		return  GetNodeFactory().Var(node->variable);
 	case CNodeKind::EXPR_BOR:
 	case CNodeKind::EXPR_BAND:
 	case CNodeKind::EXPR_XOR:
@@ -651,12 +552,12 @@ CNode* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const Definitio
 	case CNodeKind::EXPR_LESS:
 	case CNodeKind::EXPR_LESS_EQUAL:
 	case CNodeKind::EXPR_INDEX:
-		return  translator->GetNodeFactory().Expr(node->kind, node->e.x, node->e.y);
+		return  GetNodeFactory().Expr(node->kind, node->e.x, node->e.y);
 
 	case CNodeKind::EXPR_NOT:
 	case CNodeKind::EXPR_DEREF:
 	case CNodeKind::EXPR_ADDR:
-		return  translator->GetNodeFactory().Expr(node->kind, node->e.x);
+		return  GetNodeFactory().Expr(node->kind, node->e.x);
 
 	default:
 	{
@@ -667,9 +568,9 @@ CNode* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const Definitio
 	}
 	}
 }
-#include "Dump.h"
+
 // 临时变量必定是两条三地址码连着，所以直接合并成一个表达式
-CNode* CBasicBlockDAGTranslator::Translate(TACBasicBlock* block)
+CNode* CBasicBlockDAGTranslator::Translate(const TACBasicBlock* block)
 {
 	GenerateDAG(block);
 	auto node = GenerateCodes();

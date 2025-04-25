@@ -19,8 +19,11 @@ public:
 protected:
 
 	virtual CNode* TranslateBody() override;
+	virtual BasicBlockResult TranslateBasicBlock(const TACBasicBlock* block) override;
+
 	CNode* TranslateCall(TAC* call, CNode* params = nullptr);
 	CNode* ConditionalJump(CNodeKind kind, TAC* tac);
+	CNode* ConditionalJump(const BasicBlockResult& ret);
 
 	CNode* UnaryExpression(CNodeKind kind, const TAC* tac);
 	CNode* BinaryExpression(CNodeKind kind, const TAC* tac);

@@ -8,6 +8,15 @@ class TACOperand;
 struct Variable;
 struct String;
 struct Type;
+class TACBasicBlock;
+
+// 基本块翻译结果
+struct BasicBlockResult
+{
+	CNode* statement;  // 基本块对应的语句
+	CNode* condition;  // 如果基本块以跳转指令介绍，则保存跳转条件
+	uint32_t jumpTarget;  // 跳转目标地址
+};
 
 // 三地址码翻译为C语句的基类
 class CTranslator
@@ -36,8 +45,6 @@ public:
 	void SetFunctionType();
 	// 添加所有临时变量
 	void SetLocalVariables();
-	// 翻译函数体
-	virtual CNode* TranslateBody();
 	// 获取标签名称
 	String* GetLabelName(uint32_t jumpAddr);
 	// 回填标签语句
@@ -53,6 +60,12 @@ public:
 
 	Allocator& GetAllocator() { return allocator; }
 	CNodeFactory& GetNodeFactory() { return nodeFactory; }
+
+protected:
+	// 翻译函数体
+	virtual CNode* TranslateBody() = 0;
+	// 翻译基本块
+	virtual BasicBlockResult TranslateBasicBlock(const TACBasicBlock* block) = 0;
 protected:
 	Allocator& allocator;
 	CNodeFactory nodeFactory;
