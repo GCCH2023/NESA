@@ -19,7 +19,7 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 
 	// 根据节点类型调用特定的访问方法
 	CNode* child;
-	switch (node->kind)
+	switch (node->GetKind())
 	{
 	case CNodeKind::EXPR_VARIABLE:
 	case CNodeKind::EXPR_INTEGER:
@@ -28,7 +28,7 @@ void CASTContextTraverser::TraverseNode(CNode* node, CASTContextVisitor& visitor
 		break;
 	case CNodeKind::STAT_LIST:
 		PushAncestor(node);
-		for (auto child : CListNode(*node))
+		for (auto child : node->As<>CListNode(*node))
 		{
 			TraverseNode(child, visitor);
 			PushSenior(child);

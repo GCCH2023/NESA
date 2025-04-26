@@ -49,6 +49,9 @@
     <Filter Include="C\Translator">
       <UniqueIdentifier>{0d9c2b73-5e41-441c-806b-9e285cc31b03}</UniqueIdentifier>
     </Filter>
+    <Filter Include="C\Factory">
+      <UniqueIdentifier>{7d3f43d0-59ba-4a11-a42c-5ed94af315f2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -237,9 +240,6 @@
     <ClInclude Include="CBasicBlockDAGTranslator.h">
       <Filter>C\Translator</Filter>
     </ClInclude>
-    <ClInclude Include="CNodeFactory.h">
-      <Filter>C</Filter>
-    </ClInclude>
     <ClInclude Include="CStatementVisitor.h">
       <Filter>C\Traverser</Filter>
     </ClInclude>
@@ -248,6 +248,9 @@
     </ClInclude>
     <ClInclude Include="CBasicBlockBaseTranslator.h">
       <Filter>C\Translator</Filter>
+    </ClInclude>
+    <ClInclude Include="CNodeFactory.h">
+      <Filter>C\Factory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -401,9 +404,6 @@
     <ClCompile Include="CBasicBlockDAGTranslator.cpp">
       <Filter>C\Translator</Filter>
     </ClCompile>
-    <ClCompile Include="CNodeFactory.cpp">
-      <Filter>C</Filter>
-    </ClCompile>
     <ClCompile Include="CStatementVisitor.cpp">
       <Filter>C\Traverser</Filter>
     </ClCompile>
@@ -412,6 +412,9 @@
     </ClCompile>
     <ClCompile Include="CBasicBlockBaseTranslator.cpp">
       <Filter>C\Translator</Filter>
+    </ClCompile>
+    <ClCompile Include="CNodeFactory.cpp">
+      <Filter>C\Factory</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

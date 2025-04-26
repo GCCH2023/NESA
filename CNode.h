@@ -59,7 +59,7 @@ enum class CNodeKind
 	EXPR_INDEX,  // 索引 x[y]
 	EXPR_ARROW,  // 取记录对象指针的字段 x->y
 	EXPR_DOT,  // 取记录对象的字段 x.y
-	
+
 	EXPR_CALL,  // 函数调用
 	EXPR_LIST,  // 表达式列表
 
@@ -224,184 +224,364 @@ constexpr bool IsBinaryExpression(CNodeKind kind)
 	return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR_BINARY);
 }
 
-// C语言语法节点
-struct CNode
+
+class CNode
 {
-	CNodeKind kind;  // 节点的类型
-
-	union
-	{
-		struct
-		{
-			String* name;
-			CNode* body;
-		}l;  // 标签语句
-		const Variable* variable;  // 变量
-		const Field* field;  // 记录类型的字段
-		struct
-		{
-			const Type* type;  // 类型转换表达式的目标类型
-			CNode* expr;
-		}cast;  // 类型转换表达式
-		struct
-		{
-			int value;
-		}i;  // 整数常量
-		struct
-		{
-			CNode* x;
-			CNode* y;
-			CNode* z;
-		}e;  // 表达式的三个操作数
-		struct
-		{
-			CNode* condition;
-			CNode* then;
-			CNode* _else;
-		}s;  // if, while, do while
-		struct
-		{
-			String* name;  // 函数名称
-			CNode* args;  // 参数列表
-		}call;
-		struct
-		{
-			CNode* head;
-			CNode* tail;
-		}list; // 语句列表
-		struct
-		{
-			CNode* condition;  // 循环条件表达式
-			CNode* body;  // 循环体语句
-			CNode* init;  // 初始化表达式
-			CNode* iter;  // 迭代表达式
-		}_for;  // for
-	};
-
-private:
-	friend class CListNode;
-	// 构成双向链表
-	CNode* prev = nullptr;
-	CNode* next = nullptr;
 public:
-
-	CNode();
-	CNode(CNodeKind kind);
-	CNode(const CNode& other) = default;
-
-	// 设置为 for 语句
-	CNode& For(CNode* init, CNode* condition, CNode* iter, CNode* body);
-	// 设置为 goto 语句
-	CNode& Goto(String* label);
-	// 设置为 if 语句
-	CNode& If(CNode* condition, CNode* body, CNode* _else = nullptr);
-	// 设置为 while 语句
-	CNode& While(CNode* condition, CNode* body);
-	// 设置为 do while 语句
-	CNode& DoWhile(CNode* condition, CNode* body);
-	// 设置为 return 语句
-	CNode& Return(CNode* value = nullptr);
-	// 设置为 标签 语句
-	CNode& Label(String* label, CNode* body);
-	// 设置为 表达式 语句
-	CNode& ExprStat(CNode* expr);
-	// 设置为整数
-	CNode& Integer(int value);
-	// 设置为函数调用
-	CNode& Call(String* function, CNode* args = nullptr);
-	// 设置为类型转换表达式
-	CNode& Cast(const Type* type, CNode* expr);
-	// 设置为字段
-	CNode& Field(const ::Field* field);
-	// 设置为表达式
-	CNode& Expr(CNodeKind kind, CNode* x = nullptr, CNode* y = nullptr, CNode* z = nullptr);
-	// 设置为变量表达式
-	CNode& Var(const Variable* variable);
-	// 设置为 复合语句
-	CNode& ListStat();
-	// 设置为赋值表达式
-	CNode& Assign(CNode* target, CNode* source);
-	// 设置为 空 语句
-	CNode& EmptyStat();
-	// 设置为表达式列表
-	CNode& ExprList();
-
-	// 设置为无效节点
-	CNode& Reset();
-	// 设置为指定节点的数据，不包括链表关系
-	CNode& CopyData(const CNode& other);
-
+	// 获取节点类别
+	CNodeKind GetKind() const { return kind; }
 	// 是否语句
 	bool IsStatement() const { return MatchCategory(GetCategory(kind), CNODE_CAT_STAT); }
-	// 是否空语句
-	bool IsEmptyStatement() const { return kind == CNodeKind::STAT_EMPTY; }
-	// 是否复合语句
-	bool IsCompoundStatement() const { return kind == CNodeKind::STAT_LIST; }
 	// 是否表达式
 	bool IsExpression() const { return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR); }
-	// 是否比较表达式
-	bool IsCompareExpression() const { return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR_COMP); }
-	// 是否整数
-	bool IsInteger() const { return kind == CNodeKind::EXPR_INTEGER; }
-	// 是否变量
-	bool IsVariable() const { return kind == CNodeKind::EXPR_VARIABLE; }
 
-	CNode* GetPrev() { return prev; }
-	CNode* GetNext() { return next; }
+protected:
+	CNode(CNodeKind kind_) :kind(kind_) {}
+private:
+	CNodeKind kind;
+};
+
+
+struct Variable;
+class Expression;
+
+class VariableExpression
+{
+public:
+	const Variable* variable;
+};
+
+class IntegerExpression
+{
+public:
+	int value;
+};
+
+class FieldExpression
+{
+public:
+	const Field* field;
+};
+
+class CastExpression
+{
+public:
+	const Type* type;
+	Expression* expr;
+};
+
+class UnaryExpression
+{
+public:
+	Expression* x;
+};
+
+class BinaryExpression
+{
+public:
+	Expression* x;
+	Expression* y;
+};
+
+class TernaryExpression
+{
+public:
+	Expression* x;
+	Expression* y;
+	Expression* z;
+};
+
+using Arguments = std::vector<Expression*>;
+
+class CallExpression
+{
+public:
+	String* func;
+	Arguments args;
+};
+
+
+class Expression : public CNode
+{
+public:
+	Expression(const Expression& expr) :
+		CNode(expr.GetKind()),
+		value(expr.value)
+	{
+	}
+	Expression(Expression&& expr) :
+		CNode(expr.GetKind()),
+		value(expr.value)
+	{
+	}
+
+	static Expression Variable(const ::Variable* variable)
+	{
+		assert(variable);
+
+		Expression expr(CNodeKind::EXPR_VARIABLE);
+		expr.value = VariableExpression{ variable };
+		return expr;
+	}
+	static Expression Integer(int value)
+	{
+		Expression expr(CNodeKind::EXPR_INTEGER);
+		expr.value = IntegerExpression{ value };
+		return expr;
+	}
+	static Expression Field(const ::Field* field)
+	{
+		assert(field);
+
+		Expression expr(CNodeKind::EXPR_FIELD);
+		expr.value = FieldExpression{ field };
+		return expr;
+	}
+	static Expression Cast(const Type* type, Expression* expression)
+	{
+		assert(type);
+		assert(expression);
+
+		Expression expr(CNodeKind::EXPR_CAST);
+		expr.value = CastExpression{ type, expression };
+		return expr;
+	}
+	static Expression Unary(CNodeKind op, Expression* x)
+	{
+		assert(::IsUnaryExpression(op));
+		assert(x);
+
+		Expression expr(op);
+		expr.value = UnaryExpression{ x };
+		return expr;
+	}
+	static Expression Binary(CNodeKind op, Expression* x, Expression* y)
+	{
+		assert(::IsBinaryExpression(op));
+		assert(x);
+
+		Expression expr(op);
+		expr.value = UnaryExpression{ x };
+		return expr;
+	}
+	static Expression Call(String* func)
+	{
+		assert(func);
+
+		Expression expr(CNodeKind::EXPR_CALL);
+		expr.value = CallExpression{ func };
+		return expr;
+	}
+
+	template<typename T>
+	const T& As() const { return std::get<T>(value); }
+
+	// 是否比较表达式
+	bool IsCompare() const { return MatchCategory(GetCategory(GetKind()), CNODE_CAT_EXPR_COMP); }
+	// 是否整数
+	bool IsInteger() const { return GetKind() == CNodeKind::EXPR_INTEGER; }
+	// 是否变量
+	bool IsVariable() const { return GetKind() == CNodeKind::EXPR_VARIABLE; }
+
+private:
+	Expression(CNodeKind kind) : CNode(kind) {}
+private:
+	std::variant<VariableExpression,
+		IntegerExpression,
+		FieldExpression,
+		CastExpression,
+		UnaryExpression,
+		BinaryExpression,
+		TernaryExpression,
+		CallExpression> value;
+};
+
+class Statement;
+
+class IfStatement
+{
+public:
+	Expression* condition;
+	Statement* then;
+	Statement* else_;
+};
+
+class WhileStatement
+{
+public:
+	Expression* condition;
+	Statement* then;
+};
+
+class DoWhileStatement
+{
+public:
+	Expression* condition;
+	Statement* then;
+};
+
+class LabelStatement
+{
+public:
+	String* name;
+	Statement* body;
+};
+
+class ForStatement
+{
+public:
+	Expression* init;  // 初始化表达式
+	Expression* condition;  // 循环条件表达式
+	Expression* iter;  // 迭代表达式
+	Statement* body;  // 循环体语句
+};
+
+class GotoStatement
+{
+public:
+	String* label;
+};
+
+class ReturnStatement
+{
+public:
+	Expression* value;
+};
+
+class ExprStatement
+{
+public:
+	Expression* expr;
+};
+
+using Statements = std::vector<Statement*>;
+
+class CompoundStatement
+{
+public:
+	Statements statements;
+};
+
+class Statement : public CNode
+{
+public:
+	Statement(const Statement& stat) :
+		CNode(stat.GetKind()),
+		value(stat.value)
+	{
+	}
+	Statement(Statement&& stat) :
+		CNode(stat.GetKind()),
+		value(stat.value)
+	{
+	}
+
+	static Statement If(Expression* condition, Statement* then, Statement* _else = nullptr)
+	{
+		assert(condition);
+		assert(then);
+
+		Statement statement(CNodeKind::STAT_IF);
+		statement.value = IfStatement{ condition, then, _else };
+		return statement;
+	}
+	static Statement While(Expression* condition, Statement* body)
+	{
+		assert(condition);
+		assert(body);
+
+		Statement statement(CNodeKind::STAT_WHILE);
+		statement.value = WhileStatement{ condition, body };
+		return statement;
+	}
+	static Statement DoWhile(Expression* condition, Statement* then)
+	{
+		assert(condition);
+		assert(then);
+
+		Statement statement(CNodeKind::STAT_DO_WHILE);
+		statement.value = DoWhileStatement{ condition, then };
+		return statement;
+	}
+	static Statement Empty()
+	{
+		Statement statement(CNodeKind::STAT_EMPTY);
+		return statement;
+	}
+	static Statement Label(String* name, Statement* body)
+	{
+		assert(name);
+		assert(body);
+
+		Statement statement(CNodeKind::STAT_LABEL);
+		statement.value = LabelStatement{ name, body };
+		return statement;
+	}
+	static Statement For(Statement* body, Expression* init = nullptr, Expression* condition = nullptr, Expression* iter = nullptr)
+	{
+		assert(body);
+
+		Statement statement(CNodeKind::STAT_FOR);
+		statement.value = ForStatement{ init, condition, iter, body };
+		return statement;
+	}
+	static Statement Goto(String* label)
+	{
+		assert(label);
+
+		Statement statement(CNodeKind::STAT_GOTO);
+		statement.value = GotoStatement{ label };
+		return statement;
+	}
+	static Statement Return(Expression* value = nullptr)
+	{
+		Statement statement(CNodeKind::STAT_RETURN);
+		statement.value = ReturnStatement{ value };
+		return statement;
+	}
+	static Statement Expr(Expression* expr)
+	{
+		assert(expr);
+
+		Statement statement(CNodeKind::STAT_EXPR);
+		statement.value = ExprStatement{ expr };
+		return statement;
+	}
+	static Statement Compound()
+	{
+		Statement statement(CNodeKind::STAT_LIST);
+		statement.value = CompoundStatement();
+		return statement;
+	}
+
+	template<typename T>
+	const T& As() const { return std::get<T>(value); }
+
+	// 是否空语句
+	bool IsEmpty() const { return GetKind() == CNodeKind::STAT_EMPTY; }
+	// 是否复合语句
+	bool IsCompound() const { return GetKind() == CNodeKind::STAT_LIST; }
+
+private:
+	Statement(CNodeKind kind) : CNode(kind) {}
+private:
+	std::variant<std::monostate,
+		IfStatement,
+		WhileStatement,
+		DoWhileStatement,
+		LabelStatement,
+		ForStatement,
+		GotoStatement,
+		ReturnStatement,
+		ExprStatement,
+		CompoundStatement> value;
 };
 
 // 获取运算符的优先级
 // 返回值越小，优先级越大
 int GetOperatorPriority(CNodeKind op);
 
-
-// 专门用于操作列表节点的类
-class CListNode
-{
-public:
-	// 迭代器类
-	class Iterator {
-	private:
-		CNode* current;
-	public:
-		Iterator(CNode* node) : current(node) {}
-		CNode* operator*() const { return current; }
-		CNode* operator->() const { return current; }
-		Iterator& operator++() { if (current) current = current->next; return *this; }
-		Iterator operator++(int) { Iterator temp = *this; 	++(*this); return temp; }
-		Iterator& operator--() { if (current) current = current->prev;			return *this; }
-		Iterator operator--(int) { Iterator temp = *this;			--(*this);			return temp; }
-		bool operator==(const Iterator& other) const { return current == other.current; }
-		bool operator!=(const Iterator& other) const { return current != other.current; }
-	};
-
-	CListNode(CNode& node_);
-	CListNode(CNode* node_);
-	// 添加一个节点到末尾
-	CListNode& Add(CNode* node);
-	// 添加一个节点到开头
-	CListNode& PushFront(CNode* node);
-	// 添加一个链表到开头
-	CListNode& PushFront(CNode* head, CNode* tail);
-	// 移除指定节点，返回下一个节点的迭代器
-	Iterator Remove(CNode* node);
-	// 获取列表中节点的数量
-	size_t Count() const;
-	// 将指定列表的全部元素加入到这个列表中
-	void Add(const CListNode& other);
-	// 将指定列表的全部元素加入到这个列表的前面
-	void JoinFront(const CListNode& other);
-	// 将指定列表插入到指定位置后
-	CListNode& Insert(Iterator pos, const CListNode& other);
-	// 是否不包含元素
-	bool Empty() const { return list->list.head == nullptr; }
-	Iterator begin() { return Iterator(list->list.head); }
-	Iterator end() { return Iterator(nullptr); }
-private:
-	CNode* list;
-};
-
 // 计算 x op y 的值
 // 要求 x 和 y 都是整数节点
 // 失败抛出异常
-int Evaluate(CNodeKind op, const CNode& x, const CNode& y);
+int Evaluate(CNodeKind op, const Expression& x, const Expression& y);

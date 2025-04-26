@@ -7,168 +7,111 @@ CNodeFactory::CNodeFactory(Allocator& allocator_):
 {
 }
 
-CNode* CNodeFactory::For(CNode* init, CNode* condition, CNode* iter, CNode* body)
+Statement* CNodeFactory::For(Statement* body, Expression* init, Expression* condition, Expression* iter)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->For(init, condition, iter, body);
-	return node;
+	return allocator.New<Statement>(Statement::For(body, init, condition, iter));
 }
 
-CNode* CNodeFactory::Goto(String* label)
+Statement* CNodeFactory::Goto(String* label)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->Goto(label);
-	return node;
+	return allocator.New<Statement>(Statement::Goto(label));
 }
 
-CNode* CNodeFactory::If(CNode* condition, CNode* body, CNode* _else)
+Statement* CNodeFactory::If(Expression* condition, Statement* then, Statement* _else)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->If(condition, body, _else);
-	return node;
+	return allocator.New<Statement>(Statement::If(condition, then, _else));
 }
 
-CNode* CNodeFactory::While(CNode* condition, CNode* body)
+Statement* CNodeFactory::While(Expression* condition, Statement* body)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->While(condition, body);
-	return node;
+	return allocator.New<Statement>(Statement::While(condition, body));
 }
 
-CNode* CNodeFactory::DoWhile(CNode* condition, CNode* body)
+Statement* CNodeFactory::DoWhile(Expression* condition, Statement* body)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->DoWhile(condition, body);
-	return node;
+	return allocator.New<Statement>(Statement::DoWhile(condition, body));
 }
 
 
-CNode* CNodeFactory::Label(String* label, CNode* body)
+Statement* CNodeFactory::Label(String* label, Statement* body)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->Label(label, body);
-	return node;
+	return allocator.New<Statement>(Statement::Label(label, body));
 }
 
-CNode* CNodeFactory::ExprStat(CNode* expr)
+Statement* CNodeFactory::ExprStat(Expression* expr)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->ExprStat(expr);
-	return node;
+	return allocator.New<Statement>(Statement::Expr(expr));
 }
 
-CNode* CNodeFactory::Integer(int value)
+Statement* CNodeFactory::CompoundStat()
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->Integer(value);
-	return node;
+	return allocator.New<Statement>(Statement::Compound());
 }
 
-CNode* CNodeFactory::Call(String* function, CNode* params)
+Statement* CNodeFactory::EmptyStat()
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->Call(function, params);
-	return node;
+	return allocator.New<Statement>(Statement::Empty());
 }
 
-CNode* CNodeFactory::Cast(const Type* type, CNode* expr)
+Statement* CNodeFactory::Return(Expression* value)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->Cast(type, expr);
-	return node;
+	return allocator.New<Statement>(Statement::Return(value));
 }
 
-CNode* CNodeFactory::Field(const ::Field* field)
+Expression* CNodeFactory::Integer(int value)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->Field(field);
-	return node;
+	return allocator.New<Expression>(Expression::Integer(value));
 }
 
-CNode* CNodeFactory::Expr(CNodeKind kind, CNode* x, CNode* y, CNode* z)
+Expression* CNodeFactory::Call(String* function)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->Expr(kind, x, y, z);
-	return node;
+	return allocator.New<Expression>(Expression::Call(function));
 }
 
-CNode* CNodeFactory::Var(const Variable* variable)
+Expression* CNodeFactory::Cast(const Type* type, Expression* expr)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->Var(variable);
-	return node;
+	return allocator.New<Expression>(Expression::Cast(type, expr));
 }
 
-CNode* CNodeFactory::ListStat()
+Expression* CNodeFactory::Field(const ::Field* field)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->ListStat();
-	return node;
+	return allocator.New<Expression>(Expression::Field(field));
 }
 
-CNode* CNodeFactory::Assign(CNode* target, CNode* source)
+Expression* CNodeFactory::Unary(CNodeKind op, Expression* x)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->Assign(target, source);
-	return node;
+	return allocator.New<Expression>(Expression::Unary(op, x));
 }
 
-CNode* CNodeFactory::AssignStat(CNode* target, CNode* source)
+Expression* CNodeFactory::Binary(CNodeKind op, Expression* x, Expression* y)
 {
-	CNode* expr = allocator.Alloc<CNode>();
-	expr->Assign(target, source);
-	CNode* node = allocator.Alloc<CNode>();
-	node->ExprStat(expr);
-	return node;
+	return allocator.New<Expression>(Expression::Binary(op, x, y));
 }
 
-CNode* CNodeFactory::EmptyStat()
+Expression* CNodeFactory::Var(const Variable* variable)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->EmptyStat();
-	return node;
+	return allocator.New<Expression>(Expression::Variable(variable));
 }
 
-CNode* CNodeFactory::Return(CNode* value)
+Expression* CNodeFactory::Assign(Expression* target, Expression* source)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->Return(value);
-	return node;
+	return allocator.New<Expression>(Expression::Binary(CNodeKind::EXPR_ASSIGN, target, source));
 }
 
-CNode* CNodeFactory::ExprList()
+Statement* CNodeFactory::AssignStat(Expression* target, Expression* source)
 {
-	CNode* node = allocator.Alloc<CNode>();
-	node->ExprList();
-	return node;
+	Expression* expr = Assign(target, source);
+	return ExprStat(expr);
 }
 
-CNode* CNodeFactory::UnaryAssignExpr(CNodeKind op, CNode* z, CNode* x)
+Expression* CNodeFactory::ExprList()
 {
-	assert(IsUnaryExpression(op));
-
-	return Assign(z, Expr(op, x));
+	return nullptr;
+	//return allocator.New<Expression>(Expression::Arg(CNodeKind::EXPR_ASSIGN, target, source));
 }
 
-CNode* CNodeFactory::BinaryAssignExpr(CNodeKind op, CNode* z, CNode* x, CNode* y)
+Expression* CNodeFactory::UnaryAssignExpr(CNodeKind op, Expression* z, Expression* x)
 {
-	assert(IsBinaryExpression(op));
-
-	return Assign(z, Expr(op, x, y));
-}
-
-CNode* CNodeFactory::UnaryAssignExprStat(CNodeKind op, CNode* z, CNode* x)
-{
-	return ExprStat(UnaryAssignExpr(op, z, x));
-}
-
-CNode* CNodeFactory::BinaryAssignExprStat(CNodeKind op, CNode* z, CNode* x, CNode* y)
-{
-	return ExprStat(BinaryAssignExpr(op, z, x, y));
-}
-
-
-CNode* CNodeFactory::Copy(const CNode& node)
-{
-	return allocator.New<CNode>(node);
+	auto expr = Unary(op, x);
+	return Assign(z, expr);
 }
