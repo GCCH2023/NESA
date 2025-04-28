@@ -103,15 +103,3 @@ Statement* CNodeFactory::AssignStat(Expression* target, Expression* source)
 	Expression* expr = Assign(target, source);
 	return ExprStat(expr);
 }
-
-Expression* CNodeFactory::ExprList()
-{
-	return nullptr;
-	//return allocator.New<Expression>(Expression::Arg(CNodeKind::EXPR_ASSIGN, target, source));
-}
-
-Expression* CNodeFactory::UnaryAssignExpr(CNodeKind op, Expression* z, Expression* x)
-{
-	auto expr = Unary(op, x);
-	return Assign(z, expr);
-}

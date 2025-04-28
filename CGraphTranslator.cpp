@@ -5,6 +5,7 @@ using namespace std;
 #include "CDataBase.h"
 #include "CBasicBlockTranslator.h"
 #include "CBasicBlockDAGTranslator.h"
+#include "NodeConverter.h"
 
 //#define DEBUG_GRAPH
 
@@ -81,7 +82,7 @@ CNodeKind CGraphTranslator::TranslateOperator(TACOperator op)
 	}
 }
 
-CNode* CGraphTranslator::CombineListIf(CNode* statement, CNode* condition, CNode* body, CNode* elseBody /*= nullptr*/)
+Statement* CGraphTranslator::CombineListIf(Statement* statement, Expression* condition, Statement* body, Statement* elseBody /*= nullptr*/)
 {
 	auto ifStat = nodeFactory.If(condition, body, elseBody);
 	if (!statement)
@@ -89,47 +90,17 @@ CNode* CGraphTranslator::CombineListIf(CNode* statement, CNode* condition, CNode
 	return NewStatementPair(statement, ifStat);
 }
 
-CNode* CGraphTranslator::GetNotExpression(CNode* expr)
-{
-	switch (expr->kind)
-	{
-	case CNodeKind::EXPR_GREAT:
-		expr->kind = CNodeKind::EXPR_LESS_EQUAL;
-		break;
-	case CNodeKind::EXPR_GREAT_EQUAL:
-		expr->kind = CNodeKind::EXPR_LESS;
-		break;
-	case CNodeKind::EXPR_LESS:
-		expr->kind = CNodeKind::EXPR_GREAT_EQUAL;
-		break;
-	case CNodeKind::EXPR_LESS_EQUAL:
-		expr->kind = CNodeKind::EXPR_GREAT;
-		break;
-	case CNodeKind::EXPR_EQUAL:
-		expr->kind = CNodeKind::EXPR_NOT_EQUAL;
-		break;
-	case CNodeKind::EXPR_NOT_EQUAL:
-		expr->kind = CNodeKind::EXPR_EQUAL;
-		break;
-	default:
-		throw Exception(_T("未实现的表达式取反类型"));
-	}
-	return expr;
-}
-
-
-
-CNode* CGraphTranslator::NewDoWhile(CNode* condition, CNode* body)
+Statement* CGraphTranslator::NewDoWhile(Expression* condition, Statement* body)
 {
 	// do ; while (condition) => while (condition) ;
 	// 没有循环体或者条件总是为真，则转换为 while 循环
-	if (body->kind == CNodeKind::STAT_EMPTY || condition->kind == CNodeKind::EXPR_INTEGER)
+	if (body->IsEmpty() || condition->IsInteger())
 		return nodeFactory.While(condition, body);
 	return nodeFactory.DoWhile(condition, body);
 }
 
 
-CNode* CGraphTranslator::NewStatementPair(CNode* first, CNode* second)
+Statement* CGraphTranslator::NewStatementPair(Statement* first, Statement* second)
 {
 	assert(first->GetNext() == nullptr);
 	// 尝试优化
@@ -137,9 +108,9 @@ CNode* CGraphTranslator::NewStatementPair(CNode* first, CNode* second)
 	// 合并后，被丢弃了，引用失效。
 	// 但是这个问题也不算是问题，因为区域归约后，子区域一般不访问了
 	// 发现了新的问题，把标签语句给优化掉了，还是生成语句后再优化好了
-	//if (first->kind == CNodeKind::STAT_LIST)
+	//if (first->GetKind() == CNodeKind::STAT_LIST)
 	//{
-	//	if (second->kind == CNodeKind::STAT_LIST)
+	//	if (second->GetKind() == CNodeKind::STAT_LIST)
 	//	{
 	//		// 合并到末尾
 	//		first->list.tail->AddNext(second->list.head;
@@ -151,17 +122,14 @@ CNode* CGraphTranslator::NewStatementPair(CNode* first, CNode* second)
 	//	first->list.tail = second;
 	//	return first;
 	//}
-	//else if (second->kind == CNodeKind::STAT_LIST)
+	//else if (second->GetKind() == CNodeKind::STAT_LIST)
 	//{
 	//	// 添加到开头
 	//	first->AddNext(second->list.head;
 	//	second->list.head = first;
 	//	return second;
 	//}
-	CNode parent(CNodeKind::STAT_LIST);
-	CListNode list(parent);
-	list.Add(first);
-	list.Add(second);
+	std::vector<Statement*> list = { first, second };
 	return NewStatementList(list);
 }
 
@@ -245,7 +213,7 @@ void CGraphTranslator::OnReduceIf(Node _if, Node then)
 	auto& body = graph[then];
 	auto& node = cond;  // 结果
 	auto blocks = this->GetTACFunction()->GetBasicBlocks();
-	CNode* ifCond;
+	Expression* ifCond;
 	if (cond.type == CTNTYPE_LEAF)
 	{
 		auto result = TranslateBasicBlock(blocks[cond.index]);
@@ -275,7 +243,7 @@ void CGraphTranslator::OnReduceIfElse(Node _if, Node t, Node e)
 	auto& _else = graph[e];
 	auto& node = cond;  // 结果
 	auto blocks = this->GetTACFunction()->GetBasicBlocks();
-	CNode* ifCond;
+	Expression* ifCond;
 	uint32_t jumpAddr = 0;
 	if (cond.type == CTNTYPE_LEAF)
 	{
@@ -353,8 +321,8 @@ void CGraphTranslator::OnReduceIfOr(Node _if, Node then, Node _else)
 		blockRet2.condition = b.condition;
 	}
 	// 用 || 连接 a 和 b 的条件，b的条件要取反，因为b条件满足时跳转到d
-	blockRet2.condition = GetNotExpression(blockRet2.condition);
-	blockRet1.condition = nodeFactory.Expr(CNodeKind::EXPR_OR, blockRet1.condition, blockRet2.condition);
+	NodeConverter::Not(blockRet2.condition);
+	blockRet1.condition = nodeFactory.Binary(CNodeKind::EXPR_OR, blockRet1.condition, blockRet2.condition);
 	if (c.type == CTNTYPE_LEAF)
 	{
 		c.statement = TranslateBasicBlock(blocks[c.index]).statement;
@@ -630,7 +598,7 @@ VertexSet& CGraphTranslator::CAnalysis(VertexSet& N)
 	return N;
 }
 
-CNode* CGraphTranslator::TranslateBody()
+Statement* CGraphTranslator::TranslateBody()
 {
 	BuildCFG();
 
@@ -666,9 +634,9 @@ CNode* CGraphTranslator::TranslateBody()
 
 BasicBlockResult CGraphTranslator::TranslateBasicBlock(const TACBasicBlock* block)
 {
-	CBasicBlockDAGTranslator translator(this);
+	CBasicBlockTranslator translator(this);
 	auto node = translator.Translate(block);
-	auto condition = translator.GetCondition();
+	auto condition = translator.GetJumpCondition();
 	auto jumpAddr = translator.GetJumpTarget();
 	return { node, condition, jumpAddr };
 }

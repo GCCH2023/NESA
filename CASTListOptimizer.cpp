@@ -1,50 +1,46 @@
 #include "stdafx.h"
 #include "CASTListOptimizer.h"
-#include "CNode.h"
-
+#include "NodeConverter.h"
 
 void CASTListOptimizer::Reset()
 {
 	visited.clear();
 }
 
-#include "Dump.h"
-
 // 后序抽象语法树，有多条子语句则顺序遍历它们
-void CASTListOptimizer::OnVisit(CNode* node)
+void CASTListOptimizer::OnVisit(Statement* node)
 {
 	if (!node) return;
 
 	// 首先处理子节点
 	VisitChildren(node);
 
-	if (!node->IsCompoundStatement())
+	if (!node->IsCompound())
 		return;
 
 	// 遍历列表语句的所有子节点
-	CListNode list(node);
+	auto& list = node->AsList();
 	for (auto it = list.begin(); it != list.end();)
 	{
-		if (it->IsEmptyStatement())
-			it = list.Remove(*it);  // 删除空语句
-		else if (it->IsCompoundStatement())
+		if (it->IsEmpty())
+			it = list.erase(*it);  // 删除空语句
+		else if (it->IsCompound())
 		{
 			auto pos = it++;
-			CListNode childList(*pos);
-			list.Insert(pos, childList);  // { } 的子节点上移一层
-			list.Remove(*pos);  // 删除 {}
+			list.insert(pos, *it);  // { } 的子节点上移一层
+			list.erase(*pos);  // 删除 {}
 		}
 		else
 			++it;
 	}
 
-	switch (list.Count())
+	switch (list.size())
 	{
 	case 0:  // 没有元素则修改为空语句节点
-		node->EmptyStat();
+		NodeConverter::ToEmptyStatement(node);
 		return;
 	case 1:  // 只有一条子语句，去除列表
-		node->CopyData(**list.begin());
+		NodeConverter::To(node, std::move(*list.front()));
 		return;
 	}
 }
@@ -55,7 +51,7 @@ void CASTListOptimizer::OnVisit(CNode* node)
 // 非列表作为列表的子语句添加到末尾
 // 3. 非列表 + 列表
 // 非列表作为列表的子语句添加到开头
-int CASTListOptimizer::TryCombineStatementList(CNode* first, CNode* second)
+int CASTListOptimizer::TryCombineStatementList(Statement* first, Statement* second)
 {
 	//if (first->kind == CNodeKind::STAT_LIST)
 	//{
@@ -81,35 +77,31 @@ int CASTListOptimizer::TryCombineStatementList(CNode* first, CNode* second)
 	return 0;
 }
 
-void CASTListOptimizer::TryOptimizeStatementList(CNode* node)
+void CASTListOptimizer::TryOptimizeStatementList(Statement* node)
 {
 	// 对语句列表的优化
-	if (node->kind != CNodeKind::STAT_LIST)
+	if (!node->IsCompound())
 		return;
 
-	CListNode list(node);
+	auto& list = node->AsList();
 	// 1. 删除 空语句 节点
 	for (auto it = list.begin(); it != list.end();)
 	{
-		if (it->IsEmptyStatement())
-			it = list.Remove(*it);
+		if (it->IsEmpty())
+			it = list.erase(it);
 		else
 			++it;
 	}
-	while (node->list.head && node->list.head->kind == CNodeKind::STAT_EMPTY)
-		node->list.head = node->list.head->GetNext();
 
 	// 2. 如果没有子节点，那么就将这个列表节点修改为空语句节点
-	if (list.Empty())
+		// 3. 只有一个子节点，那么用子节点代替它
+	switch (list.size())
 	{
-		node->Reset();
+	case 0:
+		NodeConverter::ToEmptyStatement(node);
 		return;
-	}
-
-	// 3. 只有一个子节点，那么用子节点代替它
-	if (list.Count() == 1)
-	{
-		node->CopyData(**list.begin());
+	case 1:
+		NodeConverter::To(node, std::move(*list.front()));
 		return;
 	}
 }

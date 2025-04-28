@@ -80,7 +80,7 @@ void DumpType(const Type* type)
 // 如果该节点的优先级低于父节点优先级，则输出括号
 OStream& DumpExpression(OStream& os, CNode* child, CNodeKind parentKind)
 {
-	if (GetOperatorPriority(child->kind) > GetOperatorPriority(parentKind))
+	if (GetOperatorPriority(child->GetKind()) > GetOperatorPriority(parentKind))
 	{
 		COUT << _T("(") << child << _T(")");
 	}
@@ -93,27 +93,29 @@ OStream& DumpExpression(OStream& os, CNode* child, CNodeKind parentKind)
 
 OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 {
-	switch (obj->kind)
+	auto stat = static_cast<const Statement*>(obj);
+	auto expr = static_cast<const Expression*>(obj);
+	switch (obj->GetKind())
 	{
 	case CNodeKind::STAT_LIST:
 	{
-								 for (auto n = obj->list.head; n; n = n->GetNext())
+								 for (auto n : stat->AsList())
 									 DumpCNode(os, n, indent);
 								 return os;
 	}
 	case CNodeKind::STAT_EXPR:
 	{
 								 Indent(os, indent);
-								 return os << obj->e.x << _T(";\n");
+								 return os << stat->GetExpression() << _T(";\n");
 	}
 	case CNodeKind::STAT_WHILE:
 	{
 								  Indent(os, indent);
-								  os << _T("while (") << obj->s.condition << _T(")");
-								  if (obj->s.then->kind == CNodeKind::STAT_EMPTY)
+								  os << _T("while (") << stat->GetLoopCondition() << _T(")");
+								  if (stat->GetLoopBody()->IsEmpty())
 									  return os << _T(" ;\n");
 								  os << _T(" {\n");
-								  DumpCNode(os, obj->s.then, indent + 1);
+								  DumpCNode(os, stat->GetLoopBody(), indent + 1);
 								  Indent(os, indent);
 								  os << _T("}\n");
 								  return os;
@@ -122,19 +124,20 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	{
 									 Indent(os, indent);
 									 os << _T("do {\n");
-									 DumpCNode(os, obj->s.then, indent + 1);
+									 DumpCNode(os, stat->GetLoopBody(), indent + 1);
 									 Indent(os, indent);
-									 os << _T("} while(") << obj->s.condition << _T(");\n");
+									 os << _T("} while(") << stat->GetLoopCondition() << _T(");\n");
 									 return os;
 	}
 	case CNodeKind::STAT_FOR:
 	{
 		Indent(os, indent);
-		os << _T("for (") << obj->_for.init << _T("; ") << obj->_for.condition << _T("; ") << obj->_for.iter << _T(")");
-		if (obj->s.then->kind == CNodeKind::STAT_EMPTY)
+		os << _T("for (") << stat->GetForInit() << _T("; ") << stat->GetLoopCondition() << _T("; ")
+			<< stat->GetForIter() << _T(")");
+		if (stat->GetLoopBody()->IsEmpty())
 			return os << _T(" ;\n");
 		os << _T(" {\n");
-		DumpCNode(os, obj->_for.body, indent + 1);
+		DumpCNode(os, stat->GetLoopBody(), indent + 1);
 		Indent(os, indent);
 		os << _T("}\n");
 		return os;
@@ -142,18 +145,18 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::STAT_IF:
 	{
 							   Indent(os, indent);
-							   os << _T("if (") << obj->s.condition << _T(")");
-							   if (obj->s.then->kind == CNodeKind::STAT_EMPTY)
+							   os << _T("if (") << stat->GetIfCondition() << _T(")");
+							   if (stat->GetThen()->IsEmpty())
 								   return os << _T(" ;\n");
 							   os << _T(" {\n");
-							   DumpCNode(os, obj->s.then, indent + 1);
+							   DumpCNode(os, stat->GetThen(), indent + 1);
 							   Indent(os, indent);
 							   os << _T("}\n");
-							   if (obj->s._else)
+							   if (stat->GetElse())
 							   {
 								   Indent(os, indent);
 								   os << _T("else {\n");
-								   DumpCNode(os, obj->s._else, indent + 1);
+								   DumpCNode(os, stat->GetElse(), indent + 1);
 								   Indent(os, indent);
 								   os << _T("}\n");
 							   }
@@ -162,15 +165,15 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::STAT_GOTO:
 	{
 								 Indent(os, indent);
-								 os << _T("goto ") << obj->l.name << _T(";\n");
+								 os << _T("goto ") << stat->GetGotoLabelName() << _T(";\n");
 								 return os;
 	}
 	case CNodeKind::STAT_LABEL:
 	{
 								  Indent(os, indent);
-								  os << obj->l.name << _T(":");
+								  os << stat->GetLabelName() << _T(":");
 								  os << _T("\n");
-								  DumpCNode(os, obj->l.body, indent);
+								  DumpCNode(os, stat->GetLabelBody(), indent);
 								  return os;
 	}
 	case CNodeKind::STAT_EMPTY:
@@ -181,22 +184,22 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::STAT_RETURN:
 	{
 								   Indent(os, indent);
-								   if (obj->e.x)
-									   return os << _T("return ") << obj->e.x << _T(";\n");
+								   if (stat->GetReturnValue())
+									   return os << _T("return ") << stat->GetReturnValue() << _T(";\n");
 								   else
 									   return os << _T("return;\n");
 	}
 	case CNodeKind::EXPR_INTEGER:
 	{
-									return os << obj->i.value;
+		return os << expr->GetInteger();
 	}
 	case CNodeKind::EXPR_VARIABLE:
 	{
-									 return os << obj->variable->name;
+		return os << expr->GetVariable()->name;
 	}
 	case CNodeKind::EXPR_FIELD:
 	{
-									 return os << obj->field->name;
+		return os << expr->GetField()->name;
 	}
 
 	// 双目运算符
@@ -217,16 +220,16 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::EXPR_LESS:
 	case CNodeKind::EXPR_LESS_EQUAL:
 	{
-								DumpExpression(os, obj->e.x, obj->kind);
-								os << _T(" ") << ToString(obj->kind) << _T(" ");
-								return DumpExpression(os, obj->e.y, obj->kind);
+								DumpExpression(os, expr->GetLeftOperand(), expr->GetKind());
+								os << _T(" ") << ToString(expr->GetKind()) << _T(" ");
+								return DumpExpression(os, expr->GetRightOperand(), expr->GetKind());
 	}
 	case CNodeKind::EXPR_ARROW:
 	case CNodeKind::EXPR_DOT:
 	{
-								DumpExpression(os, obj->e.x, obj->kind);
-								os << ToString(obj->kind);
-								return DumpExpression(os, obj->e.y, obj->kind);
+		DumpExpression(os, expr->GetLeftOperand(), expr->GetKind());
+								os << ToString(expr->GetKind());
+								return DumpExpression(os, expr->GetRightOperand(), expr->GetKind());
 	}
 
 	// 单目运算符
@@ -234,24 +237,25 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::EXPR_DEREF:
 	case CNodeKind::EXPR_ADDR:
 	{
-								 os << ToString(obj->kind);
-								 return DumpExpression(os, obj->e.x, obj->kind);
+								 os << ToString(expr->GetKind());
+								 return DumpExpression(os, expr->GetOperand(), expr->GetKind());
 	}
 	
 	case CNodeKind::EXPR_INDEX:
 	{
-								  DumpExpression(os, obj->e.x, obj->kind);
-								  return os << _T("[") << obj->e.y << _T("]");
+								  DumpExpression(os, expr->GetLeftOperand(), expr->GetKind());
+								  return os << _T("[") << expr->GetRightOperand() << _T("]");
 	}
 	case CNodeKind::EXPR_CALL:
 	{
 								 Indent(os, indent);
-								 os << obj->call.name << _T("(");
-								 if (obj->call.args == nullptr)
+								 os << expr->GetFunctionName() << _T("(");
+								 auto& args = expr->GetArguments();
+								 if (args.empty())
 									 return os << _T(")");
-								 for (CNode* param : CListNode(obj->call.args))
+								 for (auto param : args)
 								 {
-									 if (param != obj->call.args->list.tail)
+									 if (param != args.back())
 										 os << _T(", ");
 									 os << param;
 								 }
@@ -260,8 +264,8 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 	case CNodeKind::EXPR_CAST:
 	{
 								 os << _T("(");
-								 DumpType(obj->cast.type);
-								 return os << _T(")") << obj->cast.expr;
+								 DumpType(expr->GetCastType());
+								 return os << _T(")") << expr->GetCastValue();
 	}
 
 
@@ -272,6 +276,8 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 
 OStream& operator<<(OStream& os, const CNode* obj)
 {
+	if (!obj)
+		return os;
 	return DumpCNode(os, obj, 0);
 }
 
@@ -283,7 +289,8 @@ OStream& operator<<(OStream& os, const String* str)
 
 OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)
 {
-	switch (obj->kind)
+	auto stat = static_cast<const Statement*>(obj);
+	switch (obj->GetKind())
 	{
 	case CNodeKind::STAT_LIST:
 	{
@@ -291,7 +298,7 @@ OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)
 								 os << _T("list:\n");
 								 Indent(os, indent);
 								 os << _T("{\n");
-								 for (auto n = obj->list.head; n; n = n->GetNext())
+								 for (auto n : stat->AsList())
 									 DumpCNodeStructures(os, n, indent + 1);
 								 Indent(os, indent);
 								 os << _T("}\n");
@@ -306,33 +313,33 @@ OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)
 	{
 								  Indent(os, indent);
 								  os << _T("while:\n");
-								  DumpCNodeStructures(os, obj->s.then, indent + 1);
+								  DumpCNodeStructures(os, stat->GetLoopBody(), indent + 1);
 								  return os;
 	}
 	case CNodeKind::STAT_DO_WHILE:
 	{
 									 Indent(os, indent);
 									 os << _T("do while:\n");
-									 DumpCNodeStructures(os, obj->e.y, indent + 1);
+									 DumpCNodeStructures(os, stat->GetLoopBody(), indent + 1);
 									 return os;
 	}
 	case CNodeKind::STAT_FOR:
 	{
 		Indent(os, indent);
 		os << _T("for:\n");
-		DumpCNodeStructures(os, obj->_for.body, indent + 1);
+		DumpCNodeStructures(os, stat->GetLoopBody(), indent + 1);
 		return os;
 	}
 	case CNodeKind::STAT_IF:
 	{
 							   Indent(os, indent);
 							   os << _T("if:\n");
-							   DumpCNodeStructures(os, obj->s.then, indent + 1);
-							   if (obj->s._else)
+							   DumpCNodeStructures(os, stat->GetThen(), indent + 1);
+							   if (stat->GetElse())
 							   {
 								   Indent(os, indent);
 								   os << _T("else:\n");
-								   DumpCNodeStructures(os, obj->s._else, indent + 1);
+								   DumpCNodeStructures(os, stat->GetElse(), indent + 1);
 							   }
 							   return os;
 	}
@@ -346,7 +353,7 @@ OStream& DumpCNodeStructures(OStream& os, const CNode* obj, int indent)
 	{
 								  Indent(os, indent);
 								  os << _T("label:\n");
-								  DumpCNodeStructures(os, obj->l.body, indent);
+								  DumpCNodeStructures(os, stat->GetLabelBody(), indent);
 								  return os;
 	}
 	case CNodeKind::STAT_EMPTY:
@@ -542,4 +549,3 @@ void Dump(CDataBase& cdb)
 		COUT << std::endl;
 	}
 }
-

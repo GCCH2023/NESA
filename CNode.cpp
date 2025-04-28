@@ -59,7 +59,7 @@ const TCHAR* ToString(CNodeKind kind)
 	case CNodeKind::EXPR_AND: return _T("&&");
 	case CNodeKind::EXPR_OR: return _T("||");
 	case CNodeKind::EXPR_NOT: return _T("!");
-	case CNodeKind::EXPR_LIST: return _T("EXPR_LIST");
+	case CNodeKind::EXPR_CONDITION: return _T("?:");
 	default:
 		throw Exception(_T("Î´ÊµÏÖµÄ CNodeKind ToString"));
 	}
@@ -155,8 +155,8 @@ int Evaluate(CNodeKind op, const Expression& x, const Expression& y)
 		throw Exception(s);
 	}
 
-	int a = x.As<IntegerExpression>().value;
-	int b = y.As<IntegerExpression>().value;
+	int a = x.GetInteger();
+	int b = y.GetInteger();
 	switch (op)
 	{
 	case CNodeKind::EXPR_ADD: return a + b;

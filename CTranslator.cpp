@@ -3,7 +3,8 @@
 #include "CTranslator.h"
 #include "Function.h"
 #include "CDataBase.h"
-#include "CASTTraverser.h"
+#include "NodeConverter.h"
+#include "CNodeVisitor.h"
 
 CTranslator::CTranslator(Allocator& allocator_):
 allocator(allocator_),
@@ -93,7 +94,7 @@ String* CTranslator::GetLocalVariableName(int index)
 }
 
 
-CNode* CTranslator::GetExpression(const TACOperand& operand)
+Expression* CTranslator::GetExpression(const TACOperand& operand)
 {
 	switch (operand.GetKind())
 	{
@@ -147,7 +148,7 @@ CNode* CTranslator::GetExpression(const TACOperand& operand)
 	}
 }
 
-CNode* CTranslator::GetExpression(CNode& node, const TACOperand& operand)
+Expression* CTranslator::GetExpression(Expression& node, const TACOperand& operand)
 {
 	switch (operand.GetKind())
 	{
@@ -157,7 +158,7 @@ CNode* CTranslator::GetExpression(CNode& node, const TACOperand& operand)
 	case TACOperand::TEMP:
 	{
 		auto var = GetLocalVariable(operand.GetValue());
-		node.Var(var);
+		NodeConverter::To(&node, Expression::Variable(var));
 		break;
 	}
 	case TACOperand::REGISTER:
@@ -167,11 +168,11 @@ CNode* CTranslator::GetExpression(CNode& node, const TACOperand& operand)
 		auto variable = this->function->GetParameter(name);
 		if (variable)
 		{
-			node.Var(variable);
+			NodeConverter::To(&node, Expression::Variable(variable));
 			break;
 		}
 		variable = GetLocalVariable(name, TypeManager::Char);
-		node.Var(variable);
+		NodeConverter::To(&node, Expression::Variable(variable));
 		break;
 	}
 	case TACOperand::GLOBAL:
@@ -184,7 +185,7 @@ CNode* CTranslator::GetExpression(CNode& node, const TACOperand& operand)
 			s.Format(_T("获取全局变量 %X 失败"), addr);
 			throw Exception(s.ToString());
 		}
-		node.Var(global);
+		NodeConverter::To(&node, Expression::Variable(global));
 		break;
 	}
 	case TACOperand::ADDRESS:
@@ -197,7 +198,7 @@ CNode* CTranslator::GetExpression(CNode& node, const TACOperand& operand)
 			s.Format(_T("获取全局变量 %X 失败"), addr);
 			throw Exception(s.ToString());
 		}
-		node.Var(global);
+		NodeConverter::To(&node, Expression::Variable(global));
 		break;
 	}
 	default:
@@ -278,7 +279,7 @@ void CTranslator::SetLocalVariables()
 	}
 }
 
-CNode* CTranslator::TranslateBody()
+Statement* CTranslator::TranslateBody()
 {
 	throw Exception(_T("翻译函数体未实现"));
 }
@@ -302,53 +303,58 @@ void CTranslator::PatchLabels()
 	for (auto label : labels)
 	{
 		auto statement = blockStatements[label.first];
-		if (statement->kind != CNodeKind::STAT_LABEL)
+		if (!statement->IsLabel())
 		{
 			// 复制一份原来的节点，修改原来的节点标签语句，并使用复制节点作为语句体
 			// 原来就是标签语句，附加一个新标签也是可以的
 			auto body = nodeFactory.Copy(*statement);
-			statement->Label(label.second, body);
+			NodeConverter::ToLabelStatement(statement, label.second, body);
 		}
 	}
 }
 
-void CTranslator::AddAddressMapStatement(uint32_t address, CNode* statement)
+void CTranslator::AddAddressMapStatement(uint32_t address, Statement* statement)
 {
 	blockStatements[address] = statement;
 }
 
 
-CNode* CTranslator::NewStatementList(CListNode& list)
+Statement* CTranslator::NewStatementList(const std::vector<Statement*>& list)
 {
-	if (list.Empty())
+	if (list.empty())
 		return nodeFactory.EmptyStat();
-	if (list.Count() == 1)
-		return *list.begin();
-	auto node = nodeFactory.ListStat();
-	CListNode(node).Add(list);
+	if (list.size() == 1)
+		return list.front();
+	auto node = nodeFactory.CompoundStat();
+	auto& stats = node->AsList();
+	for (auto s : list)
+	{
+		stats.push_back(s);
+	}
 	return node;
 }
 
-class LocvalVariablesRemover : public CASTVisitor
+class LocvalVariablesRemover : protected CNodeVisitor
 {
 public:
 	LocvalVariablesRemover(Function* function_):function(function_){}
 	void Run()
 	{
-		CASTTraverser traverser;
-		traverser.Traverse(function->GetBody(), *this);
+		Visit(function->GetBody());
 
 		std::erase_if(function->GetVariableList(), [&visited = visited](const Variable* var) {
 			return visited.find(var) == visited.end();
 			});
 	}
 protected:
-	virtual void PreVisit(CNode* node)
+	virtual void OnVisit(Expression* node) override
 	{
-		if (node->kind == CNodeKind::EXPR_VARIABLE)
+		if (node->IsVariable())
 		{
-			visited.insert(node->variable);
+			visited.insert(node->GetVariable());
+			return;
 		}
+		VisitChildren(node);
 	}
 private:
 	Function* function;

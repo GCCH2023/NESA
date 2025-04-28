@@ -15,12 +15,10 @@ CTreeOptimizer::~CTreeOptimizer()
 
 void CTreeOptimizer::Optimize(CNode* root)
 {
-	CASTContextTraverser traverser;
 	CASTListOptimizer optimizer;
-
 	optimizer.Visit(root);
 
 	CASTDoWhileOptimier doWhileOptimizer;
-	traverser.Traverse(root, doWhileOptimizer);
+	doWhileOptimizer.Visit(root);
 }
 

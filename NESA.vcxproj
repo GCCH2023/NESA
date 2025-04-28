@@ -153,19 +153,17 @@
     <ClInclude Include="BitSet.h" />
     <ClInclude Include="BitTable.h" />
     <ClInclude Include="Cartridge.h" />
-    <ClInclude Include="CASTContextTraverser.h" />
     <ClInclude Include="CASTDoWhileOptimier.h" />
     <ClInclude Include="CASTListOptimizer.h" />
-    <ClInclude Include="CASTTraverser.h" />
     <ClInclude Include="CBasicBlockBaseTranslator.h" />
     <ClInclude Include="CBasicBlockDAGTranslator.h" />
     <ClInclude Include="CBasicBlockTranslator.h" />
     <ClInclude Include="CDataBase.h" />
     <ClInclude Include="CNode.h" />
     <ClInclude Include="CNodeFactory.h" />
+    <ClInclude Include="CNodeVisitor.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="CGraphTranslator.h" />
-    <ClInclude Include="CStatementVisitor.h" />
     <ClInclude Include="DataFlowAnalyzer.h" />
     <ClInclude Include="CDirectTranslator.h" />
     <ClInclude Include="DirectedGraph.h" />
@@ -187,6 +185,7 @@
     <ClInclude Include="NesSubroutine.h" />
     <ClInclude Include="NesSubroutineParser.h" />
     <ClInclude Include="NesUtil.h" />
+    <ClInclude Include="NodeConverter.h" />
     <ClInclude Include="NodeSet.h" />
     <ClInclude Include="ReachingDefinition.h" />
     <ClInclude Include="Sprintf.h" />
@@ -212,15 +211,14 @@
     <ClInclude Include="Type.h" />
     <ClInclude Include="TypeManager.h" />
     <ClInclude Include="Variable.h" />
+    <ClInclude Include="VariableUsed.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ASTManager.cpp" />
     <ClCompile Include="BitTable.cpp" />
     <ClCompile Include="Cartridge.cpp" />
-    <ClCompile Include="CASTContextTraverser.cpp" />
     <ClCompile Include="CASTDoWhileOptimier.cpp" />
     <ClCompile Include="CASTListOptimizer.cpp" />
-    <ClCompile Include="CASTTraverser.cpp" />
     <ClCompile Include="CBasicBlockBaseTranslator.cpp" />
     <ClCompile Include="CBasicBlockDAGTranslator.cpp" />
     <ClCompile Include="CBasicBlockTranslator.cpp" />
@@ -229,7 +227,7 @@
     <ClCompile Include="CGraphTranslator.cpp" />
     <ClCompile Include="CDirectTranslator.cpp" />
     <ClCompile Include="CNodeFactory.cpp" />
-    <ClCompile Include="CStatementVisitor.cpp" />
+    <ClCompile Include="CNodeVisitor.cpp" />
     <ClCompile Include="DominatorAnalyzer.cpp" />
     <ClCompile Include="Dump.cpp" />
     <ClCompile Include="Exception.cpp" />
@@ -247,6 +245,7 @@
     <ClCompile Include="NesObject.cpp" />
     <ClCompile Include="NesSubroutine.cpp" />
     <ClCompile Include="NesSubroutineParser.cpp" />
+    <ClCompile Include="NodeConverter.cpp" />
     <ClCompile Include="NodeSet.cpp" />
     <ClCompile Include="ReachingDefinition.cpp" />
     <ClCompile Include="CCommonTranslator.cpp" />
@@ -273,6 +272,7 @@
     <ClCompile Include="Type.cpp" />
     <ClCompile Include="TypeManager.cpp" />
     <ClCompile Include="Variable.cpp" />
+    <ClCompile Include="VariableUsed.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

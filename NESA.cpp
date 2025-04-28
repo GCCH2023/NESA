@@ -375,10 +375,10 @@ void NesDBSubroutineParserTest(const TCHAR* rom, Nes::Address address = 0, Nes::
 		DumpCNodeStructures(COUT, func->GetBody(), 0);
 
 		// 优化C代码结构
-		ctreeOptimizer.Optimize(func->GetBody());
+		/*ctreeOptimizer.Optimize(func->GetBody());
 		COUT << _T("\n优化语法树结构后:\n");
 		 DumpCNodeStructures(COUT, func->GetBody(), 0);
-		COUT << endl;
+		COUT << endl;*/
 		DumpDefinition(func);
 
 	}

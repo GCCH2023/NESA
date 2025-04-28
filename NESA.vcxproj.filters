@@ -210,12 +210,6 @@
     <ClInclude Include="DynamicBitSet.h">
       <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="CASTTraverser.h">
-      <Filter>C\Traverser</Filter>
-    </ClInclude>
-    <ClInclude Include="CASTContextTraverser.h">
-      <Filter>C\Traverser</Filter>
-    </ClInclude>
     <ClInclude Include="CASTListOptimizer.h">
       <Filter>C\Optimizer</Filter>
     </ClInclude>
@@ -240,9 +234,6 @@
     <ClInclude Include="CBasicBlockDAGTranslator.h">
       <Filter>C\Translator</Filter>
     </ClInclude>
-    <ClInclude Include="CStatementVisitor.h">
-      <Filter>C\Traverser</Filter>
-    </ClInclude>
     <ClInclude Include="CTranslator.h">
       <Filter>C\Translator</Filter>
     </ClInclude>
@@ -251,6 +242,15 @@
     </ClInclude>
     <ClInclude Include="CNodeFactory.h">
       <Filter>C\Factory</Filter>
+    </ClInclude>
+    <ClInclude Include="CNodeVisitor.h">
+      <Filter>C\Traverser</Filter>
+    </ClInclude>
+    <ClInclude Include="VariableUsed.h">
+      <Filter>C</Filter>
+    </ClInclude>
+    <ClInclude Include="NodeConverter.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -377,12 +377,6 @@
     <ClCompile Include="Dump.cpp">
       <Filter>C</Filter>
     </ClCompile>
-    <ClCompile Include="CASTTraverser.cpp">
-      <Filter>C\Traverser</Filter>
-    </ClCompile>
-    <ClCompile Include="CASTContextTraverser.cpp">
-      <Filter>C\Traverser</Filter>
-    </ClCompile>
     <ClCompile Include="CASTListOptimizer.cpp">
       <Filter>C\Optimizer</Filter>
     </ClCompile>
@@ -404,9 +398,6 @@
     <ClCompile Include="CBasicBlockDAGTranslator.cpp">
       <Filter>C\Translator</Filter>
     </ClCompile>
-    <ClCompile Include="CStatementVisitor.cpp">
-      <Filter>C\Traverser</Filter>
-    </ClCompile>
     <ClCompile Include="CTranslator.cpp">
       <Filter>C\Translator</Filter>
     </ClCompile>
@@ -415,6 +406,15 @@
     </ClCompile>
     <ClCompile Include="CNodeFactory.cpp">
       <Filter>C\Factory</Filter>
+    </ClCompile>
+    <ClCompile Include="CNodeVisitor.cpp">
+      <Filter>C\Traverser</Filter>
+    </ClCompile>
+    <ClCompile Include="VariableUsed.cpp">
+      <Filter>C</Filter>
+    </ClCompile>
+    <ClCompile Include="NodeConverter.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

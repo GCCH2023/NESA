@@ -1,5 +1,5 @@
 #pragma once
-#include "CStatementVisitor.h"
+#include "CNodeVisitor.h"
 
 // 优化抽象语法树中的列表语句
 /*
@@ -12,18 +12,18 @@
 （3）{ 语句1 } = 语句1, 语句1只有1条语句
 （4）{ } = 空语句
 */
-class CASTListOptimizer : public CStatementVisitor
+class CASTListOptimizer : public CNodeVisitor
 {
 public:
 	CASTListOptimizer() = default;
 	void Reset();
 protected:
-	virtual void OnVisit(CNode* node) override;
+	void OnVisit(Statement* node) override;
 	// 尝试合并两条语句，没有合并返回0，合并返回对应的类型
-	int TryCombineStatementList(CNode* first, CNode* second);
+	int TryCombineStatementList(Statement* first, Statement* second);
 	// 尝试优化语句列表节点
-	void TryOptimizeStatementList(CNode* node);
+	void TryOptimizeStatementList(Statement* node);
 private:
-	std::unordered_set<CNode*> visited;  // 被访问过的节点
+	std::unordered_set<Statement*> visited;  // 被访问过的节点
 };
 

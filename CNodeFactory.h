@@ -44,8 +44,6 @@ public:
 	Expression* Assign(Expression* target, Expression* source);
 	// 创建赋值语句
 	Statement* AssignStat(Expression* target, Expression* source);
-	// 创建表达式列表
-	Expression* ExprList();
 
 	// 创建单目赋值表达式 z = op x
 	inline Expression* UnaryAssignExpr(CNodeKind op, Expression* z, Expression* x)
@@ -69,7 +67,7 @@ public:
 		return ExprStat(BinaryAssignExpr(op, z, x, y));
 	}
 
-	// 复制节点
+	// 复制节点，不会复制节点的链接关系
 	template<typename T>
 	T* Copy(const T& node)
 	{

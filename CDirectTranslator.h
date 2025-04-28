@@ -18,15 +18,15 @@ public:
 	virtual void Reset() override;
 protected:
 
-	virtual CNode* TranslateBody() override;
+	virtual Statement* TranslateBody() override;
 	virtual BasicBlockResult TranslateBasicBlock(const TACBasicBlock* block) override;
 
-	CNode* TranslateCall(TAC* call, CNode* params = nullptr);
-	CNode* ConditionalJump(CNodeKind kind, TAC* tac);
-	CNode* ConditionalJump(const BasicBlockResult& ret);
+	Statement* TranslateCall(TAC* call, const std::vector<Expression*>& args);
+	Statement* ConditionalJump(CNodeKind kind, TAC* tac);
+	Statement* ConditionalJump(const BasicBlockResult& ret);
 
-	CNode* UnaryExpression(CNodeKind kind, const TAC* tac);
-	CNode* BinaryExpression(CNodeKind kind, const TAC* tac);
+	Statement* UnaryExpression(CNodeKind kind, const TAC* tac);
+	Statement* BinaryExpression(CNodeKind kind, const TAC* tac);
 protected:
 	
 };

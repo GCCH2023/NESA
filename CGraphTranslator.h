@@ -33,10 +33,10 @@ struct ControlTreeNodeEx
 			ControlTreeNodeEx* _else;
 		} _if;
 	};
-	CNode* statement;  // 对应的C语句，如果一个基本块只有一条跳转语句，那么这个字段为空
+	Statement* statement;  // 对应的C语句，如果一个基本块只有一条跳转语句，那么这个字段为空
 	// 对应的条件表达式，两个顺序基本块构成的循环，必然是先归约语句序列，而后是循环，那么就要保存
 	// 后面基本块的条件表达式
-	CNode* condition;
+	Expression* condition;
 	ControlTreeNodeEx():
 		type(CtrlTreeNodeType::CTNTYPE_LEAF),
 		statement(nullptr),
@@ -86,7 +86,7 @@ protected:
 	VertexSet& CAnalysis(VertexSet& N);
 
 
-	virtual CNode* TranslateBody() override;
+	virtual Statement* TranslateBody() override;
 	virtual BasicBlockResult TranslateBasicBlock(const TACBasicBlock* block) override;
 protected:
 	void OnReduceSelfLoop(Node node);
@@ -105,14 +105,11 @@ protected:
 	// 一个基本块通常前面是顺序执行的指令，最后以条件跳转指令结尾
 	// statement 是 if 前面的语句，可以为空，表示这个基本块只有一条条件跳转指令
 	// condition是if的条件，body是if条件为真要执行的语句, elseBody 是条件为假要执行的语句
-	CNode* CombineListIf(CNode* statement, CNode* condition, CNode* body, CNode* elseBody = nullptr);
-	// 对表达式进行取反
-	// 可能会修改输入的表达式的类型
-	CNode* GetNotExpression(CNode* expr);
+	Statement* CombineListIf(Statement* statement, Expression* condition, Statement* body, Statement* elseBody = nullptr);
 	// 创建一个do while 节点
-	CNode* NewDoWhile(CNode* condition, CNode* body);
+	Statement* NewDoWhile(Expression* condition, Statement* body);
 	// 创建一个只有两条语句的语句列表节点
-	CNode* NewStatementPair(CNode* first, CNode* second);
+	Statement* NewStatementPair(Statement* first, Statement* second);
 protected:
 	// 调试使用
 	// 输出所有控制树节点构成的控制流图

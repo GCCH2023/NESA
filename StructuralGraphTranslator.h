@@ -557,25 +557,25 @@
 //
 //	CNode* GetNotExpression(CNode* expr)
 //	{
-//		switch (expr->kind)
+//		switch (expr->GetKind())
 //		{
 //		case CNodeKind::EXPR_GREAT:
-//			expr->kind = CNodeKind::EXPR_LESS_EQUAL;
+//			expr->GetKind() = CNodeKind::EXPR_LESS_EQUAL;
 //			break;
 //		case CNodeKind::EXPR_GREAT_EQUAL:
-//			expr->kind = CNodeKind::EXPR_LESS;
+//			expr->GetKind() = CNodeKind::EXPR_LESS;
 //			break;
 //		case CNodeKind::EXPR_LESS:
-//			expr->kind = CNodeKind::EXPR_GREAT_EQUAL;
+//			expr->GetKind() = CNodeKind::EXPR_GREAT_EQUAL;
 //			break;
 //		case CNodeKind::EXPR_LESS_EQUAL:
-//			expr->kind = CNodeKind::EXPR_GREAT;
+//			expr->GetKind() = CNodeKind::EXPR_GREAT;
 //			break;
 //		case CNodeKind::EXPR_EQUAL:
-//			expr->kind = CNodeKind::EXPR_NOT_EQUAL;
+//			expr->GetKind() = CNodeKind::EXPR_NOT_EQUAL;
 //			break;
 //		case CNodeKind::EXPR_NOT_EQUAL:
-//			expr->kind = CNodeKind::EXPR_EQUAL;
+//			expr->GetKind() = CNodeKind::EXPR_EQUAL;
 //			break;
 //		default:
 //			throw Exception(_T("未实现的表达式取反类型"));

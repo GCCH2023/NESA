@@ -25,33 +25,33 @@ class CBasicBlockDAGTranslator:
 	using DefinitionVar = std::unordered_map<CNode*, const Variable*>;
 public:
 	CBasicBlockDAGTranslator(CTranslator* translator);
-	CNode* GetCondition() { return condition; }
-	uint32_t GetJumpTarget() { return jumpAddr; }
 protected:
-	CNode* OnTranslate(const TACBasicBlock* block) override;
-	CNode* TranslateTAC(const TAC* tac, size_t& index) override;
-	CNode* BinAssignStatement(CNodeKind kind, const TAC* tac) override;
-	CNode* AssignStatement(const TACOperand& z, CNode* x) override;
-	CNode* FieldExpression(CNode* obj, const Field* field) override;
-	CNode* IndexExpression(CNode* array, CNode* index) override;
-	CNode* ArrayAssign(CNode* z, CNode* x) override;
-	CNode* UnaryAssignStatement(CNodeKind kind, const TAC* tac) override;
+	Statement* OnTranslate(const TACBasicBlock* block) override;
+	Statement* TranslateTAC(const TAC* tac, size_t& index) override;
+	Statement* BinAssignStatement(CNodeKind kind, const TAC* tac) override;
+	Statement* AssignStatement(const TACOperand& z, Expression* x) override;
+	Expression* FieldExpression(Expression* obj, const Field* field) override;
+	Expression* IndexExpression(Expression* array, Expression* index) override;
+	Statement* ArrayAssign(Expression* z, Expression* x) override;
+	Statement* UnaryAssignStatement(CNodeKind kind, const TAC* tac) override;
 
-	CNode* GetExpression(const TACOperand& operand) override;
-	CNode* TranslateCall(const TAC* call, CNode* params) override;
+	Expression* GetExpression(const TACOperand& operand) override;
+	Statement* TranslateCall(const TAC* call, const std::vector<Expression*>& args) override;
 	// 条件跳转语句翻译
 	void ConditionalJump(const TAC* tac);
 
 	// 获取节点表中的指定节点，不存在则添加
-	CNode* GetNode(CNode* node);
+	Expression* GetNode(Expression&& node);
+	Statement* GetNode(Statement&& node);
+
 	// 将变量附加到节点上
 	void Attach(const TACOperand& var, CNode* node);
 	// 构建DAG
 	void GenerateDAG(const TACBasicBlock* block);
 	// 从 DAG 生成 C 代码
-	CNode* GenerateCodes();
+	Statement* GenerateCodes();
 	// 从 DAG 节点生成 AST 的表达式
-	CNode* GenerateExpression(CNode* node, const DefinitionVar& definition);
+	Expression* GenerateExpression(CNode* node, const DefinitionVar& definition);
 	// 标记表达式需要被保留
 	inline void Reserve(CNode* expr) { reserved.push_back(expr); }
 	inline void Reserve(TACOperand operand) { reserved.push_back(operand); }
@@ -60,8 +60,6 @@ protected:
 	// 处理跳转指令
 	void GenerateConditionalJump(const DefinitionVar& definition);
 private:
-	CNode* condition;  // 跳转指令对应的条件表达式
-	uint32_t jumpAddr;  // 跳转指令对应的
 	const TAC* jumpTAC = nullptr;  // 基本块末尾的跳转指令
 
 	// 已存在的节点表

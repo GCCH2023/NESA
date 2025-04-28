@@ -21,7 +21,7 @@ void CDirectTranslator::Reset()
 	CTranslator::Reset();
 }
 
-CNode* CDirectTranslator::TranslateCall(TAC* call, CNode* params)
+Statement* CDirectTranslator::TranslateCall(TAC* call, const std::vector<Expression*>& args)
 {
 	String* name = nullptr;
 	if (call->x.IsAddress())  // 直接给出函数地址
@@ -52,26 +52,30 @@ CNode* CDirectTranslator::TranslateCall(TAC* call, CNode* params)
 		s.Format(_T("三地址码翻译为C语句：%04X 解析函数名称失败"), call->address);
 		throw Exception(s.ToString());
 	}
-	CNode* expr = nodeFactory.Call(name, params);
+	Expression* expr = nodeFactory.Call(name);
+	for (auto arg : args)
+	{
+		expr->GetArguments().push_back(arg);
+	}
 	// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
 	if (call->z.IsTemp())
 	{
-		expr = nodeFactory.Expr(CNodeKind::EXPR_ASSIGN, GetExpression(call->z), expr);
+		expr = nodeFactory.Binary(CNodeKind::EXPR_ASSIGN, GetExpression(call->z), expr);
 	}
 	return nodeFactory.ExprStat(expr);
 }
 
-CNode* CDirectTranslator::ConditionalJump(CNodeKind kind, TAC* tac)
+Statement* CDirectTranslator::ConditionalJump(CNodeKind kind, TAC* tac)
 {
 	assert(IsExpression(kind));
 	// 条件跳转指令必定是基本块结束指令
-	auto condition = nodeFactory.Expr(kind, GetExpression(tac->x), GetExpression(tac->y));
+	auto condition = nodeFactory.Binary(kind, GetExpression(tac->x), GetExpression(tac->y));
 	auto jumpAddr = tac->z.GetValue();
 	auto gotoStat = nodeFactory.Goto(GetLabelName(jumpAddr));
 	return nodeFactory.If(condition, gotoStat);
 }
 
-CNode* CDirectTranslator::ConditionalJump(const BasicBlockResult& ret)
+Statement* CDirectTranslator::ConditionalJump(const BasicBlockResult& ret)
 {
 	if (!ret.condition)
 		return GetNodeFactory().EmptyStat();
@@ -80,32 +84,30 @@ CNode* CDirectTranslator::ConditionalJump(const BasicBlockResult& ret)
 	return nodeFactory.If(ret.condition, gotoStat);
 }
 
-CNode* CDirectTranslator::UnaryExpression(CNodeKind kind, const TAC* tac)
+Statement* CDirectTranslator::UnaryExpression(CNodeKind kind, const TAC* tac)
 {
 	return nodeFactory.UnaryAssignExprStat(kind, GetExpression(tac->z), GetExpression(tac->x));
 }
 
-CNode* CDirectTranslator::BinaryExpression(CNodeKind kind, const TAC* tac)
+Statement* CDirectTranslator::BinaryExpression(CNodeKind kind, const TAC* tac)
 {
 	return nodeFactory.BinaryAssignExprStat(kind, GetExpression(tac->z), GetExpression(tac->x), GetExpression(tac->y));
 }
 
 
-CNode* CDirectTranslator::TranslateBody()
+Statement* CDirectTranslator::TranslateBody()
 {
 	auto& blocks = GetTACFunction()->GetBasicBlocks();
-	CNode funcNode(CNodeKind::STAT_LIST);
-	CListNode funcList(funcNode);
+	std::vector<Statement*> funcList;
 	for (auto block : blocks)
 	{
-		CNode node(CNodeKind::STAT_LIST);
-		CListNode list(node);
+		std::vector<Statement*> list;
 		auto ret = TranslateBasicBlock(block);
-		list.Add(ret.statement);
-		list.Add(ConditionalJump(ret));
+		list.push_back(ret.statement);
+		list.push_back(ConditionalJump(ret));
 		auto blockStat = NewStatementList(list);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
 		AddAddressMapStatement(block->GetStartAddress(), blockStat);
-		funcList.Add(blockStat);
+		funcList.push_back(blockStat);
 	}
 	auto funcHead = NewStatementList(funcList);
 	// 在全部语句都生成后，回填标签语句
@@ -119,7 +121,7 @@ BasicBlockResult CDirectTranslator::TranslateBasicBlock(const TACBasicBlock* blo
 	CBasicBlockTranslator translator(this);
 	BasicBlockResult ret;
 	ret.statement = translator.Translate(block);
-	ret.condition = translator.GetCondition();
+	ret.condition = translator.GetJumpCondition();
 	ret.jumpTarget = translator.GetJumpTarget();
 	return ret;
 }

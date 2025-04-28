@@ -3,7 +3,6 @@
 
 class Function;
 class TACFunction;
-struct CNode;
 class TACOperand;
 struct Variable;
 struct String;
@@ -13,8 +12,8 @@ class TACBasicBlock;
 // 基本块翻译结果
 struct BasicBlockResult
 {
-	CNode* statement;  // 基本块对应的语句
-	CNode* condition;  // 如果基本块以跳转指令介绍，则保存跳转条件
+	Statement* statement;  // 基本块对应的语句
+	Expression* condition;  // 如果基本块以跳转指令介绍，则保存跳转条件
 	uint32_t jumpTarget;  // 跳转目标地址
 };
 
@@ -32,9 +31,9 @@ public:
 	inline TACFunction* GetTACFunction() { return tacFunc; }
 	inline Function* GetFunction() { return function; }
 	// 将三地址码操作数转换为C表达式，节点动态分配内存
-	CNode* GetExpression(const TACOperand& operand);
+	Expression* GetExpression(const TACOperand& operand);
 	// 将三地址码操作数转换为C表达式，节点由外部分配
-	CNode* GetExpression(CNode& node, const TACOperand& operand);
+	Expression* GetExpression(Expression& node, const TACOperand& operand);
 	// 获取局部变量，不存在就添加
 	const Variable* GetLocalVariable(String* name, Type* type);
 	// 按索引获取局部变量
@@ -50,9 +49,9 @@ public:
 	// 回填标签语句
 	void PatchLabels();
 	// 添加地址语句映射
-	void AddAddressMapStatement(uint32_t address, CNode* statement);
+	void AddAddressMapStatement(uint32_t address, Statement* statement);
 	// 创建一条列表语句
-	CNode* NewStatementList(CListNode& list);
+	Statement* NewStatementList(const std::vector<Statement*>& list);
 	// 获取寄存器的名称
 	String* GetRegisterName(int index) { return registers[index]; }
 	// 删除函数中没有用到的变量
@@ -63,7 +62,7 @@ public:
 
 protected:
 	// 翻译函数体
-	virtual CNode* TranslateBody() = 0;
+	virtual Statement* TranslateBody() = 0;
 	// 翻译基本块
 	virtual BasicBlockResult TranslateBasicBlock(const TACBasicBlock* block) = 0;
 protected:
@@ -74,6 +73,6 @@ private:
 	Function* function;
 	String* registers[9];  // AXY NVZC P SP 9个寄存器
 	std::unordered_map<Nes::Address, String*> labels;  // 地址到标签语句的映射
-	std::unordered_map<Nes::Address, CNode*> blockStatements;  // 地址到基本块对应的语句的映射
+	std::unordered_map<Nes::Address, Statement*> blockStatements;  // 地址到基本块对应的语句的映射
 };
 

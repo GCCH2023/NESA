@@ -8,15 +8,9 @@ class CBasicBlockTranslator:
 {
 public:
 	CBasicBlockTranslator(CTranslator* translator);
-	CNode* GetCondition() { return condition; }
-	uint32_t GetJumpTarget() { return jumpAddr; }
 protected:
-	CNode* OnTranslate(const TACBasicBlock* block) override;
-	CNode* TranslateTAC(const TAC* tac, size_t& index) override;
-	CNode* ConditionalJump(CNodeKind kind, const TAC* tac, uint32_t& jumpAddr);
-
-private:
-	CNode* condition;  // 跳转指令对应的条件表达式
-	uint32_t jumpAddr;  // 跳转指令对应的
+	Statement* OnTranslate(const TACBasicBlock* block) override;
+	Statement* TranslateTAC(const TAC* tac, size_t& index) override;
+	Expression* ConditionalJump(CNodeKind kind, const TAC* tac);
 };
 
