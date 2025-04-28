@@ -21,8 +21,10 @@ Function* CCommonTranslator::Translate(TACFunction* func)
 		CGraphTranslator graphTranslator(allocator);
 		return graphTranslator.Translate(func);
 	}
-	catch (...)
+	catch (Exception& e)
 	{
+		Sprintf<> s;
+		COUT << s.Format(_T("控制流翻译异常，使用直接翻译: %s\n"), e.Message());
 		allocator.Rollback(mark);
 		CDirectTranslator translator(allocator);
 		return  translator.Translate(func);

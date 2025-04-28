@@ -1,7 +1,7 @@
 #pragma once
 #include "Variable.h"
 
-struct CNode;
+class Statement;
 struct Type;
 struct String;
 
@@ -10,8 +10,8 @@ class Function
 public:
 	Function();
 
-	inline void SetBody(CNode* body) { this->body = body; }
-	inline CNode* GetBody() { return body; }
+	inline void SetBody(Statement* body) { this->body = body; }
+	inline Statement* GetBody() { return body; }
 
 	inline void SetType(Type* type) { this->type = type; }
 	inline Type* GetType() { return type; }
@@ -38,5 +38,5 @@ public:
 	CAddress address;  // 函数开始地址
 	Variable* params;  // 形参列表
 	std::vector<Variable*> variables;  // 局部变量列表
-	CNode* body;  // 函数体
+	Statement* body;  // 函数体
 };

@@ -67,11 +67,15 @@ public:
 		return ExprStat(BinaryAssignExpr(op, z, x, y));
 	}
 
-	// 复制节点，不会复制节点的链接关系
-	template<typename T>
-	T* Copy(const T& node)
+	// 复制语句节点，不会复制节点的链接关系
+	inline Statement* Copy(const Statement* node)
 	{
-		return allocator.New<T>(node);
+		return allocator.New<Statement>(*node);
+	}
+	// 复制表达式节点，不会复制节点的链接关系
+	inline Expression* Copy(const Expression* node)
+	{
+		return allocator.New<Expression>(*node);
 	}
 private:
 	Allocator& allocator;

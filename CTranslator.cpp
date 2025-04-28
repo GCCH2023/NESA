@@ -153,12 +153,12 @@ Expression* CTranslator::GetExpression(Expression& node, const TACOperand& opera
 	switch (operand.GetKind())
 	{
 	case TACOperand::INTEGER:
-		node.Integer(operand.GetValue());
+		node = Expression::Integer(operand.GetValue());
 		break;
 	case TACOperand::TEMP:
 	{
 		auto var = GetLocalVariable(operand.GetValue());
-		NodeConverter::To(&node, Expression::Variable(var));
+		node = Expression::Variable(var);
 		break;
 	}
 	case TACOperand::REGISTER:
@@ -168,11 +168,11 @@ Expression* CTranslator::GetExpression(Expression& node, const TACOperand& opera
 		auto variable = this->function->GetParameter(name);
 		if (variable)
 		{
-			NodeConverter::To(&node, Expression::Variable(variable));
+			node = Expression::Variable(variable);
 			break;
 		}
 		variable = GetLocalVariable(name, TypeManager::Char);
-		NodeConverter::To(&node, Expression::Variable(variable));
+		node = Expression::Variable(variable);
 		break;
 	}
 	case TACOperand::GLOBAL:
@@ -185,7 +185,7 @@ Expression* CTranslator::GetExpression(Expression& node, const TACOperand& opera
 			s.Format(_T("获取全局变量 %X 失败"), addr);
 			throw Exception(s.ToString());
 		}
-		NodeConverter::To(&node, Expression::Variable(global));
+		node = Expression::Variable(global);
 		break;
 	}
 	case TACOperand::ADDRESS:
@@ -198,7 +198,7 @@ Expression* CTranslator::GetExpression(Expression& node, const TACOperand& opera
 			s.Format(_T("获取全局变量 %X 失败"), addr);
 			throw Exception(s.ToString());
 		}
-		NodeConverter::To(&node, Expression::Variable(global));
+		node = Expression::Variable(global);
 		break;
 	}
 	default:
@@ -307,7 +307,7 @@ void CTranslator::PatchLabels()
 		{
 			// 复制一份原来的节点，修改原来的节点标签语句，并使用复制节点作为语句体
 			// 原来就是标签语句，附加一个新标签也是可以的
-			auto body = nodeFactory.Copy(*statement);
+			auto body = nodeFactory.Copy(statement);
 			NodeConverter::ToLabelStatement(statement, label.second, body);
 		}
 	}

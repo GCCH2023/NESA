@@ -35,11 +35,12 @@ CBasicBlockDAGTranslator::CBasicBlockDAGTranslator(CTranslator* translator_) :
 Statement* CBasicBlockDAGTranslator::TranslateTAC(const TAC* tac, size_t& index)
 {
 	Expression* expr;
-	CNode* current = nullptr;
+	Statement* current = nullptr;
 	switch (tac->op)
 	{
 	default:
-		return CBasicBlockBaseTranslator::TranslateTAC(tac, index);
+		current = CBasicBlockBaseTranslator::TranslateTAC(tac, index);
+		break;
 	case TACOperator::BOOL_BAND:
 		expr = GetNode(Expression::Binary(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y)));
 		expr = GetNode(Expression::Binary(CNodeKind::EXPR_NOT_EQUAL, expr, GetExpression(TACOperand(0))));
@@ -99,7 +100,7 @@ Statement* CBasicBlockDAGTranslator::TranslateTAC(const TAC* tac, size_t& index)
 		// 先这样翻译凑合一下，翻译成表达式语句
 		expr = GetNode(Expression::Binary(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y)));
 		Reserve(expr);
-		break;
+		return nullptr;
 	}
 	case TACOperator::RETURN:
 	{
@@ -116,7 +117,8 @@ Statement* CBasicBlockDAGTranslator::TranslateTAC(const TAC* tac, size_t& index)
 	}
 	// 进位和溢出标志都是和其他指令配合使用的，抽象语法树中不应该出现
 	}
-	return nullptr;
+	MarkReserve(tac);
+	return current;
 }
 
 Expression* CBasicBlockDAGTranslator::GetExpression(const TACOperand& operand)
@@ -194,7 +196,7 @@ Expression* CBasicBlockDAGTranslator::GetNode(Expression&& node)
 	if (it != nodeSet.end())
 		return (Expression*)*it;
 	// 创建
-	Expression* n = GetNodeFactory().Copy(node);
+	Expression* n = GetNodeFactory().Copy(&node);
 	nodeSet.insert(n);
 	return n;
 }
@@ -205,7 +207,7 @@ Statement* CBasicBlockDAGTranslator::GetNode(Statement&& node)
 	if (it != nodeSet.end())
 		return (Statement*)*it;
 	// 创建
-	Statement* n = GetNodeFactory().Copy(node);
+	Statement* n = GetNodeFactory().Copy(&node);
 	nodeSet.insert(n);
 	return n;
 }
@@ -305,18 +307,21 @@ void CBasicBlockDAGTranslator::MarkReserve(const TAC* tac)
 	if (tac->op == TACOperator::ARRAY_SET)
 		return;
 
-	if (IsAxyNvzc(tac->z))
+	if (tac->z.IsRegister() || tac->z.IsGlobal())
 		Reserve(tac->z);
 }
 
 void CBasicBlockDAGTranslator::GenerateDAG(const TACBasicBlock* block)
 {
+	if (block->GetStartAddress() == 0x8000)
+	{
+		int a = 0;
+	}
 	auto& codes = block->GetCodes();
 	for (size_t i = 0; i < codes.size(); ++i)
 	{
 		auto tac = codes[i];
 		TranslateTAC(tac, i);
-		MarkReserve(tac);
 	}
 }
 
@@ -395,6 +400,16 @@ Expression* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const Defi
 	case CNodeKind::EXPR_LESS_EQUAL:
 	case CNodeKind::EXPR_INDEX:
 		return  GetNodeFactory().Binary(node->GetKind(), expr->GetLeftOperand(), expr->GetRightOperand());
+	case CNodeKind::EXPR_CALL:
+	{
+		auto call = GetNodeFactory().Call(expr->GetFunctionName());
+		for (auto arg : expr->GetArguments())
+		{
+			auto argu = GetNodeFactory().Copy(arg);
+			call->GetArguments().push_back(argu);
+		}
+		return call;
+	}
 
 	case CNodeKind::EXPR_NOT:
 	case CNodeKind::EXPR_DEREF:

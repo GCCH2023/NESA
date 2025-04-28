@@ -634,7 +634,7 @@ Statement* CGraphTranslator::TranslateBody()
 
 BasicBlockResult CGraphTranslator::TranslateBasicBlock(const TACBasicBlock* block)
 {
-	CBasicBlockTranslator translator(this);
+	CBasicBlockDAGTranslator translator(this);
 	auto node = translator.Translate(block);
 	auto condition = translator.GetJumpCondition();
 	auto jumpAddr = translator.GetJumpTarget();

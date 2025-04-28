@@ -1,7 +1,7 @@
 #pragma once
 #include "CNodeVisitor.h"
 
-class Variable;
+struct Variable;
 
 // 判断指定节点是否使用了指定变量，需要先执行遍历
 // 目前的实现有点简单，没有考虑全局变量或字段等情况
