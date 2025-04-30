@@ -8,9 +8,5 @@ class CBasicBlockTranslator:
 {
 public:
 	CBasicBlockTranslator(CTranslator* translator);
-protected:
-	Statement* OnTranslate(const TACBasicBlock* block) override;
-	Statement* TranslateTAC(const TAC* tac, size_t& index) override;
-	Expression* ConditionalJump(CNodeKind kind, const TAC* tac);
 };
 

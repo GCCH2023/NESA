@@ -340,7 +340,7 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 			// N = M.7, V = M.6
 			AddTAC(allocator.New<TAC>(TACOperator::BOOL_BIT, RegisterN, GetOperand(i), 7), i.GetAddress());
 			AddTAC(allocator.New<TAC>(TACOperator::BOOL_BIT, RegisterV, GetOperand(i), 6), i.GetAddress());
-			tac = allocator.New<TAC>(TACOperator::BIT, NewTemp(TypeManager::Value), RegisterA, GetOperand(i));
+			tac = allocator.New<TAC>(TACOperator::BAND, NewTemp(TypeManager::Value), RegisterA, GetOperand(i));
 			AddTAC(tac, i.GetAddress());
 			// z = t == 0
 			AddTAC(allocator.New<TAC>(TACOperator::BOOL_EQ, RegisterZ, tac->z, 0), i.GetAddress());

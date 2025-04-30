@@ -6,7 +6,7 @@ class Expression;
 
 // 遍历抽象语法树中的语句和表达式
 // 需要调用 VisitChildren 来访问子节点
-// 默认实现是访问子节点
+// 默认实现是访问子节点，访问的子节点保证不为空
 class CNodeVisitor
 {
 public:
@@ -25,5 +25,8 @@ protected:
 	virtual void OnVisit(Statement* node);
 	// 访问表达式节点
 	virtual void OnVisit(Expression* node);
+private:
+	inline void TryVisit(Statement* node) { if (node) OnVisit(node); }
+	inline void TryVisit(Expression* node) { if (node) OnVisit(node); }
 };
 

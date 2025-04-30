@@ -300,8 +300,6 @@ public:
 	// 是否表达式
 	inline bool IsExpression() const { return MatchCategory(GetCategory(kind), CNODE_CAT_EXPR); }
 
-	// 获取父节点
-	inline CNode* GetParent() const { return parent; }
 	// 获取子节点数量
 	inline size_t GetChildrenCount() const { return ::GetChildrenCount(GetKind()); }
 protected:
@@ -323,17 +321,11 @@ private:
 		assert(node != this);
 		next = node; 
 	}
-	inline void SetParent(CNode* node)
-	{
-		assert(parent == nullptr);
-		parent = node;
-	}
 private:
 	CNodeKind kind;
 	// 构成双向链表
 	CNode* prev = nullptr;
 	CNode* next = nullptr;
-	CNode* parent = nullptr;
 };
 
 // 专门用于操作列表节点的类
@@ -472,6 +464,7 @@ public:
 			head = node;
 		}
 		tail = node;
+		Check();
 	}
 	void push_front(T* node) {
 		if (!node) return;
@@ -486,6 +479,7 @@ public:
 			tail = node;
 		}
 		head = node;
+		Check();
 	}
 	void insert(const iterator& pos, T* node) {
 		if (!node) return;
@@ -500,16 +494,53 @@ public:
 			return;
 		}
 
-		T* current = *pos;
-		node->SetPrev(current->GetPrev());
-		node->SetNext(current);
+		auto next = *pos;
+		auto prev = next->GetPrev();
+		node->SetPrev(prev);
+		node->SetNext(next);
 
-		link_nodes(current->GetPrev(), node);
-		link_nodes(node, current);
+		if (prev) prev->SetNext(node);
+		else head = node;
 
-		if (current == head) {
-			head = node;
+		if (next) next->SetPrev(node);
+		else tail = node;
+
+		Check();
+	}
+	// 将另一个List的所有元素移动到此List中
+	void insert(const iterator& pos, List<T>&& other)
+	{
+		if (other.empty()) {
+			return;  // 如果other为空，直接返回
 		}
+
+		// 获取插入位置的前驱和后继节点
+		T* insert_prev = (pos != end()) ? (*pos)->GetPrev() : tail;
+		T* insert_next = (pos != end()) ? (*pos) : nullptr;
+
+		// 连接other的头部
+		other.head->SetPrev(insert_prev);
+		if (insert_prev) {
+			insert_prev->SetNext(other.head);
+		}
+		else {
+			head = other.head;  // 插入到头部
+		}
+
+		// 连接other的尾部
+		other.tail->SetNext(insert_next);
+		if (insert_next) {
+			insert_next->SetPrev(other.tail);
+		}
+		else {
+			tail = other.tail;  // 插入到尾部
+		}
+
+		// 清空other，确保资源所有权转移
+		other.head = nullptr;
+		other.tail = nullptr;
+
+		Check();  // 检查链表完整性
 	}
 	iterator erase(const iterator& pos) {
 		if (pos == end()) return end();
@@ -528,53 +559,21 @@ public:
 	}
 	void clear() noexcept {
 		while (head) {
+			CNode::ResetParent(head);
+
 			T* next = head->GetNext();
 			head->SetPrev(head->SetNext(nullptr));  // 只重置指针
 			head = next;
+
 		}
 		tail = nullptr;
+		Check();
 	}
 	void swap(List& other) noexcept {
 		std::swap(head, other.head);
 		std::swap(tail, other.tail);
 	}
 
-	// 操作
-	void splice(const iterator& pos, List& other) {
-		if (other.empty()) return;
-
-		if (pos == begin()) {
-			other.tail->SetNext(head);
-			if (head) {
-				head->SetPrev(other.tail);
-			}
-			else {
-				tail = other.tail;
-			}
-			head = other.head;
-		}
-		else if (pos == end()) {
-			tail->SetNext(other.head);
-			other.head->SetPrev(tail);
-			tail = other.tail;
-		}
-		else {
-			T* current = *pos;
-			other.head->SetPrev(current->GetPrev());
-			other.tail->SetNext(current);
-
-			if (current->GetPrev()) {
-				current->GetPrev()->SetNext(other.head);
-			}
-			else {
-				head = other.head;
-			}
-			current->SetPrev(other.tail);
-		}
-
-		other.head = nullptr;
-		other.tail = nullptr;
-	}
 	void reverse() noexcept {
 		if (!head || head == tail) return;
 
@@ -605,21 +604,22 @@ public:
 	const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
 	const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
+protected:
+	inline void Check()
+	{
+		assert(!head || head->GetPrev() == nullptr);
+		assert(!tail || tail->GetNext() == nullptr);
+	}
 private:
 	T* owner = nullptr;  // 包含列表的节点
 	T* head = nullptr;
 	T* tail = nullptr;
-
-	void link_nodes(T* prev, T* next) {
-		if (prev) prev->SetNext(next);
-		if (next) next->SetPrev(prev);
-	}
 };
 
 
 struct CNodeArray
 {
-	CNode* data[4];
+	CNode* data[5];
 };
 
 struct Variable;
@@ -696,10 +696,11 @@ public:
 		children(expr.children)
 	{
 	}
-	Expression(Expression&& expr) noexcept :
-		CNode(expr.GetKind()),
-		children(expr.children)
+	Expression(Expression&& other) noexcept :
+		CNode(other.GetKind()),
+		children(other.children)
 	{
+		other.children = { nullptr };
 	}
 	// 获取前驱节点，可能为空
 	Expression* GetPrev() const { return static_cast<Expression*>(Prev()); }
@@ -707,14 +708,15 @@ public:
 	Expression* GetNext() const { return static_cast<Expression*>(Next()); }
 
 	Expression& operator=(const Expression&) = delete;
-	Expression& operator=(const Expression&& other)
+	Expression& operator=(Expression&& other)
 	{
 		SetKind(other.GetKind());
 		children = other.children;
+		other.children = { nullptr };
 		return *this;
 	}
 	// 根据索引获取子节点
-	Expression* GetChlid(size_t index)
+	Expression* GetChild(size_t index)
 	{
 		assert(index < GetChildrenCount());
 		return static_cast<Expression*>(children.data[index]);
@@ -734,6 +736,7 @@ public:
 		expr.integer = IntegerExpression{ value };
 		return expr;
 	}
+
 	static Expression Field(const ::Field* field)
 	{
 		assert(field);
@@ -742,6 +745,7 @@ public:
 		expr.field = FieldExpression{ field };
 		return expr;
 	}
+
 	static Expression Cast(const Type* type, Expression* expression)
 	{
 		assert(type);
@@ -751,6 +755,7 @@ public:
 		expr.cast = CastExpression{ expression, type };
 		return expr;
 	}
+
 	static Expression Unary(CNodeKind op, Expression* x)
 	{
 		assert(::IsUnaryExpression(op));
@@ -760,6 +765,7 @@ public:
 		expr.unary = UnaryExpression{ x };
 		return expr;
 	}
+
 	static Expression Binary(CNodeKind op, Expression* x, Expression* y)
 	{
 		assert(::IsBinaryExpression(op));
@@ -769,6 +775,7 @@ public:
 		expr.binary = BinaryExpression{ x, y };
 		return expr;
 	}
+
 	static Expression Ternary(CNodeKind op, Expression* x, Expression* y, Expression* z)
 	{
 		assert(x && y && z);
@@ -777,6 +784,7 @@ public:
 		expr.cond = ConditionExpression{ x , y, z };
 		return expr;
 	}
+
 	static Expression Call(String* func)
 	{
 		assert(func);
@@ -802,7 +810,7 @@ public:
 	// 获取字段表达式的字段
 	inline const ::Field* GetField() const
 	{
-		assert(IsVariable());
+		assert(IsField());
 		return field.field;
 	}
 	// 获取函数调用表达式的函数名
@@ -877,6 +885,8 @@ public:
 	bool IsInteger() const { return GetKind() == CNodeKind::EXPR_INTEGER; }
 	// 是否变量
 	bool IsVariable() const { return GetKind() == CNodeKind::EXPR_VARIABLE; }
+	// 是否字段
+	bool IsField() const { return GetKind() == CNodeKind::EXPR_FIELD; }
 	// 是否函数调用表达式
 	bool IsCall() const { return GetKind() == CNodeKind::EXPR_CALL; }
 	// 是否单目表达式
@@ -903,6 +913,11 @@ public:
 	inline bool IsAssign() const
 	{
 		return MatchCategory(GetCategory(GetKind()), CNODE_CAT_EXPR_ASSIGN);
+	}
+	// 是否初级表达式
+	inline bool IsPrimary() const
+	{
+		return MatchCategory(GetCategory(GetKind()), CNODE_CAT_EXPR_PRIMARY);
 	}
 private:
 	Expression(CNodeKind kind) : CNode(kind) {}
@@ -994,17 +1009,19 @@ public:
 		children(stat.children)
 	{
 	}
-	Statement(Statement&& stat) noexcept :
-		CNode(stat.GetKind()),
-		children(stat.children)
+	Statement(Statement&& other) noexcept :
+		CNode(other.GetKind()),
+		children(other.children)
 	{
+		other.children = { nullptr };
 	}
 	Statement& operator=(const Statement&) = delete;
 	// 语句赋值，不会修改链接关系
-	Statement& operator=(const Statement&& other) noexcept
+	Statement& operator=(Statement&& other) noexcept
 	{
 		SetKind(other.GetKind());
 		children = other.children;
+		other.children = { nullptr };
 		return *this;
 	}
 	// 获取前驱节点，可能为空
@@ -1012,7 +1029,7 @@ public:
 	// 获取后继节点，可能为空
 	Statement* GetNext() const { return static_cast<Statement*>(Next()); }
 	// 根据索引获取子节点
-	CNode* GetChlid(size_t index)
+	CNode* GetChild(size_t index)
 	{
 		assert(index < GetChildrenCount());
 		return children.data[index];
@@ -1027,6 +1044,7 @@ public:
 		statement.if_ = IfStatement{ condition, then, _else };
 		return statement;
 	}
+
 	static Statement While(Expression* condition, Statement* body)
 	{
 		assert(condition);
@@ -1036,6 +1054,7 @@ public:
 		statement.while_ = WhileStatement{ condition, body };
 		return statement;
 	}
+
 	static Statement DoWhile(Expression* condition, Statement* then)
 	{
 		assert(condition);
@@ -1045,11 +1064,13 @@ public:
 		statement.doWhile = DoWhileStatement{ condition, then };
 		return statement;
 	}
+
 	static Statement Empty()
 	{
 		Statement statement(CNodeKind::STAT_EMPTY);
 		return statement;
 	}
+
 	static Statement Label(String* name, Statement* body)
 	{
 		assert(name);
@@ -1059,6 +1080,7 @@ public:
 		statement.label = LabelStatement{ body, name };
 		return statement;
 	}
+
 	static Statement For(Statement* body, Expression* init = nullptr, Expression* condition = nullptr, Expression* iter = nullptr)
 	{
 		assert(body);
@@ -1067,6 +1089,7 @@ public:
 		statement.for_ = ForStatement{ init, condition, iter, body };
 		return statement;
 	}
+
 	static Statement Goto(String* label)
 	{
 		assert(label);
@@ -1075,12 +1098,14 @@ public:
 		statement.goto_ = GotoStatement{ label };
 		return statement;
 	}
+
 	static Statement Return(Expression* value = nullptr)
 	{
 		Statement statement(CNodeKind::STAT_RETURN);
 		statement.return_ = ReturnStatement{ value };
 		return statement;
 	}
+
 	static Statement Expr(Expression* expr)
 	{
 		assert(expr);
@@ -1089,6 +1114,7 @@ public:
 		statement.expr = ExprStatement{ expr };
 		return statement;
 	}
+
 	static Statement Compound()
 	{
 		Statement statement(CNodeKind::STAT_LIST);

@@ -20,6 +20,12 @@ bool MatchCompare(const Expression* node)
 }
 
 
+CASTDoWhileOptimier::CASTDoWhileOptimier():
+	parents(16)
+{
+	parents.clear();
+}
+
 void CASTDoWhileOptimier::Reset()
 {
 }
@@ -108,19 +114,14 @@ Statement* CASTDoWhileOptimier::GetIteratorStatement(Statement* node, Expression
 	return iter;
 }
 
-#include "Dump.h"
-
-void CASTDoWhileOptimier::OnVisit(Statement* node)
+void CASTDoWhileOptimier::OptimizeDoWhile(Statement* node)
 {
-	if (node->GetKind() != CNodeKind::STAT_DO_WHILE)
-		return;
-
 	// (1) 判断条件表达式
 	if (!MatchCompare(node->GetLoopCondition()))
 		return;
 
 	auto cond = node->GetLoopCondition();
-	Expression* var, *value;
+	Expression* var, * value;
 	if (cond->IsVariable())
 	{
 		var = cond->GetLeftOperand();
@@ -151,12 +152,28 @@ void CASTDoWhileOptimier::OnVisit(Statement* node)
 	// 可以转换为 for 语句
 	// (1) 移除初始化语句
 	// 必有父节点且是复合语句
-	auto list = static_cast<Statement*>(node->GetParent());
+	auto list = static_cast<Statement*>(GetParent());
 	list->AsList().erase(init);
 	// (2) 移除迭代语句
 	body->AsList().erase(iter);
 	// 修改 do while 为 for
 	assert(false && "需要改进");
 	node->For(body, init->GetExpression(), node->GetLoopCondition(), iter->GetExpression());
+}
+
+#include "Dump.h"
+
+void CASTDoWhileOptimier::OnVisit(Statement* node)
+{
+	parents.push_back(node);
+
+	VisitChildren(node);
+
+	parents.pop_back();
+
+	if (node->GetKind() != CNodeKind::STAT_DO_WHILE)
+		return;
+
+	OptimizeDoWhile(node);
 }
 

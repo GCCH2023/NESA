@@ -30,35 +30,35 @@ void CNodeVisitor::VisitChildren(CNode* node)
 	case CNodeKind::STAT_EMPTY:
 		break;
 	case CNodeKind::STAT_LABEL:
-		OnVisit(stat->GetLabelBody());
+		TryVisit(stat->GetLabelBody());
 		break;
 	case CNodeKind::STAT_EXPR:
-		OnVisit(stat->GetExpression());
+		TryVisit(stat->GetExpression());
 		break;
 	case CNodeKind::STAT_LIST:
 		for (auto n : stat->AsList())
-			OnVisit(n);
+			TryVisit(n);
 		break;
 	case CNodeKind::STAT_WHILE:
 	case CNodeKind::STAT_DO_WHILE:
-		OnVisit(stat->GetLoopCondition());
-		OnVisit(stat->GetLoopBody());
+		TryVisit(stat->GetLoopCondition());
+		TryVisit(stat->GetLoopBody());
 		break;
 	case CNodeKind::STAT_FOR:
-		OnVisit(stat->GetForInit());
-		OnVisit(stat->GetLoopCondition());
-		OnVisit(stat->GetForIter());
-		OnVisit(stat->GetLoopBody());
+		TryVisit(stat->GetForInit());
+		TryVisit(stat->GetLoopCondition());
+		TryVisit(stat->GetForIter());
+		TryVisit(stat->GetLoopBody());
 		break;
 	case CNodeKind::STAT_IF:
-		OnVisit(stat->GetIfCondition());
-		OnVisit(stat->GetThen());
-		OnVisit(stat->GetElse());
+		TryVisit(stat->GetIfCondition());
+		TryVisit(stat->GetThen());
+		TryVisit(stat->GetElse());
 		break;
 	case CNodeKind::STAT_GOTO:
 		break;
 	case CNodeKind::STAT_RETURN:
-		OnVisit(stat->GetReturnValue());
+		TryVisit(stat->GetReturnValue());
 		break;
 	case CNodeKind::EXPR_VARIABLE:
 		break;
@@ -71,7 +71,7 @@ void CNodeVisitor::VisitChildren(CNode* node)
 	case CNodeKind::EXPR_ADDR:
 	case CNodeKind::EXPR_CAST:
 	case CNodeKind::EXPR_NOT:
-		OnVisit(expr->GetOperand());
+		TryVisit(expr->GetOperand());
 		break;
 	case CNodeKind::EXPR_ADD:
 	case CNodeKind::EXPR_SUB:
@@ -94,17 +94,17 @@ void CNodeVisitor::VisitChildren(CNode* node)
 	case CNodeKind::EXPR_INDEX:
 	case CNodeKind::EXPR_ARROW:
 	case CNodeKind::EXPR_DOT:
-		OnVisit(expr->GetLeftOperand());
-		OnVisit(expr->GetRightOperand());
+		TryVisit(expr->GetLeftOperand());
+		TryVisit(expr->GetRightOperand());
 		break;
 	case CNodeKind::EXPR_CALL:
 		for (auto arg : expr->GetArguments())
-			OnVisit(arg);
+			TryVisit(arg);
 		break;
 	case CNodeKind::EXPR_CONDITION:
-		OnVisit(expr->GetCondition());
-		OnVisit(expr->GetTrueValue());
-		OnVisit(expr->GetFalseValue());
+		TryVisit(expr->GetCondition());
+		TryVisit(expr->GetTrueValue());
+		TryVisit(expr->GetFalseValue());
 		break;
 	default:
 	{

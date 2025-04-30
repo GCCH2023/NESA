@@ -27,18 +27,21 @@ public:
 	CBasicBlockDAGTranslator(CTranslator* translator);
 protected:
 	Statement* OnTranslate(const TACBasicBlock* block) override;
-	Statement* TranslateTAC(const TAC* tac, size_t& index) override;
-	Statement* BinAssignStatement(CNodeKind kind, const TAC* tac) override;
-	Statement* AssignStatement(const TACOperand& z, Expression* x) override;
+	// 翻译单目表达式
+	virtual Expression* UnaryExpression(CNodeKind kind, Expression* x);
+	// 翻译双目表达式
+	virtual Expression* BinaryExpression(CNodeKind kind, Expression* x, Expression* y);
+	// 翻译赋值表达式 z = x
+	virtual Expression* AssignExpression(const TACOperand& z, Expression* x);
+	// 翻译数组元素赋值或对象字段赋值语句
+	virtual Expression* ArrayAssign(Expression* z, Expression* x);
+	// 翻译函数调用表达式 result = func(args)，需要判断是否接收返回值
+	virtual Expression* CallExpression(String* func, ConstArgList& args, const TACOperand& result);
+	Expression* GetExpression(const TACOperand& operand) override;
 	Expression* FieldExpression(Expression* obj, const Field* field) override;
 	Expression* IndexExpression(Expression* array, Expression* index) override;
-	Statement* ArrayAssign(Expression* z, Expression* x) override;
-	Statement* UnaryAssignStatement(CNodeKind kind, const TAC* tac) override;
-
-	Expression* GetExpression(const TACOperand& operand) override;
-	Statement* TranslateCall(const TAC* call, const std::vector<Expression*>& args) override;
-	// 条件跳转语句翻译
-	void ConditionalJump(const TAC* tac);
+	// 翻译类型转换表达式
+	virtual Expression* CastExpression(const Type* type, Expression* value);
 
 	// 获取节点表中的指定节点，不存在则添加
 	Expression* GetNode(Expression&& node);
@@ -55,8 +58,6 @@ protected:
 	// 标记表达式需要被保留
 	inline void Reserve(CNode* expr) { reserved.push_back(expr); }
 	inline void Reserve(TACOperand operand) { reserved.push_back(operand); }
-	// 标记三地址码是否被保留
-	void MarkReserve(const TAC* tac);
 	// 处理跳转指令
 	void GenerateConditionalJump(const DefinitionVar& definition);
 private:

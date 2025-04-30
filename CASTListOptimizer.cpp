@@ -27,7 +27,8 @@ void CASTListOptimizer::OnVisit(Statement* node)
 		else if (it->IsCompound())
 		{
 			auto pos = it++;
-			list.insert(pos, *it);  // { } 的子节点上移一层
+			auto& child = pos->AsList();
+			list.insert(pos, std::move(child));  // { } 的子节点上移一层
 			list.erase(*pos);  // 删除 {}
 		}
 		else

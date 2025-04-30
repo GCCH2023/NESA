@@ -32,93 +32,14 @@ CBasicBlockDAGTranslator::CBasicBlockDAGTranslator(CTranslator* translator_) :
 {
 }
 
-Statement* CBasicBlockDAGTranslator::TranslateTAC(const TAC* tac, size_t& index)
+Expression* CBasicBlockDAGTranslator::UnaryExpression(CNodeKind kind, Expression* x)
 {
-	Expression* expr;
-	Statement* current = nullptr;
-	switch (tac->op)
-	{
-	default:
-		current = CBasicBlockBaseTranslator::TranslateTAC(tac, index);
-		break;
-	case TACOperator::BOOL_BAND:
-		expr = GetNode(Expression::Binary(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y)));
-		expr = GetNode(Expression::Binary(CNodeKind::EXPR_NOT_EQUAL, expr, GetExpression(TACOperand(0))));
-		Attach(tac->z, expr);
-		return nullptr;
-	case TACOperator::BOOL_BIT:
-		expr = GetNode(Expression::Binary(CNodeKind::EXPR_SHIFT_RIGHT, GetExpression(tac->x), GetExpression(tac->y)));
-		expr = GetNode(Expression::Binary(CNodeKind::EXPR_BAND, expr, GetExpression(TACOperand(1))));
-		Attach(tac->z, expr);
-		return nullptr;
-	case TACOperator::CAST:
-	{
-		auto result = GetExpression(tac->z);
-		assert(result->GetKind() == CNodeKind::EXPR_VARIABLE);
-		auto type = result->GetVariable()->type;  // 要转换到的类型
+	return GetNode(Expression::Unary(kind, x));
+}
 
-		expr = GetNode(Expression::Cast(type, GetExpression(tac->x)));
-		Attach(tac->z, expr);
-		return nullptr;
-	}
-
-	case TACOperator::IFGEQ:  // 跳转指令是基本块的最后一条指令
-	case TACOperator::IFGREAT:
-	case TACOperator::IFEQ:
-	case TACOperator::IFNEQ:
-	case TACOperator::IFLESS:
-	case TACOperator::IFLEQ:
-	case TACOperator::IFTRUE:
-	case TACOperator::IFFALSE:
-		ConditionalJump(tac);
-		return nullptr;
-	case TACOperator::GOTO:
-	{
-		// 新：当作条件总是真的跳转语句来翻译
-		expr = GetNodeFactory().Integer(1);
-		SetJumpCondition(expr);
-		SetJumpTarget(tac->z.GetValue());
-		return nullptr;
-
-		// 旧： goto 在控制流图中对应一条边，可能被处理成循环结构，也可能就是对应goto语句，
-		// 还不知道该怎么处理
-		//if (tac->z.GetValue() == tac->address)
-		//{
-		// // 跳转到自己的语句翻译为 while (1);
-		// //expr = allocator.New<CInteger>(1);
-		// //current = allocator.New<CWhileStatement>(expr, noneStatement);
-		// current = noneStatement;
-		// condition = allocator.New<CNode>(1);
-		// break;
-		//}
-		//auto label = GetLabelName(tac->z.GetValue());
-		//current = allocator.New<CNode>(CNodeKind::STAT_GOTO, label);
-		break;
-	}
-	case TACOperator::BIT:
-	{
-		// 先这样翻译凑合一下，翻译成表达式语句
-		expr = GetNode(Expression::Binary(CNodeKind::EXPR_BAND, GetExpression(tac->x), GetExpression(tac->y)));
-		Reserve(expr);
-		return nullptr;
-	}
-	case TACOperator::RETURN:
-	{
-		if (tac->x.IsZero())  // 目前只能返回 AXY 对象，所以可以这么判断有没有返回值
-		{
-			auto stat = GetNode(Statement::Return());
-			Reserve(stat);
-			return stat;
-		}
-		// 有返回值的情况
-		auto stat = GetNode(Statement::Return(GetExpression(tac->x)));
-		Reserve(stat);
-		return stat;
-	}
-	// 进位和溢出标志都是和其他指令配合使用的，抽象语法树中不应该出现
-	}
-	MarkReserve(tac);
-	return current;
+Expression* CBasicBlockDAGTranslator::BinaryExpression(CNodeKind kind, Expression* x, Expression* y)
+{
+	return GetNode(Expression::Binary(kind, x, y));
 }
 
 Expression* CBasicBlockDAGTranslator::GetExpression(const TACOperand& operand)
@@ -130,64 +51,6 @@ Expression* CBasicBlockDAGTranslator::GetExpression(const TACOperand& operand)
 	Expression node;
 	GetTranslator()->GetExpression(node, operand);
 	return GetNode(std::move(node));
-}
-
-
-Statement* CBasicBlockDAGTranslator::TranslateCall(const TAC* call, const std::vector<Expression*>& args)
-{
-	String* name = nullptr;
-	if (call->x.IsAddress())  // 直接给出函数地址
-	{
-		Sprintf<> s;
-		s.Format(_T("sub_%04X"), call->x.GetValue());
-		name = GetCDB().AddString(s.ToString());
-	}
-	else if (call->x.IsTemp())  // 函数指针临时变量
-	{
-		name = GetTranslator()->GetLocalVariableName(call->x.GetValue());
-	}
-	else if (call->x.IsGlobal())  // 函数指针全局变量
-	{
-		uint32_t addr = call->x.GetValue();
-		auto global = GetCDB().GetGlobalVariable(addr);
-		if (!global)
-		{
-			Sprintf<> s;
-			s.Format(_T("获取全局函数指针 %X 失败"), addr);
-			throw Exception(s.ToString());
-		}
-		name = global->name;
-	}
-	else
-	{
-		Sprintf<> s;
-		s.Format(_T("三地址码翻译为C语句：%04X 解析函数名称失败"), call->address);
-		throw Exception(s.ToString());
-	}
-	Expression expr = Expression::Call(name);
-	auto& callArgs = expr.GetArguments();
-	for (auto arg : args)
-	{
-		callArgs.push_back(arg);
-	}
-	// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
-	auto ret = GetNode(std::move(expr));
-	if (call->z.IsTemp())
-	{
-		Attach(call->z, ret);
-		Reserve(call->z);
-	}
-	else
-	{
-		Reserve(ret);
-	}
-	return GetNodeFactory().ExprStat(ret);
-}
-
-void CBasicBlockDAGTranslator::ConditionalJump(const TAC* tac)
-{
-	// 记录下跳转指令
-	jumpTAC = tac;
 }
 
 Expression* CBasicBlockDAGTranslator::GetNode(Expression&& node)
@@ -217,18 +80,35 @@ void CBasicBlockDAGTranslator::Attach(const TACOperand& var, CNode* node)
 	varMap[var] = node;
 }
 
-Statement* CBasicBlockDAGTranslator::BinAssignStatement(CNodeKind kind, const TAC* tac)
+Expression* CBasicBlockDAGTranslator::AssignExpression(const TACOperand& z, Expression* x)
 {
-	Expression node = Expression::Binary(kind, GetExpression(tac->x), GetExpression(tac->y));
-	CNode* expr = GetNode(std::move(node));
-	Attach(tac->z, expr);
+	Attach(z, x);
+	if (IsAxyNvzc(z) || z.IsGlobal())
+		Reserve(z);
 	return nullptr;
 }
 
-Statement* CBasicBlockDAGTranslator::AssignStatement(const TACOperand& z, Expression* x)
+Expression* CBasicBlockDAGTranslator::ArrayAssign(Expression* z, Expression* x)
 {
-	Attach(z, x);
+	auto expr = GetNode(Expression::Binary(CNodeKind::EXPR_ASSIGN, z, x));
+	Reserve(expr);
 	return nullptr;
+}
+
+Expression* CBasicBlockDAGTranslator::CallExpression(String* func, ConstArgList& args, const TACOperand& result)
+{
+	Expression* expr = GetNodeFactory().Call(func);
+	auto& callArgs = expr->GetArguments();
+	for (auto arg : args)
+	{
+		callArgs.push_back(arg);
+	}
+	// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
+	if (result.IsTemp())
+		expr = AssignExpression(result, expr);
+	else
+		Reserve(expr);
+	return expr;
 }
 
 Expression* CBasicBlockDAGTranslator::FieldExpression(Expression* obj, const Field* field)
@@ -244,17 +124,9 @@ Expression* CBasicBlockDAGTranslator::IndexExpression(Expression* array, Express
 	return expr;
 }
 
-Statement* CBasicBlockDAGTranslator::ArrayAssign(Expression* z, Expression* x)
+Expression* CBasicBlockDAGTranslator::CastExpression(const Type* type, Expression* value)
 {
-	auto expr = GetNode(Expression::Binary(CNodeKind::EXPR_ASSIGN, z, x));
-	return nullptr;
-}
-
-Statement* CBasicBlockDAGTranslator::UnaryAssignStatement(CNodeKind kind, const TAC* tac)
-{
-	auto expr = GetNode(Expression::Unary(kind, GetExpression(tac->x)));
-	Attach(tac->z, expr);
-	return nullptr;
+	return GetNode(Expression::Cast(type, value));
 }
 
 void CBasicBlockDAGTranslator::GenerateConditionalJump(const DefinitionVar& definition)
@@ -301,22 +173,12 @@ void CBasicBlockDAGTranslator::GenerateConditionalJump(const DefinitionVar& defi
 	SetJumpTarget(jumpTAC->z.GetValue());
 }
 
-
-void CBasicBlockDAGTranslator::MarkReserve(const TAC* tac)
-{
-	if (tac->op == TACOperator::ARRAY_SET)
-		return;
-
-	if (tac->z.IsRegister() || tac->z.IsGlobal())
-		Reserve(tac->z);
-}
-
 void CBasicBlockDAGTranslator::GenerateDAG(const TACBasicBlock* block)
 {
-	if (block->GetStartAddress() == 0x8000)
-	{
-		int a = 0;
-	}
+	//if (block->GetStartAddress() == 0x8000)
+	//{
+	//	int a = 0;
+	//}
 	auto& codes = block->GetCodes();
 	for (size_t i = 0; i < codes.size(); ++i)
 	{
@@ -338,10 +200,13 @@ Statement* CBasicBlockDAGTranslator::GenerateCodes()
 		{
 			// 生成赋值表达式
 			auto it = varMap.find(std::get<TACOperand>(expr));
-			Expression* right = GenerateExpression(it->second, definition);
+			Expression* right = GenerateExpression(it->second, definition);				
 			Expression* left = GetNodeFactory().Var(GetVariable(it->first));
 			expression = GetNodeFactory().Assign(left, right);
-			definition[it->second] = left->GetVariable();
+
+			auto iter = definition.find(it->second);
+			if (iter == definition.end())
+				definition.insert({ it->second, left->GetVariable() });
 		}
 		else  // CNode*
 		{
@@ -353,15 +218,29 @@ Statement* CBasicBlockDAGTranslator::GenerateCodes()
 		list.push_back(current);
 	}
 	GenerateConditionalJump(definition);
+
+	if (GetReturnStatement())
+	{
+		auto value = GenerateExpression(GetReturnStatement()->GetReturnValue(), definition);
+		auto stat = GetNodeFactory().Return(value);
+		list.push_back(stat);
+	}
 	return GetTranslator()->NewStatementList(list);  // 可能有一个基本块只由一条跳转指令构成，返回空语句
 }
 
 Expression* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const DefinitionVar& definition)
 {
-	// 已经生成过赋值代码的变量，直接返回它
-	auto it = definition.find(node);
-	if (it != definition.end())
-		return GetNodeFactory().Var(it->second);
+	if (node == nullptr)
+		return nullptr;
+
+	// 如果要生成初级表达式，则直接返回它们
+	if (!node->IsExpression() || !((Expression*)node)->IsPrimary())
+	{
+		// 已经生成过赋值代码的变量，直接返回它
+		auto it = definition.find(node);
+		if (it != definition.end())
+			return GetNodeFactory().Var(it->second);
+	}
 
 	auto stat = static_cast<Statement*>(node);
 	auto expr = static_cast<Expression*>(node);
@@ -399,6 +278,7 @@ Expression* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const Defi
 	case CNodeKind::EXPR_LESS:
 	case CNodeKind::EXPR_LESS_EQUAL:
 	case CNodeKind::EXPR_INDEX:
+	case CNodeKind::EXPR_DOT:
 		return  GetNodeFactory().Binary(node->GetKind(), expr->GetLeftOperand(), expr->GetRightOperand());
 	case CNodeKind::EXPR_CALL:
 	{
