@@ -129,56 +129,26 @@ Expression* CBasicBlockDAGTranslator::CastExpression(const Type* type, Expressio
 	return GetNode(Expression::Cast(type, value));
 }
 
+void CBasicBlockDAGTranslator::ConditionalJump(CNodeKind op, Expression* x, Expression* y, uint32_t jump)
+{
+	// 条件跳转指令必定是基本块结束指令
+	auto condition = BinaryExpression(op, x, y);
+	SetJumpCondition(condition);
+	SetJumpTarget(jump);
+}
+
 void CBasicBlockDAGTranslator::GenerateConditionalJump(const DefinitionVar& definition)
 {
-	if (!jumpTAC)
+	auto cond = GetJumpCondition();
+	if (!cond)
 		return;
 
-	CNodeKind op;
-	switch (jumpTAC->op)
-	{
-	case TACOperator::IFGEQ:  // 跳转指令是基本块的最后一条指令
-		op = CNodeKind::EXPR_GREAT_EQUAL;
-		break;
-	case TACOperator::IFGREAT:
-		op = CNodeKind::EXPR_GREAT;
-		break;
-	case TACOperator::IFEQ:
-		op = CNodeKind::EXPR_EQUAL;
-		break;
-	case TACOperator::IFNEQ:
-		op = CNodeKind::EXPR_NOT_EQUAL;
-		break;
-	case TACOperator::IFLESS:
-		op = CNodeKind::EXPR_LESS;
-		break;
-	case TACOperator::IFLEQ:
-		op = CNodeKind::EXPR_LESS_EQUAL;
-		break;
-	case TACOperator::IFTRUE:
-		op = CNodeKind::EXPR_NOT_EQUAL;
-		break;
-	case TACOperator::IFFALSE:
-		op = CNodeKind::EXPR_EQUAL;
-		break;
-	default:
-		return;
-	}
-	Expression* x = GetExpression(jumpTAC->x);
-	Expression* y = GetExpression(jumpTAC->y);
-	x = GenerateExpression(x, definition);
-	y = GenerateExpression(y, definition);
-	Expression node = Expression::Binary(op, x, y);
-	SetJumpCondition(GenerateExpression(&node, definition));
-	SetJumpTarget(jumpTAC->z.GetValue());
+	cond = GenerateExpression(cond, definition);
+	SetJumpCondition(cond);
 }
 
 void CBasicBlockDAGTranslator::GenerateDAG(const TACBasicBlock* block)
 {
-	//if (block->GetStartAddress() == 0x8000)
-	//{
-	//	int a = 0;
-	//}
 	auto& codes = block->GetCodes();
 	for (size_t i = 0; i < codes.size(); ++i)
 	{
@@ -279,13 +249,18 @@ Expression* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const Defi
 	case CNodeKind::EXPR_LESS_EQUAL:
 	case CNodeKind::EXPR_INDEX:
 	case CNodeKind::EXPR_DOT:
-		return  GetNodeFactory().Binary(node->GetKind(), expr->GetLeftOperand(), expr->GetRightOperand());
+	{
+		auto left = GenerateExpression(expr->GetLeftOperand(), definition);
+		auto right = GenerateExpression(expr->GetRightOperand(), definition);
+		return  GetNodeFactory().Binary(node->GetKind(), left, right);
+	}
 	case CNodeKind::EXPR_CALL:
 	{
 		auto call = GetNodeFactory().Call(expr->GetFunctionName());
 		for (auto arg : expr->GetArguments())
 		{
-			auto argu = GetNodeFactory().Copy(arg);
+
+			auto argu = GenerateExpression(arg, definition);
 			call->GetArguments().push_back(argu);
 		}
 		return call;
@@ -294,7 +269,15 @@ Expression* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const Defi
 	case CNodeKind::EXPR_NOT:
 	case CNodeKind::EXPR_DEREF:
 	case CNodeKind::EXPR_ADDR:
-		return  GetNodeFactory().Unary(node->GetKind(), expr->GetOperand());
+	{
+		auto x = GenerateExpression(expr->GetOperand(), definition);
+		return  GetNodeFactory().Unary(node->GetKind(), x);
+	}
+	case CNodeKind::EXPR_CAST:
+	{
+		auto x = GenerateExpression(expr->GetCastValue(), definition);
+		return  GetNodeFactory().Cast(expr->GetCastType(), x);
+	}
 
 	default:
 	{

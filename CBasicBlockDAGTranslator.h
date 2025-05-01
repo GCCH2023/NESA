@@ -28,20 +28,22 @@ public:
 protected:
 	Statement* OnTranslate(const TACBasicBlock* block) override;
 	// 翻译单目表达式
-	virtual Expression* UnaryExpression(CNodeKind kind, Expression* x);
+	Expression* UnaryExpression(CNodeKind kind, Expression* x);
 	// 翻译双目表达式
-	virtual Expression* BinaryExpression(CNodeKind kind, Expression* x, Expression* y);
+	Expression* BinaryExpression(CNodeKind kind, Expression* x, Expression* y);
 	// 翻译赋值表达式 z = x
-	virtual Expression* AssignExpression(const TACOperand& z, Expression* x);
+	Expression* AssignExpression(const TACOperand& z, Expression* x);
 	// 翻译数组元素赋值或对象字段赋值语句
-	virtual Expression* ArrayAssign(Expression* z, Expression* x);
+	Expression* ArrayAssign(Expression* z, Expression* x);
 	// 翻译函数调用表达式 result = func(args)，需要判断是否接收返回值
-	virtual Expression* CallExpression(String* func, ConstArgList& args, const TACOperand& result);
+	Expression* CallExpression(String* func, ConstArgList& args, const TACOperand& result);
 	Expression* GetExpression(const TACOperand& operand) override;
 	Expression* FieldExpression(Expression* obj, const Field* field) override;
 	Expression* IndexExpression(Expression* array, Expression* index) override;
 	// 翻译类型转换表达式
-	virtual Expression* CastExpression(const Type* type, Expression* value);
+	Expression* CastExpression(const Type* type, Expression* value) override;
+	// 处理条件跳转
+	void ConditionalJump(CNodeKind op, Expression* x, Expression* y, uint32_t jump) override;
 
 	// 获取节点表中的指定节点，不存在则添加
 	Expression* GetNode(Expression&& node);
@@ -61,8 +63,6 @@ protected:
 	// 处理跳转指令
 	void GenerateConditionalJump(const DefinitionVar& definition);
 private:
-	const TAC* jumpTAC = nullptr;  // 基本块末尾的跳转指令
-
 	// 已存在的节点表
 	std::unordered_set<CNode*, CNodeHash, CNodeEqual> nodeSet;
 	// 变量到最近的赋值节点的映射

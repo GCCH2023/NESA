@@ -10,6 +10,8 @@ public:
 	void Reset();
 protected:
 	virtual void OnVisit(Statement* node) override;
+	virtual void OnVisit(Expression* node) override;
+
 	// 获取do while节点的初始化语句，var 是迭代变量
 	// 失败返回 nullptr
 	Statement* GetInitializeStatement(Statement* node, Expression* var);

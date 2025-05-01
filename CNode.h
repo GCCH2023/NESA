@@ -515,7 +515,7 @@ public:
 		}
 
 		// 获取插入位置的前驱和后继节点
-		T* insert_prev = (pos != end()) ? (*pos)->GetPrev() : tail;
+		T* insert_prev = (pos != end()) ? pos->GetPrev() : tail;
 		T* insert_next = (pos != end()) ? (*pos) : nullptr;
 
 		// 连接other的头部
@@ -545,17 +545,24 @@ public:
 	iterator erase(const iterator& pos) {
 		if (pos == end()) return end();
 
-		T* current = *pos;
-		iterator next(current->GetNext());
+		auto current = *pos;
+		iterator nextIter(current->GetNext());
+		auto prev = current->GetPrev();
+		auto next = current->GetNext();
 
-		if (current == head) head = current->GetNext();
-		if (current == tail) tail = current->GetPrev();
+		if (next)
+			next->SetPrev(prev);
+		else
+			tail = prev;
+		if (prev)
+			prev->SetNext(next);
+		else
+			head = next;
 
-		//link_nodes(current->GetPrev(), current->GetNext());
 		current->SetPrev(nullptr);
 		current->SetNext(nullptr);
 
-		return next;
+		return nextIter;
 	}
 	void clear() noexcept {
 		while (head) {
@@ -1004,6 +1011,12 @@ public:
 class Statement : public CNode
 {
 public:
+	// 默认创建非法节点
+	Statement() :
+		CNode(CNodeKind::NONE),
+		children{ 0 }
+	{
+	}
 	Statement(const Statement& stat) :
 		CNode(stat.GetKind()),
 		children(stat.children)

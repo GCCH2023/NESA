@@ -80,7 +80,6 @@ Statement* GetVariableAssignment(Statement* node, Expression* variable)
 Statement* CASTDoWhileOptimier::GetInitializeStatement(Statement* node, Expression* var)
 {
 	Statement* init = nullptr;
-	auto& list = node->AsList();
 	for (auto prev = node->GetPrev(); prev; prev = prev->GetPrev())
 	{
 		// 判断是否定值语句
@@ -122,7 +121,7 @@ void CASTDoWhileOptimier::OptimizeDoWhile(Statement* node)
 
 	auto cond = node->GetLoopCondition();
 	Expression* var, * value;
-	if (cond->IsVariable())
+	if (cond->GetLeftOperand()->IsVariable())
 	{
 		var = cond->GetLeftOperand();
 		value = cond->GetRightOperand();
@@ -175,5 +174,11 @@ void CASTDoWhileOptimier::OnVisit(Statement* node)
 		return;
 
 	OptimizeDoWhile(node);
+}
+
+void CASTDoWhileOptimier::OnVisit(Expression* node)
+{
+	// 不需要遍历表达式
+
 }
 

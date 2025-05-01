@@ -137,7 +137,7 @@ void ParseNes(const TCHAR* rom)
 			auto func = translater.Translate(tacSub);
 
 			// 4. 优化C代码
-			ctreeOptimizer.Optimize(func->GetBody());
+			// ctreeOptimizer.Optimize(func->GetBody());
 
 			// 5. 添加到数据库
 			GetCDB().AddFunction(func);
@@ -375,10 +375,10 @@ void NesDBSubroutineParserTest(const TCHAR* rom, Nes::Address address = 0, Nes::
 		DumpCNodeStructures(COUT, func->GetBody(), 0);
 
 		// 优化C代码结构
-		/*ctreeOptimizer.Optimize(func->GetBody());
+		ctreeOptimizer.Optimize(func->GetBody());
 		COUT << _T("\n优化语法树结构后:\n");
 		 DumpCNodeStructures(COUT, func->GetBody(), 0);
-		COUT << endl;*/
+		COUT << endl;
 		DumpDefinition(func);
 
 	}
@@ -453,6 +453,31 @@ void CASTListOptimizerTest()
 	//COUT << endl;
 }
 
+void ListTest()
+{
+	Statement listNode = Statement::Compound();
+	auto& list = listNode.AsList();
+	std::vector<Expression> exprs(10);
+	std::vector<Statement> stats(10);
+	for (size_t i = 0; i < exprs.size(); ++i)
+	{
+		exprs[i] = Expression::Integer(i);
+		stats[i] = Statement::Expr(&exprs[i]);
+		list.push_back(&stats[i]);
+	}
+	COUT << _T("初始:") << list.size() << endl << &listNode << endl;
+	size_t index = 0;
+	for (auto it = list.begin(); it != list.end();)
+	{
+		if (index % 2 == 1)
+			it = list.erase(it);
+		else
+			++it;
+		++index;
+	}
+	COUT << _T("结束 ") << list.size() << endl << &listNode << endl;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	const TCHAR* rom = _T(R"(D:\FC\miaoliro.nes)");
@@ -461,18 +486,18 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//SavePRG(rom);
 
-	ParseNes(rom);
+	// ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
 	//TACFunctionParserTest(rom, 62400, 62414);
 	//SubroutineRangeParserTest(rom);
-	// NesDBSubroutineParserTest(rom, 0x8EED);
+	NesDBSubroutineParserTest(rom, 0x90CC);
 	// ReachDefinitionTest(rom, 0x8000);
 
 	//CASTListOptimizerTest();
-
+	//ListTest();
 	system("pause");
 	return 0;
 }

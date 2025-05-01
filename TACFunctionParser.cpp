@@ -50,7 +50,7 @@ void TACFunctionParser::Parse(TACFunction* func)
 	LiveVariableAnalysis lva(db, allocator);
 	lva.SetExitOut(func->GetReturnFlag());
 	auto lvaResult = lva.Analyze(func);
-	lvaResult->DumpAllBasicBlockLiveVariables();
+	// lvaResult->DumpAllBasicBlockLiveVariables();
 
 	TACDeadCodeElimination tacDce(db, allocator, lvaResult);
 	tacDce.Optimize(func);
