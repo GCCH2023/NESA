@@ -2,6 +2,7 @@
 #include "CASTDoWhileOptimier.h"
 #include "CNode.h"
 #include "VariableUsed.h"
+#include "NodeConverter.h"
 
 // 检查双目表达式的两个操作数是否满足：一个是变量，另一个是整数
 bool MatchVariableInteger(const Expression* node)
@@ -41,7 +42,7 @@ bool UsedVariable(CNode* node, Expression* variable)
 // 获取变量的整数赋值语句，失败返回空
 Statement* GetDefinedStatement(Statement* node, Expression* variable)
 {
-	if (!node->IsExpression())
+	if (!node->IsExprStatement())
 		return nullptr;
 
 	auto expr = node->GetExpression();
@@ -54,7 +55,7 @@ Statement* GetDefinedStatement(Statement* node, Expression* variable)
 	if (!MatchVariableInteger(expr))
 		return nullptr;
 
-	if (left->GetVariable()->name == variable->GetVariable()->name)
+	if (left->GetVariable() == variable->GetVariable())
 		return node;
 	return nullptr;
 }
@@ -62,7 +63,7 @@ Statement* GetDefinedStatement(Statement* node, Expression* variable)
 // 获取变量的赋值语句，失败返回空
 Statement* GetVariableAssignment(Statement* node, Expression* variable)
 {
-	if (!node->IsExpression())
+	if (!node->IsExprStatement())
 		return nullptr;
 
 	auto expr = node->GetExpression();
@@ -70,7 +71,7 @@ Statement* GetVariableAssignment(Statement* node, Expression* variable)
 	if (expr->GetKind() != CNodeKind::EXPR_ASSIGN || !expr->GetLeftOperand()->IsVariable())
 		return nullptr;
 
-	if (expr->GetLeftOperand()->GetVariable()->name == variable->GetVariable()->name)
+	if (expr->GetLeftOperand()->GetVariable() == variable->GetVariable())
 		return node;
 	return nullptr;
 }
@@ -80,7 +81,7 @@ Statement* GetVariableAssignment(Statement* node, Expression* variable)
 Statement* CASTDoWhileOptimier::GetInitializeStatement(Statement* node, Expression* var)
 {
 	Statement* init = nullptr;
-	for (auto prev = node->GetPrev(); prev; prev = prev->GetPrev())
+	for (Statement* prev = node->GetPrev(); prev; prev = prev->GetPrev())
 	{
 		// 判断是否定值语句
 		if ((init = GetDefinedStatement(prev, var)) != nullptr)
@@ -156,11 +157,8 @@ void CASTDoWhileOptimier::OptimizeDoWhile(Statement* node)
 	// (2) 移除迭代语句
 	body->AsList().erase(iter);
 	// 修改 do while 为 for
-	assert(false && "需要改进");
-	node->For(body, init->GetExpression(), node->GetLoopCondition(), iter->GetExpression());
+	NodeConverter::To(node, Statement::For(body, init->GetExpression(), node->GetLoopCondition(), iter->GetExpression()));
 }
-
-#include "Dump.h"
 
 void CASTDoWhileOptimier::OnVisit(Statement* node)
 {

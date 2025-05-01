@@ -510,9 +510,8 @@ public:
 	// 将另一个List的所有元素移动到此List中
 	void insert(const iterator& pos, List<T>&& other)
 	{
-		if (other.empty()) {
+		if (&other == this || other.empty())
 			return;  // 如果other为空，直接返回
-		}
 
 		// 获取插入位置的前驱和后继节点
 		T* insert_prev = (pos != end()) ? pos->GetPrev() : tail;
@@ -566,12 +565,10 @@ public:
 	}
 	void clear() noexcept {
 		while (head) {
-			CNode::ResetParent(head);
-
 			T* next = head->GetNext();
-			head->SetPrev(head->SetNext(nullptr));  // 只重置指针
+			head->SetPrev(nullptr);  // 只重置指针
+			head->SetNext(nullptr);
 			head = next;
-
 		}
 		tail = nullptr;
 		Check();
@@ -601,16 +598,113 @@ public:
 	const_iterator cend() const noexcept { return const_iterator(nullptr); }
 
 	// 反向迭代器
-	using reverse_iterator = std::reverse_iterator<iterator>;
-	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+	class reverse_iterator {
+	private:
+		T* current;
+	public:
+		using iterator_category = std::bidirectional_iterator_tag;
+		using value_type = T;
+		using difference_type = std::ptrdiff_t;
+		using pointer = T*;
+		using reference = T*;
 
-	reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
-	reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
-	const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
-	const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
-	const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
-	const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
+		reverse_iterator(T* node = nullptr) : current(node) {}
 
+		reference operator*() const { return current; }
+		pointer operator->() const { return current; }
+
+		reverse_iterator& operator++() {
+			if (current)
+				current = current->GetPrev();  // 反向迭代器是向前移动（prev）
+			return *this;
+		}
+
+		reverse_iterator operator++(int) {
+			reverse_iterator tmp = *this;
+			++(*this);
+			return tmp;
+		}
+
+		reverse_iterator& operator--() {
+			if (current)
+				current = current->GetNext();  // 反向迭代器的 -- 是正向的 next
+			return *this;
+		}
+
+		reverse_iterator operator--(int) {
+			reverse_iterator tmp = *this;
+			--(*this);
+			return tmp;
+		}
+
+		bool operator==(const reverse_iterator& other) const {
+			return current == other.current;
+		}
+
+		bool operator!=(const reverse_iterator& other) const {
+			return current != other.current;
+		}
+	};
+
+	class const_reverse_iterator {
+	private:
+		const T* current;  // 关键：使用 const T* 而不是 T*
+	public:
+		using iterator_category = std::bidirectional_iterator_tag;
+		using value_type = const T;
+		using difference_type = std::ptrdiff_t;
+		using pointer = const T*;  // 返回 const 指针
+		using reference = const T*; // 返回 const 引用
+
+		const_reverse_iterator(const T* node = nullptr) : current(node) {}
+
+		// 解引用返回 const 引用
+		reference operator*() const { return current; }
+		pointer operator->() const { return current; }
+
+		// ++ 操作（移动到 prev 节点）
+		const_reverse_iterator& operator++() {
+			if (current)
+				current = current->GetPrev();  // 假设 GetPrev() 是 const 方法
+			return *this;
+		}
+
+		const_reverse_iterator operator++(int) {
+			const_reverse_iterator tmp = *this;
+			++(*this);
+			return tmp;
+		}
+
+		// -- 操作（移动到 next 节点）
+		const_reverse_iterator& operator--() {
+			if (current)
+				current = current->GetNext();  // 假设 GetNext() 是 const 方法
+			return *this;
+		}
+
+		const_reverse_iterator operator--(int) {
+			const_reverse_iterator tmp = *this;
+			--(*this);
+			return tmp;
+		}
+
+		// 比较操作
+		bool operator==(const const_reverse_iterator& other) const {
+			return current == other.current;
+		}
+
+		bool operator!=(const const_reverse_iterator& other) const {
+			return current != other.current;
+		}
+	};
+
+	// List 中的反向迭代器接口：
+	reverse_iterator rbegin() noexcept { return reverse_iterator(tail); }
+	reverse_iterator rend() noexcept { return reverse_iterator(nullptr); }
+	const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(tail); }
+	const_reverse_iterator rend() const noexcept { return const_reverse_iterator(nullptr); }
+	const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(tail); }
+	const_reverse_iterator crend() const noexcept { return const_reverse_iterator(nullptr); }
 protected:
 	inline void Check()
 	{
