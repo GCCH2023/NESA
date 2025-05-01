@@ -231,6 +231,8 @@ Expression* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const Defi
 		return  GetNodeFactory().Integer(expr->GetInteger());
 	case CNodeKind::EXPR_VARIABLE:
 		return  GetNodeFactory().Var(expr->GetVariable());
+	case CNodeKind::EXPR_FIELD:
+		return  GetNodeFactory().Field(expr->GetField());
 	case CNodeKind::EXPR_BOR:
 	case CNodeKind::EXPR_BAND:
 	case CNodeKind::EXPR_XOR:

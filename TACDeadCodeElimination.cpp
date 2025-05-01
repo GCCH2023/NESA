@@ -72,8 +72,6 @@ bool IsUsed(NodeSet& out, NodeSet& varUses, NodeSet& varDefs, TACOperand& operan
 	return out.Contains(index);
 }
 
-// void DumpAllBasicBlockLiveVariables(TACBasicBlockList& blocks);
-
 // 如何一条三地址码是跳转地址，那么消除后，这个地址就没了
 // 应该改为跳转到下一条代码的地址，目前没有实现
 // 基本块的开始地址保留最初的地址好了
@@ -89,7 +87,10 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 		lva.SetExitOut(subroutine->GetReturnFlag());
 		lvaResult = lva.Analyze(subroutine);
 	}
-	// DumpAllBasicBlockLiveVariables(subroutine->GetBasicBlocks());
+	//if (subroutine->GetStartAddress() == 0x8E2D)
+	//{
+	//	lvaResult->DumpAllBasicBlockLiveVariables();
+	//}
 
 	// 遍历每个基本块，消除死代码（对寄存器赋值了但没有使用到的三地址码）
 	for (auto block : subroutine->GetBasicBlocks())
@@ -193,7 +194,8 @@ void TACDeadCodeElimination::Optimize(TACFunction* subroutine)
 
 void TACDeadCodeElimination::Reset()
 {
-
+	tacFunc = nullptr;
+	lvaResult.reset();
 }
 
 void TACDeadCodeElimination::CorrectJumpAddress()

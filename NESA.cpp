@@ -123,15 +123,28 @@ void ParseNes(const TCHAR* rom)
 		{
 			// 生成三地址码
 			TACFunction* tacSub = ntt.Translate(sub);
-			//if (sub->GetStartAddress() == 0x8E19)
+			//if (sub->GetStartAddress() == 0x8E2D)
+			//{
 			//	COUT << _T("\n三地址码:\n");
-			// tacSub->Dump();
+			//	tacSub->Dump();
+			//}
 
 			// 1. 进行窥孔优化
 			tacPh.Optimize(tacSub);
+			//if (sub->GetStartAddress() == 0x8E2D)
+			//{
+			//	COUT << _T("\n三地址码优化后:\n");
+			//	tacSub->Dump();
+			//}
 
 			// 2. 进行死代码消除
 			tacDce.Optimize(tacSub);
+			//if (sub->GetStartAddress() == 0x8E2D)
+			//{
+			//	COUT << _T("\n死代码消除后:\n");
+			//	tacSub->Dump();
+			//}
+
 
 			// 3. 生成C代码
 			auto func = translater.Translate(tacSub);
@@ -486,14 +499,14 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//SavePRG(rom);
 
-	// ParseNes(rom);
+	ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
 	//TACFunctionParserTest(rom, 62400, 62414);
 	//SubroutineRangeParserTest(rom);
-	NesDBSubroutineParserTest(rom, 0x90CC);
+	//NesDBSubroutineParserTest(rom, 0x8E2D);
 	// ReachDefinitionTest(rom, 0x8000);
 
 	//CASTListOptimizerTest();
