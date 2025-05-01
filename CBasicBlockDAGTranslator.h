@@ -1,5 +1,5 @@
 #pragma once
-#include "CBasicBlockBaseTranslator.h".h"
+#include "CBasicBlockBaseTranslator.h"
 #include "TAC.h"
 
 struct CNodeHash
@@ -19,7 +19,7 @@ struct CNodeEqual
 // 注意:
 // 1. 保留有副作用的语句，比如函数调用，数组赋值
 // 2. 生成C代码时一定要缓存赋值过的变量，否则 x = x + 1; y = x * 2; 这样的的情况会有问题
-class CBasicBlockDAGTranslator:
+class CBasicBlockDAGTranslator :
 	public CBasicBlockBaseTranslator
 {
 	using DefinitionVar = std::unordered_map<CNode*, const Variable*>;
@@ -58,8 +58,8 @@ protected:
 	// 从 DAG 节点生成 AST 的表达式
 	Expression* GenerateExpression(CNode* node, const DefinitionVar& definition);
 	// 标记表达式需要被保留
-	inline void Reserve(CNode* expr) { reserved.push_back(expr); }
-	inline void Reserve(TACOperand operand) { reserved.push_back(operand); }
+	inline void Reserve(CNode* var) { reserved.emplace_back(var); }
+	inline void Reserve(TACOperand var, CNode* value) { reserved.emplace_back(TACVar{ var, value }); }
 	// 处理跳转指令
 	void GenerateConditionalJump(const DefinitionVar& definition);
 private:
@@ -67,7 +67,11 @@ private:
 	std::unordered_set<CNode*, CNodeHash, CNodeEqual> nodeSet;
 	// 变量到最近的赋值节点的映射
 	std::unordered_map<TACOperand, CNode*, TACOperandHash> varMap;
+
+	// 变量与它对应的C节点
+	using TACVar = std::pair<TACOperand, CNode*>;  // 变量, 值
+	using CVar = CNode*;  // 数组，字段赋值，函数调用等有副作用的节点
 	// 需要保留的表达式
-	std::vector<std::variant<TACOperand, CNode*>> reserved;
+	std::vector<std::variant<TACVar, CVar>> reserved;
 };
 

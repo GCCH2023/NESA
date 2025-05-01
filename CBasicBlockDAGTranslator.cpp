@@ -84,7 +84,7 @@ Expression* CBasicBlockDAGTranslator::AssignExpression(const TACOperand& z, Expr
 {
 	Attach(z, x);
 	if (IsAxyNvzc(z) || z.IsGlobal())
-		Reserve(z);
+		Reserve(z, x);
 	return nullptr;
 }
 
@@ -169,14 +169,14 @@ Statement* CBasicBlockDAGTranslator::GenerateCodes()
 		if (expr.index() == 0)  // TACOperand
 		{
 			// 生成赋值表达式
-			auto it = varMap.find(std::get<TACOperand>(expr));
-			Expression* right = GenerateExpression(it->second, definition);				
-			Expression* left = GetNodeFactory().Var(GetVariable(it->first));
+			auto varValue = std::get<TACVar>(expr);
+			Expression* right = GenerateExpression(varValue.second, definition);				
+			Expression* left = GetNodeFactory().Var(GetVariable(varValue.first));
 			expression = GetNodeFactory().Assign(left, right);
 
-			auto iter = definition.find(it->second);
+			auto iter = definition.find(varValue.second);
 			if (iter == definition.end())
-				definition.insert({ it->second, left->GetVariable() });
+				definition.insert({ varValue.second, left->GetVariable() });
 		}
 		else  // CNode*
 		{

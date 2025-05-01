@@ -88,7 +88,7 @@ public:
 		return &nodes[index];
 	}
 	// 获取节点数量
-	inline int GetNodeCount() const { return nodesCount; }
+	inline int GetNodeCount() const { return (int)nodesCount; }
 	// 使用 Tarjan 算法获取有向图的强连通风量
 	// 每个VertexSet表示一个强连通分量
 	std::vector<VertexSet> Tarjan() const

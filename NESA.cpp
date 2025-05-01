@@ -150,7 +150,7 @@ void ParseNes(const TCHAR* rom)
 			auto func = translater.Translate(tacSub);
 
 			// 4. 优化C代码
-			// ctreeOptimizer.Optimize(func->GetBody());
+			ctreeOptimizer.Optimize(func->GetBody());
 
 			// 5. 添加到数据库
 			GetCDB().AddFunction(func);
