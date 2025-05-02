@@ -101,7 +101,9 @@ Expression* CBasicBlockDAGTranslator::CallExpression(String* func, ConstArgList&
 	auto& callArgs = expr->GetArguments();
 	for (auto arg : args)
 	{
-		callArgs.push_back(arg);
+		// 不能复用，否则链表有问题
+		auto a = GetNodeFactory().Copy(arg);
+		callArgs.push_back(a);
 	}
 	// 如果有返回值，那么接收返回值，返回值必定是用临时变量接收
 	if (result.IsTemp())

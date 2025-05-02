@@ -188,8 +188,8 @@ void NesAnalyzer::AnalyzeSubroutine()
 	std::vector<Nes::Address> queue =
 	{
 		db.GetInterruptResetAddress(),
-		//db.GetInterruptNmiAddress(),
-		//db.GetInterruptIrqAddress(),
+		db.GetInterruptNmiAddress(),
+		db.GetInterruptIrqAddress(),
 	};
 	std::unordered_set<Nes::Address> visited;
 	// 循环分析所有函数
