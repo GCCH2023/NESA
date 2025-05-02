@@ -493,9 +493,9 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 								 // r += C
 								 AddTAC(allocator.New<TAC>(TACOperator::ADD, r, r, RegisterC), i.GetAddress());
 								 // V = 
-								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_FLAGV, A, GetOperand(i)), i.GetAddress());
+								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_FLAGV, RegisterV, RegisterA, GetOperand(i)), i.GetAddress());
 								 // C = (r & 0x100) != 0
-								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_BAND, r, 0x100), i.GetAddress());
+								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_BAND, RegisterC, r, 0x100), i.GetAddress());
 								 // A = r
 								 tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterA, r), i.GetAddress();
 								 break;
@@ -511,9 +511,9 @@ TACBasicBlock* TACTranslater1::TranslateBasickBlock(NesBasicBlock* block)
 								 // r -= t
 								 AddTAC(allocator.New<TAC>(TACOperator::SUB, r, r, t), i.GetAddress());
 								 // V = 
-								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_FLAGV, A, GetOperand(i)), i.GetAddress());
+								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_FLAGV, RegisterV, RegisterA, GetOperand(i)), i.GetAddress());
 								 // C = r <= 255
-								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_LEQ, r, 0x100), i.GetAddress());
+								 AddTAC(allocator.New<TAC>(TACOperator::BOOL_LEQ, RegisterC, r, 0x100), i.GetAddress());
 								 // A = r
 								 tac = allocator.New<TAC>(TACOperator::ASSIGN, RegisterA, r), i.GetAddress();
 								 break;

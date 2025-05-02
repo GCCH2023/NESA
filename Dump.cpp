@@ -255,7 +255,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 									 return os << _T(")");
 								 for (auto param : args)
 								 {
-									 if (param != args.back())
+									 if (param != args.front())
 										 os << _T(", ");
 									 os << param;
 								 }

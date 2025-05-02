@@ -499,14 +499,14 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//SavePRG(rom);
 
-	ParseNes(rom);
+	// ParseNes(rom);
 	// TypeTest();
 	// BaiscBlockDAGTest();
 	// GlobalTest();
 	// TACBasicBlockOptimizerTest();
 	//TACFunctionParserTest(rom, 62400, 62414);
 	//SubroutineRangeParserTest(rom);
-	//NesDBSubroutineParserTest(rom, 36444);
+	NesDBSubroutineParserTest(rom, 0xF8CC);
 	// ReachDefinitionTest(rom, 0x8000);
 
 	//CASTListOptimizerTest();
