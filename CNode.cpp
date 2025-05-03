@@ -59,6 +59,7 @@ const TCHAR* ToString(CNodeKind kind)
 	case CNodeKind::EXPR_AND: return _T("&&");
 	case CNodeKind::EXPR_OR: return _T("||");
 	case CNodeKind::EXPR_NOT: return _T("!");
+	case CNodeKind::EXPR_BNOT: return _T("~");
 	case CNodeKind::EXPR_CONDITION: return _T("?:");
 	default:
 		throw Exception(_T("未实现的 CNodeKind ToString"));
@@ -132,6 +133,7 @@ int GetOperatorPriority(CNodeKind op)
 
 		// 逻辑非
 	case CNodeKind::EXPR_NOT:          // !
+	case CNodeKind::EXPR_BNOT:          // ~
 		return 1;
 
 	case CNodeKind::EXPR_INTEGER:

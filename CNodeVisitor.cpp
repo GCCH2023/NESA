@@ -71,6 +71,7 @@ void CNodeVisitor::VisitChildren(CNode* node)
 	case CNodeKind::EXPR_ADDR:
 	case CNodeKind::EXPR_CAST:
 	case CNodeKind::EXPR_NOT:
+	case CNodeKind::EXPR_BNOT:
 		TryVisit(expr->GetOperand());
 		break;
 	case CNodeKind::EXPR_ADD:

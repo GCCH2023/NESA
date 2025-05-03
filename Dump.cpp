@@ -234,6 +234,7 @@ OStream& DumpCNode(OStream& os, const CNode* obj, int indent)
 
 	// µ¥Ä¿ÔËËã·û
 	case CNodeKind::EXPR_NOT:
+	case CNodeKind::EXPR_BNOT:
 	case CNodeKind::EXPR_DEREF:
 	case CNodeKind::EXPR_ADDR:
 	{

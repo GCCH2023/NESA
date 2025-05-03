@@ -166,6 +166,8 @@ Expression* CBasicBlockBaseTranslator::TranslateTAC(const TAC* tac, size_t& inde
 		return UnaryAssignExpression(CNodeKind::EXPR_ADDR, tac);
 	case TACOperator::DEREF:
 		return UnaryAssignExpression(CNodeKind::EXPR_DEREF, tac);
+	case TACOperator::BNOT:
+		return UnaryAssignExpression(CNodeKind::EXPR_BNOT, tac);
 	case	TACOperator::CALL:
 		// 如果有参数，则必是 若干个 ARG 后面跟着一个 CALL
 		// 直接出现 CALL，说明没有参数

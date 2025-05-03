@@ -273,6 +273,7 @@ Expression* CBasicBlockDAGTranslator::GenerateExpression(CNode* node, const Defi
 	case CNodeKind::EXPR_NOT:
 	case CNodeKind::EXPR_DEREF:
 	case CNodeKind::EXPR_ADDR:
+	case CNodeKind::EXPR_BNOT:
 	{
 		auto x = GenerateExpression(expr->GetOperand(), definition);
 		return  GetNodeFactory().Unary(node->GetKind(), x);

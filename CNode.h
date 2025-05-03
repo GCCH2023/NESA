@@ -37,6 +37,7 @@ enum class CNodeKind
 	EXPR_CAST,  // 类型转换 (T)a
 
 	EXPR_NOT,  // !x
+	EXPR_BNOT,  // 取反 ~x
 
 	EXPR_ADD,  // 加法 x + y
 	EXPR_SUB,  // 减法 x - y
@@ -136,6 +137,9 @@ constexpr uint32_t GetCategory(CNodeKind kind)
 
 	case CNodeKind::EXPR_NOT:
 		return CNODE_CAT_EXPR_UNARY | CNODE_CAT_EXPR_LOGICAL;
+
+	case CNodeKind::EXPR_BNOT:
+		return CNODE_CAT_EXPR_UNARY | CNODE_CAT_EXPR_BITWISE;
 
 	case CNodeKind::EXPR_ADD:
 	case CNodeKind::EXPR_SUB:
@@ -256,6 +260,7 @@ constexpr size_t GetChildrenCount(CNodeKind kind)
 	case CNodeKind::EXPR_ADDR: return 1;  // &x
 	case CNodeKind::EXPR_CAST: return 1;  // (T)x
 	case CNodeKind::EXPR_NOT: return 1;  // !x
+	case CNodeKind::EXPR_BNOT: return 1;  // ~x
 
 		// 双目运算符
 	case CNodeKind::EXPR_ADD: return 2;  // x + y
